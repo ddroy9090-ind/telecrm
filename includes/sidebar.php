@@ -3,7 +3,7 @@
         <h3><i class="bx bx-crown"></i> <span class="sidebar-text">Admin Panel</span></h3>
     </div>
     <ul class="sidebar-menu">
-        <li class="active">
+        <li>
             <a href="index.php" class="sidebar-link">
                 <i class="bx bx-home-alt"></i>
                 <span class="sidebar-text">Dashboard</span>
@@ -50,3 +50,4 @@
         </li>
     </ul>
 </aside>
+

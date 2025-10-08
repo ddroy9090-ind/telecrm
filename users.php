@@ -93,27 +93,14 @@ if(!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                         <label for="emailAddress" class="form-label">Email address</label>
                         <input type="email" class="form-control" id="emailAddress" placeholder="Enter email">
                     </div>
-                    <fieldset class="mb-3">
-                        <legend class="col-form-label pt-0">Role</legend>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="userRole" id="roleAdmin" value="admin" checked>
-                            <label class="form-check-label" for="roleAdmin">
-                                Admin
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="userRole" id="roleManager" value="manager">
-                            <label class="form-check-label" for="roleManager">
-                                Manager
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="userRole" id="roleAgent" value="agent">
-                            <label class="form-check-label" for="roleAgent">
-                                Agent
-                            </label>
-                        </div>
-                    </fieldset>
+                    <div class="mb-3">
+                        <label for="userRole" class="form-label">Role</label>
+                        <select id="userRole" class="form-select" data-choices>
+                            <option value="admin" selected>Admin</option>
+                            <option value="manager">Manager</option>
+                            <option value="agent">Agent</option>
+                        </select>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">

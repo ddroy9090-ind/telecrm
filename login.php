@@ -195,10 +195,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-bottom-left-radius: 12px;
         }
 
+        .input-group .btn {
+            position: relative;
+            z-index: 2;
+            border: 1px #fff solid;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
         .input-group .form-control {
             background: rgba(18, 26, 22, 0.85);
             border-left: none;
-            border-radius: 0 16px 16px 0;
+            border-radius: 12px;
+            color: #f1f8f4;
         }
 
         .input-group .form-control:focus {
@@ -327,13 +336,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const toggle = document.querySelector('[data-password-toggle]');
             if (!toggle) {
                 return;
             }
 
-            toggle.addEventListener('click', function () {
+            toggle.addEventListener('click', function() {
                 const target = document.querySelector(this.getAttribute('data-password-toggle'));
                 if (!target) {
                     return;

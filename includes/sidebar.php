@@ -9,6 +9,12 @@
                 <span class="sidebar-text">Dashboard</span>
             </a>
         </li>
+        <li>
+            <a href="users.php" class="sidebar-link">
+                <i class="bx bx-user"></i>
+                <span class="sidebar-text">Users</span>
+            </a>
+        </li>
         <li class="sidebar-dropdown">
             <button type="button" class="sidebar-link sidebar-dropdown-toggle">
                 <i class="bx bx-group"></i>

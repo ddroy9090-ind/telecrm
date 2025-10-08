@@ -38,15 +38,29 @@ body {
 }
 
 .sidebar-header {
-    padding: 20px;
+    padding: 24px 20px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.sidebar-header h3 {
-    font-size: 20px;
-    margin: 0;
-    transition: all 0.3s ease;
+.sidebar-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-logo img {
+    max-width: 140px;
+    width: 100%;
+    height: auto;
+}
+
+.sidebar.collapsed .sidebar-header {
+    padding: 20px 0;
+}
+
+.sidebar.collapsed .sidebar-logo img {
+    max-width: 36px;
 }
 
 .sidebar.collapsed .sidebar-text {

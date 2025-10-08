@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+:root {
+    --theme-color: #004526;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,14 +11,14 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Montserrat', sans-serif;
     overflow-x: hidden;
     background: #f8f9fa;
 }
 
 .btn-primary {
-    background-color: #004526;
-    border-color: #004526;
+    background-color: var(--theme-color);
+    border-color: var(--theme-color);
     color: #fff;
     transition: all 0.2s ease-in-out;
 }
@@ -29,15 +35,15 @@ body {
 
 .btn-primary:disabled,
 .btn-primary.disabled {
-    background-color: #004526;
-    border-color: #004526;
+    background-color: var(--theme-color);
+    border-color: var(--theme-color);
     opacity: 0.65;
 }
 
 .form-control:focus {
     outline: none;
     box-shadow: none !important;
-    border: 1px solid #004526 !important;
+    border: 1px solid var(--theme-color) !important;
     transition: border-color 0.25s ease-in-out;
 }
 
@@ -305,7 +311,7 @@ body {
 }
 
 .toggle-btn:hover {
-    color: #004526;
+    color: var(--theme-color);
 }
 
 .topbar-right {
@@ -323,7 +329,7 @@ body {
 }
 
 .notification-icon:hover {
-    color: #004526;
+    color: var(--theme-color);
 }
 
 .badge-notification {
@@ -348,12 +354,16 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #004526 0%, #764ba2 100%);
+    background-color: var(--theme-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: #ffffff;
     cursor: pointer;
+}
+
+.user-avatar i {
+    color: inherit;
 }
 
 .user-name {

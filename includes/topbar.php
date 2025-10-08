@@ -12,8 +12,8 @@
             <span class="badge-notification">3</span>
         </div>
         <div class="user-profile dropdown">
-            <div class="user-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bx bx-user"></i>
+            <div class="user-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open user menu">
+                <i class="bx bx-user" aria-hidden="true"></i>
             </div>
             <span class="user-name"><?php echo htmlspecialchars(ucfirst($displayName)); ?></span>
             <ul class="dropdown-menu dropdown-menu-end">

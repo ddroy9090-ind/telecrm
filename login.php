@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Admin Panel</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
         body {
@@ -247,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="login-shell">
             <div class="visual-panel">
                 <div class="visual-content">
-                    <span class="visual-pill"><i class="fa-solid fa-bolt"></i> TeleCRM</span>
+                    <span class="visual-pill"><i class="bx bx-bolt-circle"></i> TeleCRM</span>
                     <h2 class="visual-title">Create Your Account to Unleash Your Dreams</h2>
                     <p class="visual-text">By signing in, you agree to the latest Terms of Service and Privacy Policy. Start exploring the future today.</p>
                 </div>
@@ -261,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <?php if (isset($error)): ?>
                     <div class="alert alert-danger" role="alert">
-                        <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
+                        <i class="bx bx-error-circle"></i> <?php echo $error; ?>
                     </div>
                 <?php endif; ?>
 
@@ -269,14 +269,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div class="mb-3">
                         <label class="form-label">Username</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <span class="input-group-text"><i class="bx bx-user"></i></span>
                             <input type="text" class="form-control" name="username" required>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <span class="input-group-text"><i class="bx bx-lock"></i></span>
                             <input type="password" class="form-control" name="password" required>
                         </div>
                     </div>
@@ -288,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <!-- <a href="#">Forgot password?</a> -->
                     </div>
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-sign-in-alt"></i>
+                        <i class="bx bx-log-in"></i>
                         <span>Login</span>
                     </button>
                     <div class="text-center login-meta">

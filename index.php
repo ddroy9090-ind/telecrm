@@ -23,28 +23,28 @@ if(!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="stat-card">
-                    <i class="fas fa-users fa-2x"></i>
+                    <i class="bx bx-group icon-2x"></i>
                     <h3>2,547</h3>
                     <p>Total Users</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                    <i class="fas fa-shopping-bag fa-2x"></i>
+                    <i class="bx bx-shopping-bag icon-2x"></i>
                     <h3>1,234</h3>
                     <p>Orders</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <i class="fas fa-dollar-sign fa-2x"></i>
+                    <i class="bx bx-rupee icon-2x"></i>
                     <h3>₹45,678</h3>
                     <p>Revenue</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                    <i class="fas fa-chart-line fa-2x"></i>
+                    <i class="bx bx-line-chart icon-2x"></i>
                     <h3>89%</h3>
                     <p>Growth</p>
                 </div>
@@ -98,16 +98,16 @@ if(!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                     <h4>Quick Actions</h4>
                     <div class="d-grid gap-2 mt-3">
                         <button class="btn btn-primary">
-                            <i class="fas fa-user-plus"></i> Add New User
+                            <i class="bx bx-user-plus"></i> Add New User
                         </button>
                         <button class="btn btn-success">
-                            <i class="fas fa-box"></i> Create Product
+                            <i class="bx bx-box"></i> Create Product
                         </button>
                         <button class="btn btn-info">
-                            <i class="fas fa-chart-bar"></i> View Reports
+                            <i class="bx bx-bar-chart-square"></i> View Reports
                         </button>
                         <button class="btn btn-warning">
-                            <i class="fas fa-cog"></i> Settings
+                            <i class="bx bx-cog"></i> Settings
                         </button>
                     </div>
                 </div>

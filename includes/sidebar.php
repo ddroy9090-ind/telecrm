@@ -1,6 +1,8 @@
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <h3><i class="bx bx-crown"></i> <span class="sidebar-text">Admin Panel</span></h3>
+        <a href="index.php" class="sidebar-logo" aria-label="TeleCRM home">
+            <img src="assets/images/logo/logo.svg" alt="TeleCRM" />
+        </a>
     </div>
     <ul class="sidebar-menu">
         <li>

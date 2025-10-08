@@ -35,7 +35,38 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('active');
         });
     });
-    
+
+    // Sidebar dropdown toggle
+    const dropdowns = document.querySelectorAll('.sidebar-dropdown');
+    dropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector('.sidebar-dropdown-toggle');
+        const submenu = dropdown.querySelector('.sidebar-submenu');
+
+        if (toggle && submenu) {
+            // Reset height
+            submenu.style.maxHeight = null;
+
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                dropdown.classList.toggle('open');
+
+                if (dropdown.classList.contains('open')) {
+                    submenu.style.maxHeight = submenu.scrollHeight + 'px';
+                } else {
+                    submenu.style.maxHeight = null;
+                }
+            });
+
+            // Open if any child is active on load
+            if (submenu.querySelector('li.active')) {
+                dropdown.classList.add('open');
+                submenu.style.maxHeight = submenu.scrollHeight + 'px';
+            }
+        }
+    });
+
     // Mobile menu toggle
     if(window.innerWidth <= 768) {
         const toggleBtn = document.querySelector('.toggle-btn');

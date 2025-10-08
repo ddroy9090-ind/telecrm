@@ -1,0 +1,334 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+    background: #f8f9fa;
+}
+
+/* Login Page Styles */
+.login-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    padding: 40px;
+    width: 100%;
+    max-width: 450px;
+}
+
+.login-card h2 {
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.login-card .input-group-text {
+    background: #f8f9fa;
+    border-right: none;
+}
+
+.login-card .form-control {
+    border-left: none;
+}
+
+.login-card .form-control:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 260px;
+    background: linear-gradient(180deg, #004526 0%, #004526  100%);
+    color: white;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.sidebar.collapsed {
+    width: 70px;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+}
+
+.sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header h3 {
+    font-size: 20px;
+    margin: 0;
+    transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-text {
+    display: none;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 20px 0;
+}
+
+.sidebar-menu li {
+    margin: 5px 0;
+    transition: all 0.3s ease;
+}
+
+.sidebar-menu li a {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.sidebar-menu li a:hover,
+.sidebar-menu li.active a {
+    background: rgba(255,255,255,0.1);
+    border-left: 3px solid #667eea;
+}
+
+.sidebar-menu li i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+    font-size: 18px;
+}
+
+/* Topbar Styles */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 260px;
+    right: 0;
+    height: 60px;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    transition: all 0.3s ease;
+    z-index: 999;
+}
+
+.sidebar.collapsed ~ .topbar {
+    left: 70px;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+    color: #667eea;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.notification-icon {
+    position: relative;
+    cursor: pointer;
+    font-size: 20px;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+.notification-icon:hover {
+    color: #667eea;
+}
+
+.badge-notification {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #f5576c;
+    color: white;
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 10px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+}
+
+.user-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+/* Main Content Styles */
+.main-content {
+    margin-left: 260px;
+    margin-top: 60px;
+    padding: 30px;
+    min-height: calc(100vh - 60px);
+    transition: all 0.3s ease;
+}
+
+.sidebar.collapsed ~ .topbar ~ .main-content {
+    margin-left: 70px;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 25px;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.stat-card h3 {
+    font-size: 36px;
+    font-weight: bold;
+    margin: 15px 0 5px 0;
+}
+
+.stat-card p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Table Styles */
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .sidebar {
+        left: -260px;
+    }
+    
+    .sidebar.show {
+        left: 0;
+    }
+    
+    .topbar {
+        left: 0;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .user-name {
+        display: none;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-card {
+    animation: fadeIn 0.5s ease;
+}
+
+.stat-card {
+    animation: fadeIn 0.6s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

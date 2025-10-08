@@ -1,0 +1,115 @@
+// Toggle Sidebar Function
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('collapsed');
+    
+    // Save state
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    saveSidebarState(isCollapsed);
+}
+
+// Save sidebar state
+function saveSidebarState(isCollapsed) {
+    const state = {
+        collapsed: isCollapsed,
+        timestamp: new Date().getTime()
+    };
+    // Store in memory only (no localStorage in Claude artifacts)
+    window.sidebarState = state;
+}
+
+// Load sidebar state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if state exists in memory
+    if(window.sidebarState && window.sidebarState.collapsed) {
+        document.getElementById('sidebar').classList.add('collapsed');
+    }
+    
+    // Handle menu item clicks
+    const menuItems = document.querySelectorAll('.sidebar-menu li');
+    menuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Remove active class from all items
+            menuItems.forEach(li => li.classList.remove('active'));
+            // Add active class to clicked item
+            this.classList.add('active');
+        });
+    });
+    
+    // Mobile menu toggle
+    if(window.innerWidth <= 768) {
+        const toggleBtn = document.querySelector('.toggle-btn');
+        toggleBtn.addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('show');
+        });
+        
+        // Close sidebar when clicking outside
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            
+            if(!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('show');
+            }
+        });
+    }
+});
+
+// Notification Bell Animation
+const notificationIcon = document.querySelector('.notification-icon');
+if(notificationIcon) {
+    notificationIcon.addEventListener('click', function() {
+        alert('You have 3 new notifications!');
+    });
+}
+
+// Quick Actions Button Handlers
+document.addEventListener('DOMContentLoaded', function() {
+    const quickActionBtns = document.querySelectorAll('.dashboard-card .btn');
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.textContent.trim();
+            console.log('Quick action clicked:', action);
+            // Add your action logic here
+        });
+    });
+});
+
+// Table Row Click Handler
+const tableRows = document.querySelectorAll('.table-hover tbody tr');
+tableRows.forEach(row => {
+    row.addEventListener('click', function() {
+        console.log('Row clicked:', this.cells[0].textContent);
+        // Add your row click logic here
+    });
+});
+
+// Responsive sidebar for mobile
+window.addEventListener('resize', function() {
+    const sidebar = document.getElementById('sidebar');
+    if(window.innerWidth > 768) {
+        sidebar.classList.remove('show');
+    }
+});
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if(target) {
+            target.scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+    });
+});
+
+// Page loading animation
+window.addEventListener('load', function() {
+    document.body.style.opacity = '0';
+    setTimeout(() => {
+        document.body.style.transition = 'opacity 0.3s';
+        document.body.style.opacity = '1';
+    }, 100);
+});

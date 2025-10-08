@@ -15,6 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullName = trim($_POST['full_name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $role = $_POST['role'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
     $userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : null;
 
     try {
@@ -24,12 +26,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new RuntimeException('All fields are required to add a user.');
                 }
 
-                $stmt = $mysqli->prepare('INSERT INTO users (full_name, email, role) VALUES (?, ?, ?)');
+                if ($password === '' || $confirmPassword === '') {
+                    throw new RuntimeException('Password and confirmation are required to add a user.');
+                }
+
+                if ($password !== $confirmPassword) {
+                    throw new RuntimeException('Password and confirm password must match.');
+                }
+
+                $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+
+                $stmt = $mysqli->prepare('INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)');
                 if (!$stmt) {
                     throw new RuntimeException('Failed to prepare insert statement: ' . $mysqli->error);
                 }
 
-                $stmt->bind_param('sss', $fullName, $email, $role);
+                $stmt->bind_param('ssss', $fullName, $email, $passwordHash, $role);
                 if (!$stmt->execute()) {
                     if ($mysqli->errno === 1062) {
                         throw new RuntimeException('A user with this email already exists.');
@@ -48,12 +60,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new RuntimeException('All fields are required to update a user.');
                 }
 
-                $stmt = $mysqli->prepare('UPDATE users SET full_name = ?, email = ?, role = ? WHERE id = ?');
+                $shouldUpdatePassword = $password !== '' || $confirmPassword !== '';
+                if ($shouldUpdatePassword) {
+                    if ($password === '' || $confirmPassword === '') {
+                        throw new RuntimeException('Both password fields are required to update the password.');
+                    }
+
+                    if ($password !== $confirmPassword) {
+                        throw new RuntimeException('Password and confirm password must match.');
+                    }
+                }
+
+                if ($shouldUpdatePassword) {
+                    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+                    $updateSql = 'UPDATE users SET full_name = ?, email = ?, role = ?, password_hash = ? WHERE id = ?';
+                    $stmt = $mysqli->prepare($updateSql);
+                } else {
+                    $updateSql = 'UPDATE users SET full_name = ?, email = ?, role = ? WHERE id = ?';
+                    $stmt = $mysqli->prepare($updateSql);
+                }
                 if (!$stmt) {
                     throw new RuntimeException('Failed to prepare update statement: ' . $mysqli->error);
                 }
 
-                $stmt->bind_param('sssi', $fullName, $email, $role, $userId);
+                if ($shouldUpdatePassword) {
+                    $stmt->bind_param('ssssi', $fullName, $email, $role, $passwordHash, $userId);
+                } else {
+                    $stmt->bind_param('sssi', $fullName, $email, $role, $userId);
+                }
                 if (!$stmt->execute()) {
                     if ($mysqli->errno === 1062) {
                         throw new RuntimeException('A user with this email already exists.');
@@ -209,6 +243,24 @@ unset($_SESSION['flash']);
                         <input type="email" class="form-control" id="emailAddress" name="email" placeholder="Enter email" required>
                     </div>
                     <div class="mb-3">
+                        <label for="addPassword" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="addPassword" name="password" placeholder="Enter password" required autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary" data-password-toggle="#addPassword" aria-label="Toggle password visibility">
+                                <i class="bx bx-show"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addConfirmPassword" class="form-label">Confirm Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password" placeholder="Re-enter password" required autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary" data-password-toggle="#addConfirmPassword" aria-label="Toggle confirm password visibility">
+                                <i class="bx bx-show"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
                         <label for="userRole" class="form-label">Role</label>
                         <select id="userRole" class="form-select" name="role" data-choices required>
                             <option value="admin">Admin</option>
@@ -248,6 +300,25 @@ unset($_SESSION['flash']);
                             <input type="email" class="form-control" id="editEmailAddress<?php echo $user['id']; ?>" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
                         </div>
                         <div class="mb-3">
+                            <label for="editPassword<?php echo $user['id']; ?>" class="form-label">New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="editPassword<?php echo $user['id']; ?>" name="password" placeholder="Leave blank to keep current password" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" data-password-toggle="#editPassword<?php echo $user['id']; ?>" aria-label="Toggle new password visibility">
+                                    <i class="bx bx-show"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Leave blank to keep the existing password.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editConfirmPassword<?php echo $user['id']; ?>" class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="editConfirmPassword<?php echo $user['id']; ?>" name="confirm_password" placeholder="Re-enter new password" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" data-password-toggle="#editConfirmPassword<?php echo $user['id']; ?>" aria-label="Toggle confirm password visibility">
+                                    <i class="bx bx-show"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label for="editUserRole<?php echo $user['id']; ?>" class="form-label">Role</label>
                             <select id="editUserRole<?php echo $user['id']; ?>" class="form-select" name="role" data-choices required>
                                 <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
@@ -265,5 +336,28 @@ unset($_SESSION['flash']);
         </div>
     </div>
 <?php endforeach; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const targetSelector = this.getAttribute('data-password-toggle');
+            const target = document.querySelector(targetSelector);
+            if (!target) {
+                return;
+            }
+
+            const icon = this.querySelector('i');
+            const isHidden = target.getAttribute('type') === 'password';
+            target.setAttribute('type', isHidden ? 'text' : 'password');
+            if (icon) {
+                icon.classList.toggle('bx-show', !isHidden);
+                icon.classList.toggle('bx-hide', isHidden);
+            }
+            this.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+        });
+    });
+});
+</script>
 
 <?php include 'includes/common-footer.php'; ?>

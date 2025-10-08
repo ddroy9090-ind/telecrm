@@ -41,118 +41,193 @@ body {
     top: 0;
     left: 0;
     height: 100vh;
-    width: 260px;
-    background: linear-gradient(180deg, #004526 0%, #004526  100%);
-    color: white;
+    width: 270px;
+    background: #ffffff;
+    color: #0f172a;
+    border-right: 1px solid #eef2f6;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 20px;
     transition: all 0.3s ease;
     z-index: 1000;
     overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.04);
 }
 
 .sidebar.collapsed {
-    width: 70px;
+    width: 88px;
+    padding: 28px 16px;
 }
 
 .sidebar::-webkit-scrollbar {
-    width: 5px;
+    width: 6px;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.3);
-    border-radius: 10px;
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 20px;
 }
 
-.sidebar-header {
-    padding: 24px 20px;
-    text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 6px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 18px;
 }
 
-.sidebar-logo {
+.sidebar-brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(59, 130, 246, 0.12));
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    color: #15803d;
+    font-size: 24px;
 }
 
-.sidebar-logo img {
-    max-width: 140px;
-    width: 100%;
-    height: auto;
+.sidebar-brand-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0f172a;
+    display: block;
 }
 
-.sidebar.collapsed .sidebar-header {
-    padding: 20px 0;
+.sidebar-brand-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    letter-spacing: 0.02em;
 }
 
-.sidebar.collapsed .sidebar-logo img {
-    max-width: 36px;
-}
-
-.sidebar.collapsed .sidebar-text {
+.sidebar.collapsed .sidebar-brand-details {
     display: none;
+}
+
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-menu {
     list-style: none;
-    padding: 20px 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
 }
 
 .sidebar-menu li {
-    margin: 5px 0;
     transition: all 0.3s ease;
+}
+
+.sidebar-menu li.mt-auto {
+    margin-top: auto;
+    padding-top: 12px;
+}
+
+.sidebar-logout .sidebar-link {
+    color: #dc2626;
+}
+
+.sidebar-logout .sidebar-icon {
+    background: rgba(248, 113, 113, 0.12);
+    color: #b91c1c;
+}
+
+.sidebar-logout .sidebar-link:hover,
+.sidebar-logout.active > .sidebar-link {
+    background: rgba(248, 113, 113, 0.12);
+    box-shadow: none;
+    color: #991b1b;
+}
+
+.sidebar-logout .sidebar-link:hover .sidebar-icon,
+.sidebar-logout.active > .sidebar-link .sidebar-icon {
+    background: rgba(248, 113, 113, 0.2);
+    color: #7f1d1d;
 }
 
 .sidebar-link {
     display: flex;
     align-items: center;
-    width: 90%;
-    padding: 10px 20px;
-    color: white;
+    gap: 14px;
+    width: 100%;
+    padding: 12px 14px;
+    color: inherit;
     text-decoration: none;
-    background: none;
+    background: transparent;
     border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     font: inherit;
-    margin: auto;
-    border-radius: 5px;
+    border-radius: 14px;
+    font-weight: 500;
+}
+
+.sidebar-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: #f1f5f9;
+    color: #16a34a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: inherit;
 }
 
 .sidebar-menu li .sidebar-link:hover,
 .sidebar-menu li.active > .sidebar-link {
-    background: rgba(255,255,255,0.1);
-    /* border-left: 3px solid #667eea; */
+    background: #e8f6ef;
+    color: #0f5132;
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
 }
 
-.sidebar-link i {
-    margin-right: 10px;
-    width: 20px;
-    text-align: center;
-    font-size: 18px;
+.sidebar-menu li .sidebar-link:hover .sidebar-icon,
+.sidebar-menu li.active > .sidebar-link .sidebar-icon {
+    background: rgba(34, 197, 94, 0.18);
+    color: #0f5132;
 }
 
-.icon-2x {
-    font-size: 2rem;
+.sidebar-dropdown-toggle {
+    text-align: left;
 }
 
 .sidebar-dropdown-arrow {
     margin-left: auto;
     transition: transform 0.3s ease;
+    font-size: 18px;
+    color: #64748b;
 }
 
 .sidebar-submenu {
     list-style: none;
-    padding-left: 0;
-    margin: 0;
+    padding-left: 18px;
+    margin: 4px 0 0;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
-    background: rgba(255,255,255,0.05);
+    border-left: 1px solid #e2e8f0;
 }
 
 .sidebar-submenu li .sidebar-link {
-    padding: 12px 20px 12px 55px;
+    padding: 10px 14px;
     font-size: 14px;
+    border-radius: 12px;
+}
+
+.sidebar-submenu .sidebar-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    font-size: 18px;
 }
 
 .sidebar-dropdown.open .sidebar-submenu {
@@ -161,6 +236,21 @@ body {
 
 .sidebar-dropdown.open .sidebar-dropdown-arrow {
     transform: rotate(-180deg);
+}
+
+.sidebar.collapsed .sidebar-brand {
+    justify-content: center;
+    padding-bottom: 18px;
+}
+
+.sidebar.collapsed .sidebar-text {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
 }
 
 .sidebar.collapsed .sidebar-dropdown-arrow {
@@ -175,7 +265,7 @@ body {
 .topbar {
     position: fixed;
     top: 0;
-    left: 260px;
+    left: 270px;
     right: 0;
     height: 60px;
     background: white;
@@ -189,7 +279,7 @@ body {
 }
 
 .sidebar.collapsed ~ .topbar {
-    left: 70px;
+    left: 88px;
 }
 
 .topbar-left {
@@ -265,7 +355,7 @@ body {
 
 /* Main Content Styles */
 .main-content {
-    margin-left: 260px;
+    margin-left: 270px;
     margin-top: 60px;
     padding: 30px;
     min-height: calc(100vh - 60px);
@@ -273,7 +363,7 @@ body {
 }
 
 .sidebar.collapsed ~ .topbar ~ .main-content {
-    margin-left: 70px;
+    margin-left: 88px;
 }
 
 .dashboard-card {
@@ -323,7 +413,7 @@ body {
 /* Responsive Styles */
 @media (max-width: 768px) {
     .sidebar {
-        left: -260px;
+        left: -270px;
     }
     
     .sidebar.show {

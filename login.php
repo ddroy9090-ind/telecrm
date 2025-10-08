@@ -1,25 +1,48 @@
 <?php
 session_start();
 
+require_once __DIR__ . '/includes/config.php';
+
+$email = '';
+
 // If already logged in, redirect to dashboard
-if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     header("Location: index.php");
     exit;
 }
 
 // Handle login
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    // Demo credentials - Replace with database check
-    if ($username === 'admin' && $password === 'admin123') {
-        $_SESSION['loggedin'] = true;
-        $_SESSION['username'] = $username;
-        header("Location: index.php");
-        exit;
+    if ($email === '' || $password === '') {
+        $error = 'Please enter both your email and password.';
     } else {
-        $error = "Invalid username or password!";
+        $stmt = $mysqli->prepare('SELECT id, full_name, email, password_hash, role FROM users WHERE email = ? LIMIT 1');
+
+        if ($stmt) {
+            $stmt->bind_param('s', $email);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $user = $result ? $result->fetch_assoc() : null;
+
+                if ($user && $user['password_hash'] !== '' && password_verify($password, $user['password_hash'])) {
+                    $_SESSION['loggedin'] = true;
+                    $_SESSION['user_id'] = (int) $user['id'];
+                    $_SESSION['username'] = $user['full_name'] !== '' ? $user['full_name'] : $user['email'];
+                    $_SESSION['email'] = $user['email'];
+                    $_SESSION['role'] = $user['role'];
+
+                    header('Location: index.php');
+                    exit;
+                }
+            }
+
+            $stmt->close();
+        }
+
+        $error = 'Invalid email or password!';
     }
 }
 ?>
@@ -267,17 +290,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <form method="POST" action="">
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
+                        <label class="form-label">Email</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bx bx-user"></i></span>
-                            <input type="text" class="form-control" name="username" required>
+                            <span class="input-group-text"><i class="bx bx-envelope"></i></span>
+                            <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($email); ?>" required autocomplete="email">
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bx bx-lock"></i></span>
-                            <input type="password" class="form-control" name="password" required>
+                            <input type="password" class="form-control" name="password" required autocomplete="current-password" id="loginPassword">
+                            <button type="button" class="btn btn-outline-secondary" data-password-toggle="#loginPassword" aria-label="Toggle password visibility">
+                                <i class="bx bx-show"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="auth-actions">
@@ -292,7 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <span>Login</span>
                     </button>
                     <div class="text-center login-meta">
-                        <small>Demo credentials: admin / admin123</small>
+                        <small>Default admin: admin@example.com / admin123</small>
                     </div>
                 </form>
             </div>
@@ -300,6 +326,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.querySelector('[data-password-toggle]');
+            if (!toggle) {
+                return;
+            }
+
+            toggle.addEventListener('click', function () {
+                const target = document.querySelector(this.getAttribute('data-password-toggle'));
+                if (!target) {
+                    return;
+                }
+
+                const icon = this.querySelector('i');
+                const isHidden = target.getAttribute('type') === 'password';
+                target.setAttribute('type', isHidden ? 'text' : 'password');
+                if (icon) {
+                    icon.classList.toggle('bx-show', !isHidden);
+                    icon.classList.toggle('bx-hide', isHidden);
+                }
+                this.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+            });
+        });
+    </script>
 </body>
 
 </html>

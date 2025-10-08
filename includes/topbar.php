@@ -1,9 +1,10 @@
+<?php $displayName = $_SESSION['username'] ?? 'User'; ?>
 <header class="topbar">
     <div class="topbar-left">
         <button class="toggle-btn" onclick="toggleSidebar()">
             <i class="bx bx-menu"></i>
         </button>
-        <h5 class="mb-0 ms-3">Welcome back, <?php echo $_SESSION['username']; ?>!</h5>
+        <h5 class="mb-0 ms-3">Welcome back, <?php echo htmlspecialchars($displayName); ?>!</h5>
     </div>
     <div class="topbar-right">
         <div class="notification-icon">
@@ -14,7 +15,7 @@
             <div class="user-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bx bx-user"></i>
             </div>
-            <span class="user-name"><?php echo ucfirst($_SESSION['username']); ?></span>
+            <span class="user-name"><?php echo htmlspecialchars(ucfirst($displayName)); ?></span>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="#profile"><i class="bx bx-user-circle"></i> Profile</a></li>
                 <li><a class="dropdown-item" href="#settings"><i class="bx bx-cog"></i> Settings</a></li>

@@ -236,16 +236,16 @@ unset($_SESSION['flash']);
                     <input type="hidden" name="action" value="create">
                     <div class="mb-3">
                         <label for="fullName" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="fullName" name="full_name" placeholder="Enter full name" required>
+                        <input type="text" class="form-control" id="fullName" name="full_name" required>
                     </div>
                     <div class="mb-3">
                         <label for="emailAddress" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="emailAddress" name="email" placeholder="Enter email" required>
+                        <input type="email" class="form-control" id="emailAddress" name="email" required>
                     </div>
                     <div class="mb-3">
                         <label for="addPassword" class="form-label">Password</label>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="addPassword" name="password" placeholder="Enter password" required autocomplete="new-password">
+                            <input type="password" class="form-control" id="addPassword" name="password"  required autocomplete="new-password">
                             <button type="button" class="btn btn-outline-secondary" data-password-toggle="#addPassword" aria-label="Toggle password visibility">
                                 <i class="bx bx-show"></i>
                             </button>
@@ -254,7 +254,7 @@ unset($_SESSION['flash']);
                     <div class="mb-3">
                         <label for="addConfirmPassword" class="form-label">Confirm Password</label>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password" placeholder="Re-enter password" required autocomplete="new-password">
+                            <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password"  required autocomplete="new-password">
                             <button type="button" class="btn btn-outline-secondary" data-password-toggle="#addConfirmPassword" aria-label="Toggle confirm password visibility">
                                 <i class="bx bx-show"></i>
                             </button>
@@ -268,7 +268,7 @@ unset($_SESSION['flash']);
                             <option value="agent" selected>Agent</option>
                         </select>
                     </div>
-                    <div class="modal-footer px-0 pb-0">
+                    <div class="modal-footer px-0 pb-0 border-0">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Save User</button>
                     </div>

@@ -162,23 +162,7 @@ unset($_SESSION['flash']);
         </div>
 
         <div class="row g-3 user-stats">
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="stats-card">
-                    <div class="stats-card-icon session">
-                        <i class="bx bx-pulse"></i>
-                    </div>
-                    <div class="stats-card-body">
-                        <span class="stats-label">Session</span>
-                        <h2 class="mb-0">21,459</h2>
-                        <span class="stats-subtitle">Total Users</span>
-                    </div>
-                    <div class="stats-card-footer">
-                        <span class="trend trend-up">+2.4%</span>
-                        <span class="comparison">vs last week</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6 col-xl-4">
                 <div class="stats-card">
                     <div class="stats-card-icon paid">
                         <i class="bx bx-credit-card"></i>
@@ -194,7 +178,7 @@ unset($_SESSION['flash']);
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6 col-xl-4">
                 <div class="stats-card">
                     <div class="stats-card-icon active">
                         <i class="bx bx-user-check"></i>
@@ -210,7 +194,7 @@ unset($_SESSION['flash']);
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6 col-xl-4">
                 <div class="stats-card">
                     <div class="stats-card-icon pending">
                         <i class="bx bx-time-five"></i>
@@ -269,7 +253,7 @@ unset($_SESSION['flash']);
                                                 }
                                                 $initial = strtoupper($initial ?: '?');
                                             ?>
-                                            <div class="d-flex align-items-center gap-3">
+                                            <div class="d-flex align-items-center gap-2">
                                                 <div class="user-avatar">
                                                     <span><?php echo htmlspecialchars($initial); ?></span>
                                                 </div>
@@ -289,15 +273,15 @@ unset($_SESSION['flash']);
                                                     'agent' => 'badge-role-agent'
                                                 ][$user['role']] ?? 'badge-role-default';
                                             ?>
-                                            <span class="badge rounded-pill <?php echo $roleClass; ?>">
+                                            <span class="badge <?php echo $roleClass; ?>">
                                                 <?php echo htmlspecialchars(ucfirst($user['role'])); ?>
                                             </span>
                                         </td>
                                         <td>
                                             <?php if (!empty($user['contact_number'])): ?>
-                                                <span class="fw-medium text-dark"><?php echo htmlspecialchars($user['contact_number']); ?></span>
+                                                <span class=""><?php echo htmlspecialchars($user['contact_number']); ?></span>
                                             <?php else: ?>
-                                                <span class="text-muted">Not provided</span>
+                                                <span class="">Not provided</span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-end">

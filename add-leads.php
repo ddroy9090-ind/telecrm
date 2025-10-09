@@ -11,6 +11,11 @@ require_once __DIR__ . '/includes/config.php';
 
 $successMessage = '';
 $errorMessage = '';
+
+if (isset($_SESSION['flash_success'])) {
+    $successMessage = $_SESSION['flash_success'];
+    unset($_SESSION['flash_success']);
+}
 $formData = [
     'stage' => '',
     'rating' => '',
@@ -68,16 +73,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
 
         if ($stmt->execute()) {
-            $successMessage = 'Lead has been added successfully.';
-            foreach ($formData as $key => $_) {
-                $formData[$key] = '';
-            }
-            $payoutReceivedInput = '0';
+            $stmt->close();
+            $_SESSION['flash_success'] = 'Lead has been added successfully.';
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
         } else {
             $errorMessage = 'Failed to add lead: ' . $stmt->error;
+            $stmt->close();
         }
-
-        $stmt->close();
     } else {
         $errorMessage = 'Failed to prepare statement: ' . $mysqli->error;
     }
@@ -111,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php echo htmlspecialchars($errorMessage); ?>
                     </div>
                 <?php endif; ?>
-                <form action="" method="post" class="row g-3" novalidate>
+                <form id="addLeadForm" action="" method="post" class="row g-3" novalidate data-reset-on-success="<?php echo $successMessage ? 'true' : 'false'; ?>">
                     <div class="col-md-3">
                         <label for="stage" class="form-label">Stage</label>
                         <select id="stage" name="stage" class="form-select" data-choices>

@@ -516,28 +516,22 @@ include __DIR__ . '/includes/common-header.php';
         $leadName = $lead['name'] ?? 'Untitled Lead';
         $leadPalette = avatarPalette($leadName);
         $leadInitials = leadInitials($leadName);
-        $leadTag = trim((string) ($lead['interested_in'] ?? ''));
-        if ($leadTag === '') {
-            $leadTag = trim((string) ($lead['property_type'] ?? ''));
-        }
-        if ($leadTag === '') {
-            $leadTag = trim((string) ($lead['purpose'] ?? ''));
-        }
-
         $contactEmail = trim((string) ($lead['email'] ?? ''));
         $contactPhone = trim((string) ($lead['phone'] ?? ''));
         $alternatePhone = trim((string) ($lead['alternate_phone'] ?? ''));
 
         $ratingValue = ratingValue($ratingText);
-        $ratingLabel = '';
+        $ratingDisplay = '';
         if ($ratingValue !== null) {
             if ($ratingText !== '' && !is_numeric($ratingText)) {
-                $ratingLabel = (string) $ratingText;
+                $ratingDisplay = (string) $ratingText;
             } elseif ($ratingText !== '') {
-                $ratingLabel = number_format((float) $ratingText, 1) . '/5';
+                $ratingDisplay = number_format((float) $ratingText, 1) . '/5';
             } else {
-                $ratingLabel = number_format($ratingValue, 1) . '/5';
+                $ratingDisplay = number_format($ratingValue, 1) . '/5';
             }
+        } elseif ($ratingText !== '') {
+            $ratingDisplay = (string) $ratingText;
         }
 
         $assignedName = trim((string) ($lead['assigned_to'] ?? ''));
@@ -547,6 +541,7 @@ include __DIR__ . '/includes/common-header.php';
         $sourceText = trim((string) ($lead['source'] ?? ''));
         $sourceDisplay = $sourceText !== '' ? $sourceText : 'Unknown';
         $sourceClass = sourceBadgeClass($sourceText);
+        $leadCountry = trim((string) ($lead['nationality'] ?? ''));
                                         ?>
                                         <tr>
                                             <td>
@@ -556,11 +551,9 @@ include __DIR__ . '/includes/common-header.php';
                                                     </div>
                                                     <div class="lead-info">
                                                         <div class="lead-title"><?php echo htmlspecialchars($leadName); ?></div>
-                                                        <div class="lead-meta">
-                                                            <span class="lead-created">Created on <?php echo htmlspecialchars($formattedDate); ?></span>
-                                                            <?php if ($leadTag !== ''): ?>
-                                                                <span class="lead-tag"><?php echo htmlspecialchars($leadTag); ?></span>
-                                                            <?php endif; ?>
+                                                        <div class="lead-country<?php echo $leadCountry === '' ? ' text-muted' : ''; ?>">
+                                                            <i class="bx bx-flag"></i>
+                                                            <span><?php echo $leadCountry !== '' ? htmlspecialchars($leadCountry) : 'Country not provided'; ?></span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -591,25 +584,8 @@ include __DIR__ . '/includes/common-header.php';
                                                 <span class="status-badge <?php echo stageBadgeClass($stageText); ?>"><?php echo $stageText !== '' ? htmlspecialchars($stageText) : 'Not set'; ?></span>
                                             </td>
                                             <td>
-                                                <?php if ($ratingValue !== null): ?>
-                                                    <div class="rating-display">
-                                                        <div class="rating-stars" aria-label="<?php echo htmlspecialchars('Rating ' . number_format($ratingValue, 1) . ' out of 5'); ?>">
-                                                            <?php for ($star = 1; $star <= 5; $star++): ?>
-                                                                <?php if ($ratingValue >= $star): ?>
-                                                                    <i class="bx bxs-star"></i>
-                                                                <?php elseif ($ratingValue >= $star - 0.5): ?>
-                                                                    <i class="bx bxs-star-half"></i>
-                                                                <?php else: ?>
-                                                                    <i class="bx bx-star"></i>
-                                                                <?php endif; ?>
-                                                            <?php endfor; ?>
-                                                        </div>
-                                                        <?php if ($ratingLabel !== ''): ?>
-                                                            <span class="rating-text"><?php echo htmlspecialchars($ratingLabel); ?></span>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                <?php elseif ($ratingText !== ''): ?>
-                                                    <span class="rating-badge <?php echo ratingBadgeClass((string) $ratingText); ?>"><?php echo htmlspecialchars((string) $ratingText); ?></span>
+                                                <?php if ($ratingDisplay !== ''): ?>
+                                                    <span class="rating-text-only"><?php echo htmlspecialchars($ratingDisplay); ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">—</span>
                                                 <?php endif; ?>
@@ -633,44 +609,34 @@ include __DIR__ . '/includes/common-header.php';
                                                 </span>
                                             </td>
                                             <td class="text-end">
-                                                <div class="dropdown">
-                                                    <button class="btn btn-actions" type="button" id="actions-<?php echo (int) $lead['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <span>Actions</span>
-                                                        <i class="bx bx-chevron-down"></i>
+                                                <div class="lead-actions">
+                                                    <button class="btn btn-actions" type="button" data-action-toggle="actions-<?php echo (int) $lead['id']; ?>" aria-expanded="false" aria-controls="actions-<?php echo (int) $lead['id']; ?>">
+                                                        <i class="bx bx-dots-vertical-rounded"></i>
+                                                        <span class="visually-hidden">Toggle actions</span>
                                                     </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actions-<?php echo (int) $lead['id']; ?>">
-                                                        <li>
-                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
-                                                                <i class="bx bx-show-alt"></i>
-                                                                <span>View Details</span>
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
-                                                                <i class="bx bx-edit"></i>
-                                                                <span>Edit Lead</span>
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
-                                                                <i class="bx bx-git-compare"></i>
-                                                                <span>Change Stage</span>
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
-                                                                <i class="bx bx-user-plus"></i>
-                                                                <span>Assign To</span>
-                                                            </a>
-                                                        </li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="#">
-                                                                <i class="bx bx-trash"></i>
-                                                                <span>Delete Lead</span>
-                                                            </a>
-                                                        </li>
-                                                    </ul>
+                                                    <div class="actions-menu" id="actions-<?php echo (int) $lead['id']; ?>">
+                                                        <a class="action-item" href="#">
+                                                            <i class="bx bx-show-alt"></i>
+                                                            <span>View Details</span>
+                                                        </a>
+                                                        <a class="action-item" href="#">
+                                                            <i class="bx bx-edit"></i>
+                                                            <span>Edit Lead</span>
+                                                        </a>
+                                                        <a class="action-item" href="#">
+                                                            <i class="bx bx-git-compare"></i>
+                                                            <span>Change Stage</span>
+                                                        </a>
+                                                        <a class="action-item" href="#">
+                                                            <i class="bx bx-user-plus"></i>
+                                                            <span>Assign To</span>
+                                                        </a>
+                                                        <hr>
+                                                        <a class="action-item text-danger" href="#">
+                                                            <i class="bx bx-trash"></i>
+                                                            <span>Delete Lead</span>
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -684,4 +650,58 @@ include __DIR__ . '/includes/common-header.php';
         </div>
     </main>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const actionContainers = document.querySelectorAll('.lead-actions');
+
+        function closeAllMenus(except) {
+            actionContainers.forEach(function (container) {
+                if (container === except) {
+                    return;
+                }
+
+                container.classList.remove('is-open');
+                const button = container.querySelector('[data-action-toggle]');
+
+                if (button) {
+                    button.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        actionContainers.forEach(function (container) {
+            const toggleButton = container.querySelector('[data-action-toggle]');
+            const menu = container.querySelector('.actions-menu');
+
+            if (!toggleButton || !menu) {
+                return;
+            }
+
+            toggleButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const isOpen = container.classList.contains('is-open');
+                if (isOpen) {
+                    container.classList.remove('is-open');
+                    toggleButton.setAttribute('aria-expanded', 'false');
+                } else {
+                    closeAllMenus(container);
+                    container.classList.add('is-open');
+                    toggleButton.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+
+        document.addEventListener('click', function () {
+            closeAllMenus();
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeAllMenus();
+            }
+        });
+    });
+</script>
 <?php include __DIR__ . '/includes/common-footer.php'; ?>

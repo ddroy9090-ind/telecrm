@@ -185,13 +185,99 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// Table Row Click Handler
-const tableRows = document.querySelectorAll(".table-hover tbody tr");
-tableRows.forEach((row) => {
-  row.addEventListener("click", function () {
-    console.log("Row clicked:", this.cells[0].textContent);
-    // Add your row click logic here
-  });
+// Enhanced DataTable integration for leads table
+document.addEventListener("DOMContentLoaded", function () {
+  const leadTable = document.getElementById("leadDataTable");
+
+  if (!leadTable) {
+    return;
+  }
+
+  const handleRowClick = (row) => {
+    row.addEventListener("click", function () {
+      const firstCell = this.cells?.[0];
+      if (firstCell) {
+        console.log("Row clicked:", firstCell.textContent.trim());
+      }
+    });
+  };
+
+  const enhanceTableControls = () => {
+    const wrapper = leadTable.closest(".dataTables_wrapper");
+    if (!wrapper) {
+      return;
+    }
+
+    const searchInput = wrapper.querySelector("div.dataTables_filter input");
+    if (searchInput) {
+      searchInput.classList.add("form-control", "form-control-sm", "dt-search-input");
+      searchInput.placeholder = "Search leads...";
+    }
+
+    const lengthSelect = wrapper.querySelector("div.dataTables_length select");
+    if (lengthSelect) {
+      lengthSelect.classList.add("form-select", "form-select-sm", "dt-length-select");
+    }
+
+    const filterLabel = wrapper.querySelector("div.dataTables_filter label");
+    if (filterLabel) {
+      filterLabel.classList.add("w-100", "mb-0");
+    }
+
+    const lengthLabel = wrapper.querySelector("div.dataTables_length label");
+    if (lengthLabel) {
+      lengthLabel.classList.add("mb-0", "text-muted", "fw-semibold");
+    }
+  };
+
+  if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
+    const $table = window.jQuery(leadTable);
+
+    const dataTable = $table.DataTable({
+      dom:
+        "<'row align-items-center g-2'<'col-sm-12 col-lg-6 text-sm-start text-center' l><'col-sm-12 col-lg-6 text-sm-start text-lg-end' f>>" +
+        "<'row'<'col-12'tr>>" +
+        "<'row align-items-center g-2 mt-0'<'col-sm-12 col-md-5 text-sm-start text-center'i><'col-sm-12 col-md-7 text-sm-start text-md-end'p>>",
+      order: [],
+      paging: true,
+      responsive: true,
+      pageLength: 10,
+      lengthMenu: [10, 25, 50, 100],
+      columnDefs: [
+        {
+          targets: -1,
+          orderable: false,
+        },
+      ],
+      language: {
+        lengthMenu: "Show _MENU_ leads",
+        zeroRecords: "No matching leads found",
+        info: "Showing _START_ to _END_ of _TOTAL_ leads",
+        infoEmpty: "Showing 0 to 0 of 0 leads",
+        infoFiltered: "(filtered from _MAX_ total leads)",
+        search: "",
+        paginate: {
+          previous: "<span class='me-1'>&lsaquo;</span>Prev",
+          next: "Next<span class='ms-1'>&rsaquo;</span>",
+        },
+      },
+    });
+
+    enhanceTableControls();
+
+    $table.on("draw.dt", function () {
+      enhanceTableControls();
+    });
+
+    $table.on("click", "tbody tr", function () {
+      const firstCell = this.cells?.[0];
+      if (firstCell) {
+        console.log("Row clicked:", firstCell.textContent.trim());
+      }
+    });
+  } else {
+    leadTable.querySelectorAll("tbody tr").forEach(handleRowClick);
+  }
 });
 
 // Responsive sidebar for mobile

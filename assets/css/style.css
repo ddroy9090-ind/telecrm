@@ -56,6 +56,20 @@ button:focus:not(:focus-visible) {
     color: #fff;
 }
 
+.btn-outline-primary {
+    color: #004526;
+    border-color: #004526;
+    background-color: transparent;
+    transition: all 0.3s ease-in-out;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: #004526;
+    color: #ffffff;
+    box-shadow: 0 12px 24px -18px rgba(0, 69, 38, 0.45);
+}
+
 .btn-primary:focus,
 .btn-primary:active,
 .btn-primary.active,
@@ -1130,6 +1144,40 @@ select{
     text-decoration: underline;
 }
 
+.lead-table-card .card-header {
+    padding: 24px 24px 12px;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(16, 185, 129, 0.08));
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.lead-table-header h5 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.lead-table-header p {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.lead-table-header .badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px dashed rgba(15, 23, 42, 0.18);
+    background-color: rgba(248, 250, 252, 0.9);
+}
+
+.table-header-meta .btn {
+    border-radius: 999px;
+    padding-inline: 18px;
+    font-weight: 600;
+}
+
+.table-header-meta .btn .bx {
+    font-size: 1rem;
+}
+
 .card.lead-table-card {
     border-radius: 14px;
     border: 1px solid rgba(15, 23, 42, 0.05);
@@ -1251,6 +1299,120 @@ select{
     color: #475569;
 }
 
+.btn-icon.btn-action {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #f8fafc;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-icon.btn-action:focus,
+.btn-icon.btn-action:hover {
+    background: #004526;
+    color: #ffffff;
+    border-color: #004526;
+    box-shadow: 0 12px 24px -18px rgba(0, 69, 38, 0.65);
+}
+
+.dropdown-menu {
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 18px 38px -24px rgba(15, 23, 42, 0.3);
+    padding: 8px 0;
+}
+
+.dropdown-menu .dropdown-item {
+    font-weight: 500;
+    padding: 10px 18px;
+}
+
+.dropdown-menu .dropdown-item:active {
+    background-color: rgba(16, 185, 129, 0.12);
+    color: #0f172a;
+}
+
+.dropdown-menu .dropdown-item.text-danger:active {
+    background-color: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+}
+
+.lead-table-card .dataTables_wrapper {
+    padding: 20px 24px 24px;
+}
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 1rem;
+}
+
+.dataTables_wrapper .dataTables_length label,
+.dataTables_wrapper .dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_filter input.dt-search-input {
+    background-color: #ffffff;
+    border-radius: 999px;
+    padding-left: 40px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Ccircle cx="11" cy="11" r="7"/%3E%3Cline x1="20" y1="20" x2="16.65" y2="16.65"/%3E%3C/svg%3E');
+    background-repeat: no-repeat;
+    background-position: 14px center;
+}
+
+.dataTables_wrapper .dataTables_filter input.dt-search-input:focus {
+    border-color: #004526;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.dataTables_wrapper .dataTables_length select.dt-length-select {
+    max-width: 110px;
+    border-radius: 999px;
+    padding: 0.35rem 1.75rem 0.35rem 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.dataTables_wrapper .dataTables_info {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    margin-top: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 999px !important;
+    border: 1px solid transparent !important;
+    padding: 0.35rem 0.85rem;
+    margin: 0 0.2rem;
+    color: #0f172a !important;
+    background: #f8fafc !important;
+    transition: all 0.2s ease-in-out;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    border-color: #004526 !important;
+    background: #004526 !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 24px -18px rgba(0, 69, 38, 0.65);
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+    background: #e2e8f0 !important;
+    border-color: transparent !important;
+    color: #94a3b8 !important;
+    box-shadow: none;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.previous span,
+.dataTables_wrapper .dataTables_paginate .paginate_button.next span {
+    font-weight: 600;
+}
+
 .btn-icon:hover {
     background: rgba(148, 163, 184, 0.12);
     color: #0f172a;
@@ -1281,6 +1443,10 @@ select{
 
     .lead-table-card tbody td {
         padding: 14px 16px;
+    }
+
+    .lead-table-card .dataTables_wrapper {
+        padding: 16px;
     }
 
     .status-badge,

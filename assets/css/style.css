@@ -1207,6 +1207,11 @@ select {
     vertical-align: middle;
 }
 
+.lead-table-card tbody tr:last-of-type td {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
 .lead-name strong {
     display: block;
     font-size: 1rem;

@@ -322,9 +322,9 @@ button:focus:not(:focus-visible) {
     left: 0;
     height: 100vh;
     width: 270px;
-    background: #ffffff;
-    color: #0f172a;
-    border-right: 1px solid #eef2f6;
+    background: #004526;
+    color: #ffffff;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
     display: flex;
     flex-direction: column;
     padding: 15px 15px;
@@ -354,7 +354,7 @@ button:focus:not(:focus-visible) {
     align-items: center;
     gap: 14px; */
     padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     margin-bottom: 15px;
 }
 
@@ -384,13 +384,13 @@ button:focus:not(:focus-visible) {
 .sidebar-brand-title {
     font-size: 18px;
     font-weight: 600;
-    color: #0f172a;
+    color: #ffffff;
     display: block;
 }
 
 .sidebar-brand-subtitle {
     font-size: 13px;
-    color: #64748b;
+    color: rgba(255, 255, 255, 0.7);
     letter-spacing: 0.02em;
 }
 
@@ -424,27 +424,6 @@ button:focus:not(:focus-visible) {
     padding-top: 12px;
 }
 
-.sidebar-logout .sidebar-link {
-    color: #dc2626;
-}
-
-.sidebar-logout .sidebar-icon {
-    background: rgba(248, 113, 113, 0.12);
-    color: #b91c1c;
-}
-
-.sidebar-logout .sidebar-link:hover,
-.sidebar-logout.active>.sidebar-link {
-    background: rgba(248, 113, 113, 0.12);
-    box-shadow: none;
-    color: #991b1b;
-}
-
-.sidebar-logout .sidebar-link:hover .sidebar-icon,
-.sidebar-logout.active>.sidebar-link .sidebar-icon {
-    background: rgba(248, 113, 113, 0.2);
-    color: #7f1d1d;
-}
 
 .sidebar-link {
     display: flex;
@@ -468,8 +447,8 @@ button:focus:not(:focus-visible) {
     width: 30px;
     height: 30px;
     border-radius: 5px;
-    background: #f1f5f9;
-    color: #16a34a;
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -480,15 +459,15 @@ button:focus:not(:focus-visible) {
 
 .sidebar-menu li .sidebar-link:hover,
 .sidebar-menu li.active>.sidebar-link {
-    background: #e8f6ef;
-    color: #0f5132;
-    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .sidebar-menu li .sidebar-link:hover .sidebar-icon,
 .sidebar-menu li.active>.sidebar-link .sidebar-icon {
-    background: rgba(34, 197, 94, 0.18);
-    color: #0f5132;
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
 }
 
 .sidebar-dropdown-toggle {
@@ -499,7 +478,7 @@ button:focus:not(:focus-visible) {
     margin-left: auto;
     transition: transform 0.3s ease;
     font-size: 18px;
-    color: #64748b;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .sidebar-submenu {
@@ -509,7 +488,7 @@ button:focus:not(:focus-visible) {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
-    border-left: 1px solid #e2e8f0;
+    border-left: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .sidebar-submenu li .sidebar-link {
@@ -523,6 +502,8 @@ button:focus:not(:focus-visible) {
     height: 30px;
     border-radius: 5px;
     font-size: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
 }
 
 .sidebar-dropdown.open .sidebar-submenu {

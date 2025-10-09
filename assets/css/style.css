@@ -889,7 +889,7 @@ button:focus:not(:focus-visible) {
 .choices.is-focused .choices__inner,
 .choices.is-open .choices__inner {
     border-color: #004526;
-    box-shadow: 0 0 0 4px rgba(124, 141, 255, 0.15);
+    box-shadow: none;
 }
 
 .is-open .choices__list--dropdown, .is-open .choices__list[aria-expanded] {

@@ -131,7 +131,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                     </div>
 
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Add Lead</button>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Submit Lead</button>
+                        </div>
                     </div>
                 </form>
             </div>

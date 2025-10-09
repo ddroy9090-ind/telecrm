@@ -407,7 +407,7 @@ unset($_SESSION['flash']);
                         </div>
                         <div class="form-group mb-4">
                             <label for="editUserRole<?php echo $user['id']; ?>" class="form-label">Role</label>
-                            <select id="editUserRole<?php echo $user['id']; ?>" class="form-select" name="role" data-choices required>
+                            <select id="editUserRole<?php echo $user['id']; ?>" class="select-dropDownClass" name="role" data-choices required>
                                 <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
                                 <option value="manager" <?php echo $user['role'] === 'manager' ? 'selected' : ''; ?>>Manager</option>
                                 <option value="agent" <?php echo $user['role'] === 'agent' ? 'selected' : ''; ?>>Agent</option>

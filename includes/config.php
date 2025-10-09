@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL DEFAULT '',
+    contact_number VARCHAR(30) DEFAULT NULL,
     role ENUM('admin', 'manager', 'agent') NOT NULL DEFAULT 'agent',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -46,18 +47,32 @@ if ($passwordColumnCheck) {
     die('Failed to inspect users table: ' . $mysqli->error);
 }
 
+// Ensure contact_number column exists for legacy installations
+$contactColumnCheck = $mysqli->query("SHOW COLUMNS FROM users LIKE 'contact_number'");
+if ($contactColumnCheck) {
+    if ($contactColumnCheck->num_rows === 0) {
+        if (!$mysqli->query("ALTER TABLE users ADD COLUMN contact_number VARCHAR(30) DEFAULT NULL AFTER password_hash")) {
+            die('Failed to add contact number column: ' . $mysqli->error);
+        }
+    }
+    $contactColumnCheck->free();
+} else {
+    die('Failed to inspect users table for contact column: ' . $mysqli->error);
+}
+
 // Seed a default admin user if no users exist yet
 $existingUsers = $mysqli->query('SELECT COUNT(*) AS user_count FROM users');
 if ($existingUsers) {
     $row = $existingUsers->fetch_assoc();
     if ((int) ($row['user_count'] ?? 0) === 0) {
         $defaultPasswordHash = password_hash('admin123', PASSWORD_DEFAULT);
-        $stmt = $mysqli->prepare('INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)');
+        $stmt = $mysqli->prepare('INSERT INTO users (full_name, email, password_hash, contact_number, role) VALUES (?, ?, ?, ?, ?)');
         if ($stmt) {
             $defaultName = 'Administrator';
             $defaultEmail = 'admin@example.com';
             $defaultRole = 'admin';
-            $stmt->bind_param('ssss', $defaultName, $defaultEmail, $defaultPasswordHash, $defaultRole);
+            $defaultContact = '+1 555 0100';
+            $stmt->bind_param('sssss', $defaultName, $defaultEmail, $defaultPasswordHash, $defaultContact, $defaultRole);
             $stmt->execute();
             $stmt->close();
         }

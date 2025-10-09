@@ -878,7 +878,7 @@ button:focus:not(:focus-visible) {
     min-height: 48px;
     padding: 0 48px 0 18px;
     border: 1px solid #e6eaee;
-    border-radius: 12px !important;
+    border-radius: 5px !important;
     background-color: #ffffff;
     font-size: 15px;
     color: #1d2b2a;
@@ -888,8 +888,13 @@ button:focus:not(:focus-visible) {
 
 .choices.is-focused .choices__inner,
 .choices.is-open .choices__inner {
-    border-color: #7c8dff;
+    border-color: #004526;
     box-shadow: 0 0 0 4px rgba(124, 141, 255, 0.15);
+}
+
+.is-open .choices__list--dropdown, .is-open .choices__list[aria-expanded] {
+    border-color: #b7b7b7;
+    border-radius: 5px;
 }
 
 .choices__placeholder {

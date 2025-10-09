@@ -1,12 +1,6 @@
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <div class="sidebar-brand-icon">
-            <i class='bx bx-buildings'></i>
-        </div>
-        <div class="sidebar-brand-details">
-            <span class="sidebar-brand-title">TeleCRM</span>
-            <span class="sidebar-brand-subtitle">CRM Suite</span>
-        </div>
+        <a href="index.php"> <img src="assets/images/logo/green-logo.svg" alt=""></a>
     </div>
     <nav class="sidebar-nav">
         <ul class="sidebar-menu">

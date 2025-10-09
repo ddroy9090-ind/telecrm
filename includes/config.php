@@ -5,6 +5,11 @@ $username = 'root';
 $password = '';
 $database = 'telecrm';
 
+// $host = 'localhost';
+// $username = 'u431421769_root1';
+// $password = 'TeleCRM@123';
+// $database = 'u431421769_telecrm';
+
 $mysqli = @new mysqli($host, $username, $password, $database);
 
 if ($mysqli->connect_error) {

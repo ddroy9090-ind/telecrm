@@ -235,3 +235,24 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+  const alerts = document.querySelectorAll(".alert");
+  if (alerts.length) {
+    setTimeout(() => {
+      alerts.forEach((alert) => {
+        if (typeof bootstrap !== "undefined" && bootstrap.Alert) {
+          const alertInstance = bootstrap.Alert.getOrCreateInstance(alert);
+          alertInstance.close();
+        } else {
+          alert.classList.add("d-none");
+        }
+      });
+    }, 5000);
+  }
+
+  const addLeadForm = document.getElementById("addLeadForm");
+  if (addLeadForm && addLeadForm.dataset.resetOnSuccess === "true") {
+    addLeadForm.reset();
+  }
+});

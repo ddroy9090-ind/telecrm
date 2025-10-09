@@ -56,6 +56,42 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `All leads`
+--
+
+CREATE TABLE `All leads` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `stage` varchar(50) DEFAULT NULL,
+  `rating` varchar(50) DEFAULT NULL,
+  `assigned_to` varchar(255) DEFAULT NULL,
+  `source` varchar(100) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `alternate_phone` varchar(50) DEFAULT NULL,
+  `nationality` varchar(100) DEFAULT NULL,
+  `interested_in` varchar(100) DEFAULT NULL,
+  `property_type` varchar(100) DEFAULT NULL,
+  `location_preferences` varchar(255) DEFAULT NULL,
+  `budget_range` varchar(100) DEFAULT NULL,
+  `size_required` varchar(100) DEFAULT NULL,
+  `purpose` varchar(255) DEFAULT NULL,
+  `urgency` varchar(100) DEFAULT NULL,
+  `alternate_email` varchar(255) DEFAULT NULL,
+  `payout_received` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Indexes for table `All leads`
+--
+
+ALTER TABLE `All leads`
+  ADD PRIMARY KEY (`id`);
+
 --
 -- AUTO_INCREMENT for dumped tables
 --
@@ -65,6 +101,12 @@ ALTER TABLE `users`
 --
 ALTER TABLE `users`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `All leads`
+--
+ALTER TABLE `All leads`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

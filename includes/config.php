@@ -34,6 +34,35 @@ if (!$mysqli->query($createUsersTable)) {
     die('Failed to ensure users table exists: ' . $mysqli->error);
 }
 
+$createAllLeadsTable = <<<SQL
+CREATE TABLE IF NOT EXISTS `All leads` (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    stage VARCHAR(50) DEFAULT NULL,
+    rating VARCHAR(50) DEFAULT NULL,
+    assigned_to VARCHAR(255) DEFAULT NULL,
+    source VARCHAR(100) DEFAULT NULL,
+    name VARCHAR(255) DEFAULT NULL,
+    phone VARCHAR(50) DEFAULT NULL,
+    email VARCHAR(255) DEFAULT NULL,
+    alternate_phone VARCHAR(50) DEFAULT NULL,
+    nationality VARCHAR(100) DEFAULT NULL,
+    interested_in VARCHAR(100) DEFAULT NULL,
+    property_type VARCHAR(100) DEFAULT NULL,
+    location_preferences VARCHAR(255) DEFAULT NULL,
+    budget_range VARCHAR(100) DEFAULT NULL,
+    size_required VARCHAR(100) DEFAULT NULL,
+    purpose VARCHAR(255) DEFAULT NULL,
+    urgency VARCHAR(100) DEFAULT NULL,
+    alternate_email VARCHAR(255) DEFAULT NULL,
+    payout_received TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createAllLeadsTable)) {
+    die('Failed to ensure All leads table exists: ' . $mysqli->error);
+}
+
 // Ensure password_hash column exists for legacy installations
 $passwordColumnCheck = $mysqli->query("SHOW COLUMNS FROM users LIKE 'password_hash'");
 if ($passwordColumnCheck) {

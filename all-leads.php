@@ -359,9 +359,26 @@ include __DIR__ . '/includes/common-header.php';
             </div>
 
             <div class="card lead-table-card">
+                <div class="card-header border-0 pb-0">
+                    <div class="lead-table-header d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                        <div>
+                            <h5 class="mb-1">Leads Overview</h5>
+                            <p class="text-muted mb-0">Stay on top of every prospect with quick insights and smart sorting.</p>
+                        </div>
+                        <div class="table-header-meta d-flex flex-wrap align-items-center gap-3">
+                            <div class="badge rounded-pill bg-light text-body-tertiary px-3 py-2">
+                                <i class="bx bx-time-five me-1"></i>Updated just now
+                            </div>
+                            <a href="add-leads.php" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+                                <i class="bx bx-plus"></i>
+                                <span>Quick Add</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table id="leadDataTable" class="table table-hover align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th scope="col">Name</th>
@@ -433,7 +450,7 @@ include __DIR__ . '/includes/common-header.php';
                                             </td>
                                             <td class="text-end">
                                                 <div class="dropdown">
-                                                    <button class="btn btn-icon btn-link text-decoration-none" type="button" id="actions-<?php echo (int) $lead['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <button class="btn btn-icon btn-action" type="button" id="actions-<?php echo (int) $lead['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
                                                         <i class="bx bx-dots-horizontal-rounded"></i>
                                                     </button>
                                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actions-<?php echo (int) $lead['id']; ?>">

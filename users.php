@@ -326,32 +326,32 @@ unset($_SESSION['flash']);
                         <div class="row">
                             <div class="col-lg-12 col-md-6 mb-3">
                                 <label for="fullName" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="fullName" name="full_name" placeholder="Enter full name" required>
+                                <input type="text" class="form-control" id="fullName" name="full_name" required>
                             </div>
 
                             <div class="col-lg-12 col-md-6 mb-3">
                                 <label for="emailAddress" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="emailAddress" name="email" placeholder="Enter email address" required>
+                                <input type="email" class="form-control" id="emailAddress" name="email"  required>
                             </div>
 
-                            <div class="col-lg-6 col-md-6 mb-3">
+                            <div class="col-lg-12 col-md-6 mb-3">
                                 <label for="contactNumber" class="form-label">Contact Number</label>
-                                <input type="tel" class="form-control" id="contactNumber" name="contact_number" placeholder="e.g. +1 555 0123" inputmode="tel">
+                                <input type="tel" class="form-control" id="contactNumber" name="contact_number"  inputmode="tel">
                             </div>
 
                             <div class="col-lg-6 col-md-6 mb-3">
                                 <label for="addPassword" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="addPassword" name="password" placeholder="Enter password" required autocomplete="new-password">
+                                <input type="password" class="form-control" id="addPassword" name="password"  required autocomplete="new-password">
                             </div>
 
                             <div class="col-lg-6 col-md-6 mb-3">
                                 <label for="addConfirmPassword" class="form-label">Confirm Password</label>
-                                <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password" placeholder="Re-enter password" required autocomplete="new-password">
+                                <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password"  required autocomplete="new-password">
                             </div>
 
-                            <div class="col-lg-6 col-md-6 mb-3">
+                            <div class="col-lg-12 col-md-6 mb-3">
                                 <label for="userRole" class="form-label">Role</label>
-                                <select id="userRole" class="form-select" name="role" data-choices required>
+                                <select id="userRole" class="select-dropDownClass" name="role" data-choices required>
                                     <option value="admin">Admin</option>
                                     <option value="manager">Manager</option>
                                     <option value="agent" selected>Agent</option>

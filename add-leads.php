@@ -26,24 +26,70 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
         <div class="card">
             <div class="card-body">
                 <form action="#" method="post" class="row g-3" novalidate>
+                    <div class="col-md-3">
+                        <label for="stage" class="form-label">Stage</label>
+                        <select id="stage" name="stage" class="form-select" data-choices>
+                            <option value="" selected disabled>Select stage</option>
+                            <option value="New">New</option>
+                            <option value="Contacted">Contacted</option>
+                            <option value="Qualified">Qualified</option>
+                            <option value="Proposal">Proposal</option>
+                            <option value="Negotiation">Negotiation</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="rating" class="form-label">Rating</label>
+                        <select id="rating" name="rating" class="form-select" data-choices>
+                            <option value="" selected disabled>Select rating</option>
+                            <option value="Hot">Hot</option>
+                            <option value="Warm">Warm</option>
+                            <option value="Cold">Cold</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="assignedTo" class="form-label">Assigned To</label>
+                        <select id="assignedTo" name="assigned_to" class="form-select" data-choices>
+                            <option value="" selected disabled>Select assignee</option>
+                            <option value="Unassigned">Unassigned</option>
+                            <option value="Agent 1">Agent 1</option>
+                            <option value="Agent 2">Agent 2</option>
+                            <option value="Agent 3">Agent 3</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="source" class="form-label">Source</label>
+                        <select id="source" name="source" class="form-select" data-choices>
+                            <option value="" selected disabled>Select source</option>
+                            <option value="Website">Website</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Walk-in">Walk-in</option>
+                            <option value="Social Media">Social Media</option>
+                            <option value="Advertisement">Advertisement</option>
+                        </select>
+                    </div>
+
                     <div class="col-md-6">
                         <label for="leadName" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="leadName" name="name" placeholder="Enter full name">
+                        <input type="text" class="form-control" id="leadName" name="name">
                     </div>
 
                     <div class="col-md-6">
                         <label for="leadPhone" class="form-label">Phone</label>
-                        <input type="text" class="form-control" id="leadPhone" name="phone" placeholder="e.g. +971 50 123 4567">
+                        <input type="text" class="form-control" id="leadPhone" name="phone">
                     </div>
 
                     <div class="col-md-6">
                         <label for="leadEmail" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="leadEmail" name="email" placeholder="name@example.com">
+                        <input type="email" class="form-control" id="leadEmail" name="email">
                     </div>
 
                     <div class="col-md-6">
                         <label for="alternatePhone" class="form-label">Alternate Phone</label>
-                        <input type="text" class="form-control" id="alternatePhone" name="alternate_phone" placeholder="Alternate contact number">
+                        <input type="text" class="form-control" id="alternatePhone" name="alternate_phone">
                     </div>
 
                     <div class="col-md-6">
@@ -87,22 +133,22 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
                     <div class="col-md-6">
                         <label for="locationPreferences" class="form-label">Location Preferences</label>
-                        <input type="text" class="form-control" id="locationPreferences" name="location_preferences" placeholder="Preferred locations">
+                        <input type="text" class="form-control" id="locationPreferences" name="location_preferences">
                     </div>
 
                     <div class="col-md-6">
                         <label for="budgetRange" class="form-label">Budget Range</label>
-                        <input type="text" class="form-control" id="budgetRange" name="budget_range" placeholder="e.g. AED 1M - AED 1.5M">
+                        <input type="text" class="form-control" id="budgetRange" name="budget_range">
                     </div>
 
                     <div class="col-md-6">
                         <label for="sizeRequired" class="form-label">Size Required</label>
-                        <input type="text" class="form-control" id="sizeRequired" name="size_required" placeholder="Desired size">
+                        <input type="text" class="form-control" id="sizeRequired" name="size_required">
                     </div>
 
                     <div class="col-md-6">
                         <label for="purpose" class="form-label">Purpose</label>
-                        <input type="text" class="form-control" id="purpose" name="purpose" placeholder="Purpose of purchase">
+                        <input type="text" class="form-control" id="purpose" name="purpose">
                     </div>
 
                     <div class="col-md-6">
@@ -118,7 +164,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
                     <div class="col-md-6">
                         <label for="alternateEmail" class="form-label">Alternate Email</label>
-                        <input type="email" class="form-control" id="alternateEmail" name="alternate_email" placeholder="Alternate email address">
+                        <input type="email" class="form-control" id="alternateEmail" name="alternate_email">
                     </div>
 
                     <div class="col-12">

@@ -183,18 +183,18 @@ $conversionTrend = calculateTrend($statsByMonth, 'converted');
 function renderTrend(?float $trend): string
 {
     if ($trend === null) {
-        return '<span class="trend-neutral">—</span>';
+        return '<span class="trend trend-neutral">—</span>';
     }
 
     if ($trend > 0) {
-        return '<span class="trend-up">+' . htmlspecialchars((string) $trend) . "% vs last month</span>";
+        return '<span class="trend trend-up">+' . htmlspecialchars((string) $trend) . "% vs last month</span>";
     }
 
     if ($trend < 0) {
-        return '<span class="trend-down">' . htmlspecialchars((string) $trend) . "% vs last month</span>";
+        return '<span class="trend trend-down">' . htmlspecialchars((string) $trend) . "% vs last month</span>";
     }
 
-    return '<span class="trend-neutral">0% vs last month</span>';
+    return '<span class="trend trend-neutral">0% vs last month</span>';
 }
 
 function stageBadgeClass(string $stage): string
@@ -259,50 +259,58 @@ include __DIR__ . '/includes/common-header.php';
 
             <div class="row g-3 lead-summary-row mb-4">
                 <div class="col-xl-3 col-md-6">
-                    <div class="leads-summary-card">
-                        <div class="summary-icon icon-total">
+                    <div class="stats-card leads-stats-card">
+                        <div class="stats-card-icon total">
                             <i class="bx bx-group"></i>
                         </div>
-                        <div class="summary-content">
-                            <span class="summary-label">Total Leads</span>
-                            <span class="summary-value"><?php echo number_format($totalLeads); ?></span>
-                            <span class="summary-trend"><?php echo renderTrend($totalTrend); ?></span>
+                        <div class="stats-card-body">
+                            <span class="stats-label">Total Leads</span>
+                            <h2 class="mb-0"><?php echo number_format($totalLeads); ?></h2>
+                        </div>
+                        <div class="stats-card-footer">
+                            <?php echo renderTrend($totalTrend); ?>
                         </div>
                     </div>
                 </div>
                 <div class="col-xl-3 col-md-6">
-                    <div class="leads-summary-card">
-                        <div class="summary-icon icon-active">
+                    <div class="stats-card leads-stats-card">
+                        <div class="stats-card-icon active">
                             <i class="bx bx-target-lock"></i>
                         </div>
-                        <div class="summary-content">
-                            <span class="summary-label">Active Leads</span>
-                            <span class="summary-value"><?php echo number_format($activeLeads); ?></span>
-                            <span class="summary-trend"><?php echo renderTrend($activeTrend); ?></span>
+                        <div class="stats-card-body">
+                            <span class="stats-label">Active Leads</span>
+                            <h2 class="mb-0"><?php echo number_format($activeLeads); ?></h2>
+                        </div>
+                        <div class="stats-card-footer">
+                            <?php echo renderTrend($activeTrend); ?>
                         </div>
                     </div>
                 </div>
                 <div class="col-xl-3 col-md-6">
-                    <div class="leads-summary-card">
-                        <div class="summary-icon icon-conversion">
+                    <div class="stats-card leads-stats-card">
+                        <div class="stats-card-icon conversion">
                             <i class="bx bx-line-chart"></i>
                         </div>
-                        <div class="summary-content">
-                            <span class="summary-label">Conversion Rate</span>
-                            <span class="summary-value"><?php echo $totalLeads > 0 ? $conversionRate . '%': '0%'; ?></span>
-                            <span class="summary-trend"><?php echo renderTrend($conversionTrend); ?></span>
+                        <div class="stats-card-body">
+                            <span class="stats-label">Conversion Rate</span>
+                            <h2 class="mb-0"><?php echo $totalLeads > 0 ? $conversionRate . '%': '0%'; ?></h2>
+                        </div>
+                        <div class="stats-card-footer">
+                            <?php echo renderTrend($conversionTrend); ?>
                         </div>
                     </div>
                 </div>
                 <div class="col-xl-3 col-md-6">
-                    <div class="leads-summary-card">
-                        <div class="summary-icon icon-rating">
+                    <div class="stats-card leads-stats-card">
+                        <div class="stats-card-icon rating">
                             <i class="bx bx-star"></i>
                         </div>
-                        <div class="summary-content">
-                            <span class="summary-label">Avg Rating</span>
-                            <span class="summary-value"><?php echo $averageRating !== null ? $averageRating : '—'; ?></span>
-                            <span class="summary-trend"><span class="trend-neutral">Updated in real time</span></span>
+                        <div class="stats-card-body">
+                            <span class="stats-label">Avg Rating</span>
+                            <h2 class="mb-0"><?php echo $averageRating !== null ? $averageRating : '—'; ?></h2>
+                        </div>
+                        <div class="stats-card-footer">
+                            <span class="trend trend-neutral">Updated in real time</span>
                         </div>
                     </div>
                 </div>
@@ -336,7 +344,10 @@ include __DIR__ . '/includes/common-header.php';
                         </select>
                     </div>
                     <div class="col-12 col-md-4 col-lg-2">
-                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary flex-fill">Apply Filters</button>
+                            <a href="all-leads.php" class="btn btn-outline-secondary flex-fill">Reset</a>
+                        </div>
                     </div>
                 </form>
                 <div class="lead-results-count mt-3">

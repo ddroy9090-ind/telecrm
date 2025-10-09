@@ -161,6 +161,73 @@ unset($_SESSION['flash']);
             </button>
         </div>
 
+        <div class="row g-3 user-stats">
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stats-card">
+                    <div class="stats-card-icon session">
+                        <i class="bx bx-pulse"></i>
+                    </div>
+                    <div class="stats-card-body">
+                        <span class="stats-label">Session</span>
+                        <h2 class="mb-0">21,459</h2>
+                        <span class="stats-subtitle">Total Users</span>
+                    </div>
+                    <div class="stats-card-footer">
+                        <span class="trend trend-up">+2.4%</span>
+                        <span class="comparison">vs last week</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stats-card">
+                    <div class="stats-card-icon paid">
+                        <i class="bx bx-credit-card"></i>
+                    </div>
+                    <div class="stats-card-body">
+                        <span class="stats-label">Paid Users</span>
+                        <h2 class="mb-0">4,567</h2>
+                        <span class="stats-subtitle">Last week analytics</span>
+                    </div>
+                    <div class="stats-card-footer">
+                        <span class="trend trend-up">+6.8%</span>
+                        <span class="comparison">vs last week</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stats-card">
+                    <div class="stats-card-icon active">
+                        <i class="bx bx-user-check"></i>
+                    </div>
+                    <div class="stats-card-body">
+                        <span class="stats-label">Active Users</span>
+                        <h2 class="mb-0">19,680</h2>
+                        <span class="stats-subtitle">Last week analytics</span>
+                    </div>
+                    <div class="stats-card-footer">
+                        <span class="trend trend-down">-1.4%</span>
+                        <span class="comparison">vs last week</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stats-card">
+                    <div class="stats-card-icon pending">
+                        <i class="bx bx-time-five"></i>
+                    </div>
+                    <div class="stats-card-body">
+                        <span class="stats-label">Pending Users</span>
+                        <h2 class="mb-0">237</h2>
+                        <span class="stats-subtitle">Last week analytics</span>
+                    </div>
+                    <div class="stats-card-footer">
+                        <span class="trend trend-up">+0.2%</span>
+                        <span class="comparison">vs last week</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <?php if (!empty($flash)): ?>
             <div class="alert alert-<?php echo htmlspecialchars($flash['type']); ?> alert-dismissible fade show" role="alert">
                 <?php echo htmlspecialchars($flash['message']); ?>

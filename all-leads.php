@@ -238,6 +238,135 @@ function ratingBadgeClass(?string $rating): string
     };
 }
 
+function leadStringLength(string $text): int
+{
+    if (function_exists('mb_strlen')) {
+        return mb_strlen($text);
+    }
+
+    return strlen($text);
+}
+
+function leadSubstring(string $text, int $start, ?int $length = null): string
+{
+    if (function_exists('mb_substr')) {
+        return $length === null ? mb_substr($text, $start) : mb_substr($text, $start, $length);
+    }
+
+    return $length === null ? substr($text, $start) : substr($text, $start, $length);
+}
+
+function leadToUpper(string $text): string
+{
+    if (function_exists('mb_strtoupper')) {
+        return mb_strtoupper($text);
+    }
+
+    return strtoupper($text);
+}
+
+function leadInitials(?string $name): string
+{
+    $name = trim((string) $name);
+
+    if ($name === '') {
+        return 'NA';
+    }
+
+    $parts = preg_split('/\s+/u', $name) ?: [];
+    $initials = '';
+
+    foreach ($parts as $part) {
+        if ($part === '') {
+            continue;
+        }
+
+        $initials .= leadToUpper(leadSubstring($part, 0, 1));
+
+        if (leadStringLength($initials) >= 2) {
+            break;
+        }
+    }
+
+    if ($initials === '') {
+        $initials = leadToUpper(leadSubstring($name, 0, 1));
+    }
+
+    if (leadStringLength($initials) > 2) {
+        $initials = leadSubstring($initials, 0, 2);
+    }
+
+    return $initials;
+}
+
+function avatarPalette(?string $seed): array
+{
+    $seed = trim((string) $seed);
+
+    if ($seed === '') {
+        $seed = 'default';
+    }
+
+    $palettes = [
+        ['background' => 'linear-gradient(135deg, #e0f2fe, #bae6fd)', 'color' => '#0369a1'],
+        ['background' => 'linear-gradient(135deg, #ede9fe, #ddd6fe)', 'color' => '#5b21b6'],
+        ['background' => 'linear-gradient(135deg, #fce7f3, #fbcfe8)', 'color' => '#be185d'],
+        ['background' => 'linear-gradient(135deg, #dcfce7, #bbf7d0)', 'color' => '#15803d'],
+        ['background' => 'linear-gradient(135deg, #fef3c7, #fde68a)', 'color' => '#b45309'],
+        ['background' => 'linear-gradient(135deg, #fee2e2, #fecaca)', 'color' => '#b91c1c'],
+        ['background' => 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', 'color' => '#0f172a'],
+    ];
+
+    $index = abs(crc32(strtolower($seed))) % count($palettes);
+
+    return $palettes[$index];
+}
+
+function ratingValue(?string $ratingText): ?float
+{
+    if ($ratingText === null) {
+        return null;
+    }
+
+    $ratingText = trim((string) $ratingText);
+
+    if ($ratingText === '') {
+        return null;
+    }
+
+    if (is_numeric($ratingText)) {
+        $value = (float) $ratingText;
+
+        return max(0.0, min(5.0, $value));
+    }
+
+    $normalized = strtolower($ratingText);
+
+    return match (true) {
+        str_contains($normalized, 'hot') => 5.0,
+        str_contains($normalized, 'warm') => 4.0,
+        str_contains($normalized, 'qualified') => 4.0,
+        str_contains($normalized, 'cold') => 2.5,
+        str_contains($normalized, 'new') => 2.0,
+        default => null,
+    };
+}
+
+function sourceBadgeClass(?string $source): string
+{
+    $normalized = strtolower(trim((string) $source));
+
+    return match (true) {
+        $normalized === '' => 'source-badge-default',
+        str_contains($normalized, 'social') => 'source-badge-social',
+        str_contains($normalized, 'web') => 'source-badge-website',
+        str_contains($normalized, 'walk') => 'source-badge-walkin',
+        str_contains($normalized, 'referral') => 'source-badge-referral',
+        str_contains($normalized, 'email') => 'source-badge-email',
+        default => 'source-badge-default',
+    };
+}
+
 include __DIR__ . '/includes/common-header.php';
 ?>
 <div id="adminPanel">
@@ -383,21 +512,78 @@ include __DIR__ . '/includes/common-header.php';
                                                     $formattedDate = $timestamp->format('d M, Y');
                                                 }
                                             }
+
+        $leadName = $lead['name'] ?? 'Untitled Lead';
+        $leadPalette = avatarPalette($leadName);
+        $leadInitials = leadInitials($leadName);
+        $leadTag = trim((string) ($lead['interested_in'] ?? ''));
+        if ($leadTag === '') {
+            $leadTag = trim((string) ($lead['property_type'] ?? ''));
+        }
+        if ($leadTag === '') {
+            $leadTag = trim((string) ($lead['purpose'] ?? ''));
+        }
+
+        $contactEmail = trim((string) ($lead['email'] ?? ''));
+        $contactPhone = trim((string) ($lead['phone'] ?? ''));
+        $alternatePhone = trim((string) ($lead['alternate_phone'] ?? ''));
+
+        $ratingValue = ratingValue($ratingText);
+        $ratingLabel = '';
+        if ($ratingValue !== null) {
+            if ($ratingText !== '' && !is_numeric($ratingText)) {
+                $ratingLabel = (string) $ratingText;
+            } elseif ($ratingText !== '') {
+                $ratingLabel = number_format((float) $ratingText, 1) . '/5';
+            } else {
+                $ratingLabel = number_format($ratingValue, 1) . '/5';
+            }
+        }
+
+        $assignedName = trim((string) ($lead['assigned_to'] ?? ''));
+        $assignedPalette = avatarPalette($assignedName !== '' ? $assignedName : 'Unassigned');
+        $assignedInitials = $assignedName !== '' ? leadInitials($assignedName) : leadInitials('Unassigned');
+
+        $sourceText = trim((string) ($lead['source'] ?? ''));
+        $sourceDisplay = $sourceText !== '' ? $sourceText : 'Unknown';
+        $sourceClass = sourceBadgeClass($sourceText);
                                         ?>
                                         <tr>
                                             <td>
-                                                <div class="lead-name">
-                                                    <strong><?php echo htmlspecialchars($lead['name'] ?? 'Untitled Lead'); ?></strong>
-                                                    <span class="lead-created text-muted">Created on <?php echo htmlspecialchars($formattedDate); ?></span>
+                                                <div class="lead-profile d-flex align-items-center gap-3">
+                                                    <div class="lead-avatar" style="background: <?php echo htmlspecialchars($leadPalette['background']); ?>; color: <?php echo htmlspecialchars($leadPalette['color']); ?>;">
+                                                        <span><?php echo htmlspecialchars($leadInitials); ?></span>
+                                                    </div>
+                                                    <div class="lead-info">
+                                                        <div class="lead-title"><?php echo htmlspecialchars($leadName); ?></div>
+                                                        <div class="lead-meta">
+                                                            <span class="lead-created">Created on <?php echo htmlspecialchars($formattedDate); ?></span>
+                                                            <?php if ($leadTag !== ''): ?>
+                                                                <span class="lead-tag"><?php echo htmlspecialchars($leadTag); ?></span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div class="lead-contact">
-                                                    <?php if (!empty($lead['email'])): ?>
-                                                        <a href="mailto:<?php echo htmlspecialchars($lead['email']); ?>" class="d-block"><?php echo htmlspecialchars($lead['email']); ?></a>
+                                                    <?php if ($contactEmail !== ''): ?>
+                                                        <a href="mailto:<?php echo htmlspecialchars($contactEmail); ?>" class="contact-item">
+                                                            <i class="bx bx-envelope"></i>
+                                                            <span><?php echo htmlspecialchars($contactEmail); ?></span>
+                                                        </a>
                                                     <?php endif; ?>
-                                                    <?php if (!empty($lead['phone'])): ?>
-                                                        <span class="text-muted"><?php echo htmlspecialchars($lead['phone']); ?></span>
+                                                    <?php if ($contactPhone !== ''): ?>
+                                                        <div class="contact-item text-muted">
+                                                            <i class="bx bx-phone"></i>
+                                                            <span><?php echo htmlspecialchars($contactPhone); ?></span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <?php if ($alternatePhone !== '' && $alternatePhone !== $contactPhone): ?>
+                                                        <div class="contact-item text-muted">
+                                                            <i class="bx bx-phone-call"></i>
+                                                            <span><?php echo htmlspecialchars($alternatePhone); ?></span>
+                                                        </div>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
@@ -405,30 +591,85 @@ include __DIR__ . '/includes/common-header.php';
                                                 <span class="status-badge <?php echo stageBadgeClass($stageText); ?>"><?php echo $stageText !== '' ? htmlspecialchars($stageText) : 'Not set'; ?></span>
                                             </td>
                                             <td>
-                                                <?php if ($ratingText !== ''): ?>
+                                                <?php if ($ratingValue !== null): ?>
+                                                    <div class="rating-display">
+                                                        <div class="rating-stars" aria-label="<?php echo htmlspecialchars('Rating ' . number_format($ratingValue, 1) . ' out of 5'); ?>">
+                                                            <?php for ($star = 1; $star <= 5; $star++): ?>
+                                                                <?php if ($ratingValue >= $star): ?>
+                                                                    <i class="bx bxs-star"></i>
+                                                                <?php elseif ($ratingValue >= $star - 0.5): ?>
+                                                                    <i class="bx bxs-star-half"></i>
+                                                                <?php else: ?>
+                                                                    <i class="bx bx-star"></i>
+                                                                <?php endif; ?>
+                                                            <?php endfor; ?>
+                                                        </div>
+                                                        <?php if ($ratingLabel !== ''): ?>
+                                                            <span class="rating-text"><?php echo htmlspecialchars($ratingLabel); ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php elseif ($ratingText !== ''): ?>
                                                     <span class="rating-badge <?php echo ratingBadgeClass((string) $ratingText); ?>"><?php echo htmlspecialchars((string) $ratingText); ?></span>
                                                 <?php else: ?>
                                                     <span class="text-muted">—</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?php echo !empty($lead['assigned_to']) ? htmlspecialchars($lead['assigned_to']) : '<span class="text-muted">Unassigned</span>'; ?>
+                                                <?php if ($assignedName !== ''): ?>
+                                                    <div class="assigned-user d-flex align-items-center gap-2">
+                                                        <div class="assigned-avatar" style="background: <?php echo htmlspecialchars($assignedPalette['background']); ?>; color: <?php echo htmlspecialchars($assignedPalette['color']); ?>;">
+                                                            <span><?php echo htmlspecialchars($assignedInitials); ?></span>
+                                                        </div>
+                                                        <div class="assigned-name"><?php echo htmlspecialchars($assignedName); ?></div>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-muted">Unassigned</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?php echo !empty($lead['source']) ? htmlspecialchars($lead['source']) : '<span class="text-muted">Unknown</span>'; ?>
+                                                <span class="source-badge <?php echo htmlspecialchars($sourceClass); ?>">
+                                                    <i class="bx bx-share-alt"></i>
+                                                    <?php echo htmlspecialchars($sourceDisplay); ?>
+                                                </span>
                                             </td>
                                             <td class="text-end">
                                                 <div class="dropdown">
-                                                    <button class="btn btn-icon btn-action" type="button" id="actions-<?php echo (int) $lead['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="bx bx-dots-horizontal-rounded"></i>
+                                                    <button class="btn btn-actions" type="button" id="actions-<?php echo (int) $lead['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>Actions</span>
+                                                        <i class="bx bx-chevron-down"></i>
                                                     </button>
                                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actions-<?php echo (int) $lead['id']; ?>">
-                                                        <li><a class="dropdown-item" href="#">View Details</a></li>
-                                                        <li><a class="dropdown-item" href="#">Edit Lead</a></li>
-                                                        <li><a class="dropdown-item" href="#">Change Stage</a></li>
-                                                        <li><a class="dropdown-item" href="#">Assign To</a></li>
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
+                                                                <i class="bx bx-show-alt"></i>
+                                                                <span>View Details</span>
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
+                                                                <i class="bx bx-edit"></i>
+                                                                <span>Edit Lead</span>
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
+                                                                <i class="bx bx-git-compare"></i>
+                                                                <span>Change Stage</span>
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2" href="#">
+                                                                <i class="bx bx-user-plus"></i>
+                                                                <span>Assign To</span>
+                                                            </a>
+                                                        </li>
                                                         <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item text-danger" href="#">Delete Lead</a></li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="#">
+                                                                <i class="bx bx-trash"></i>
+                                                                <span>Delete Lead</span>
+                                                            </a>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                             </td>

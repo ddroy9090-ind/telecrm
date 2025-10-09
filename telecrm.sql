@@ -32,6 +32,7 @@ CREATE TABLE `users` (
   `full_name` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL DEFAULT '',
+  `contact_number` varchar(30) DEFAULT NULL,
   `role` enum('admin','manager','agent') NOT NULL DEFAULT 'agent',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -41,8 +42,8 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `role`, `created_at`, `updated_at`) VALUES
-(5, 'Administrator', 'admin@example.com', '$2y$10$FczfYBAJzoibRAjjDKzFQOAmYmkUZnu0RRnsixoIIMoAHP6A2tMi6', 'admin', '2025-10-08 12:18:29', '2025-10-08 12:18:29');
+INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `contact_number`, `role`, `created_at`, `updated_at`) VALUES
+(5, 'Administrator', 'admin@example.com', '$2y$10$FczfYBAJzoibRAjjDKzFQOAmYmkUZnu0RRnsixoIIMoAHP6A2tMi6', '+1 555 0100', 'admin', '2025-10-08 12:18:29', '2025-10-08 12:18:29');
 
 --
 -- Indexes for dumped tables

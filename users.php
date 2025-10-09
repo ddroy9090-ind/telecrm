@@ -15,6 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullName = trim($_POST['full_name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $role = $_POST['role'] ?? '';
+    $contactNumber = trim($_POST['contact_number'] ?? '');
+    if ($contactNumber !== '') {
+        $contactNumber = preg_replace('/[^0-9+()\-\s]/', '', $contactNumber);
+    }
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     $userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : null;
@@ -36,12 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-                $stmt = $mysqli->prepare('INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)');
+                $stmt = $mysqli->prepare('INSERT INTO users (full_name, email, contact_number, password_hash, role) VALUES (?, ?, ?, ?, ?)');
                 if (!$stmt) {
                     throw new RuntimeException('Failed to prepare insert statement: ' . $mysqli->error);
                 }
 
-                $stmt->bind_param('ssss', $fullName, $email, $passwordHash, $role);
+                $stmt->bind_param('sssss', $fullName, $email, $contactNumber, $passwordHash, $role);
                 if (!$stmt->execute()) {
                     if ($mysqli->errno === 1062) {
                         throw new RuntimeException('A user with this email already exists.');
@@ -73,10 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($shouldUpdatePassword) {
                     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-                    $updateSql = 'UPDATE users SET full_name = ?, email = ?, role = ?, password_hash = ? WHERE id = ?';
+                    $updateSql = 'UPDATE users SET full_name = ?, email = ?, contact_number = ?, role = ?, password_hash = ? WHERE id = ?';
                     $stmt = $mysqli->prepare($updateSql);
                 } else {
-                    $updateSql = 'UPDATE users SET full_name = ?, email = ?, role = ? WHERE id = ?';
+                    $updateSql = 'UPDATE users SET full_name = ?, email = ?, contact_number = ?, role = ? WHERE id = ?';
                     $stmt = $mysqli->prepare($updateSql);
                 }
                 if (!$stmt) {
@@ -84,9 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if ($shouldUpdatePassword) {
-                    $stmt->bind_param('ssssi', $fullName, $email, $role, $passwordHash, $userId);
+                    $stmt->bind_param('sssssi', $fullName, $email, $contactNumber, $role, $passwordHash, $userId);
                 } else {
-                    $stmt->bind_param('sssi', $fullName, $email, $role, $userId);
+                    $stmt->bind_param('ssssi', $fullName, $email, $contactNumber, $role, $userId);
                 }
                 if (!$stmt->execute()) {
                     if ($mysqli->errno === 1062) {
@@ -128,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $users = [];
-$result = $mysqli->query('SELECT id, full_name, email, role FROM users ORDER BY id ASC');
+$result = $mysqli->query('SELECT id, full_name, email, contact_number, role FROM users ORDER BY id ASC');
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $users[] = $row;
@@ -164,53 +168,84 @@ unset($_SESSION['flash']);
             </div>
         <?php endif; ?>
 
-        <div class="card shadow-sm">
-            <div class="card-body">
+        <div class="card shadow-sm users-card">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped align-middle mb-0">
-                        <thead class="table-light">
+                    <table class="table users-table align-middle mb-0">
+                        <thead>
                             <tr>
-                                <th scope="col">#</th>
                                 <th scope="col">Full Name</th>
                                 <th scope="col">Email</th>
                                 <th scope="col">Role</th>
+                                <th scope="col">Contact Number</th>
                                 <th scope="col" class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (count($users) === 0): ?>
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted">No users found. Add your first user to get started.</td>
+                                    <td colspan="5" class="text-center text-muted py-4">No users found. Add your first user to get started.</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($users as $index => $user): ?>
+                                <?php foreach ($users as $user): ?>
                                     <tr>
-                                        <th scope="row"><?php echo $index + 1; ?></th>
-                                        <td><?php echo htmlspecialchars($user['full_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                        <td>
+                                            <?php
+                                                $name = trim($user['full_name']);
+                                                $initial = '?';
+                                                if ($name !== '') {
+                                                    if (function_exists('mb_substr')) {
+                                                        $initial = mb_substr($name, 0, 1, 'UTF-8');
+                                                    } else {
+                                                        $initial = substr($name, 0, 1);
+                                                    }
+                                                }
+                                                $initial = strtoupper($initial ?: '?');
+                                            ?>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="user-avatar">
+                                                    <span><?php echo htmlspecialchars($initial); ?></span>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold text-dark"><?php echo htmlspecialchars($user['full_name']); ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="mailto:<?php echo htmlspecialchars($user['email']); ?>" class="text-decoration-none"><?php echo htmlspecialchars($user['email']); ?></a>
+                                        </td>
                                         <td>
                                             <?php
                                                 $roleClass = [
-                                                    'admin' => 'bg-primary',
-                                                    'manager' => 'bg-success',
-                                                    'agent' => 'bg-info'
-                                                ][$user['role']] ?? 'bg-secondary';
+                                                    'admin' => 'badge-role-admin',
+                                                    'manager' => 'badge-role-manager',
+                                                    'agent' => 'badge-role-agent'
+                                                ][$user['role']] ?? 'badge-role-default';
                                             ?>
-                                            <span class="badge <?php echo $roleClass; ?>">
-                                                <?php echo ucfirst(htmlspecialchars($user['role'])); ?>
+                                            <span class="badge rounded-pill <?php echo $roleClass; ?>">
+                                                <?php echo htmlspecialchars(ucfirst($user['role'])); ?>
                                             </span>
                                         </td>
+                                        <td>
+                                            <?php if (!empty($user['contact_number'])): ?>
+                                                <span class="fw-medium text-dark"><?php echo htmlspecialchars($user['contact_number']); ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not provided</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="text-end">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" title="Edit" data-bs-toggle="modal" data-bs-target="#editUserModal<?php echo $user['id']; ?>">
-                                                <i class="bx bx-edit-alt"></i>
-                                            </button>
-                                            <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="user_id" value="<?php echo (int) $user['id']; ?>">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                    <i class="bx bx-trash"></i>
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit" data-bs-toggle="modal" data-bs-target="#editUserModal<?php echo $user['id']; ?>">
+                                                    <i class="bx bx-edit-alt"></i>
                                                 </button>
-                                            </form>
+                                                <form method="post" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="user_id" value="<?php echo (int) $user['id']; ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                        <i class="bx bx-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -241,6 +276,10 @@ unset($_SESSION['flash']);
                     <div class="mb-3">
                         <label for="emailAddress" class="form-label">Email address</label>
                         <input type="email" class="form-control" id="emailAddress" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactNumber" class="form-label">Contact Number</label>
+                        <input type="tel" class="form-control" id="contactNumber" name="contact_number" placeholder="e.g. +1 555 0123" inputmode="tel">
                     </div>
                     <div class="mb-3">
                         <label for="addPassword" class="form-label">Password</label>
@@ -298,6 +337,10 @@ unset($_SESSION['flash']);
                         <div class="mb-3">
                             <label for="editEmailAddress<?php echo $user['id']; ?>" class="form-label">Email address</label>
                             <input type="email" class="form-control" id="editEmailAddress<?php echo $user['id']; ?>" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editContactNumber<?php echo $user['id']; ?>" class="form-label">Contact Number</label>
+                            <input type="tel" class="form-control" id="editContactNumber<?php echo $user['id']; ?>" name="contact_number" value="<?php echo htmlspecialchars($user['contact_number'] ?? ''); ?>" placeholder="e.g. +1 555 0123" inputmode="tel">
                         </div>
                         <div class="mb-3">
                             <label for="editPassword<?php echo $user['id']; ?>" class="form-label">New Password</label>

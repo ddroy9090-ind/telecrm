@@ -317,46 +317,59 @@ unset($_SESSION['flash']);
                 <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body pt-2">
-                <form method="post" action="users.php" class="minimal-form">
-                    <input type="hidden" name="action" value="create">
-                    <div class="form-group mb-4">
-                        <label for="fullName" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="fullName" name="full_name" placeholder="Enter full name" required>
-                    </div>
-                    <div class="form-group mb-4">
-                        <label for="emailAddress" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="emailAddress" name="email" placeholder="Enter email address" required>
-                    </div>
-                    <div class="form-group mb-4">
-                        <label for="contactNumber" class="form-label">Contact Number</label>
-                        <input type="tel" class="form-control" id="contactNumber" name="contact_number" placeholder="e.g. +1 555 0123" inputmode="tel">
-                    </div>
-                    <div class="form-group mb-4">
-                        <label for="addPassword" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="addPassword" name="password" placeholder="Enter password" required autocomplete="new-password">
-                    </div>
-                    <div class="form-group mb-4">
-                        <label for="addConfirmPassword" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password" placeholder="Re-enter password" required autocomplete="new-password">
-                    </div>
-                    <div class="form-group mb-4">
-                        <label for="userRole" class="form-label">Role</label>
-                        <select id="userRole" class="form-select" name="role" data-choices required>
-                            <option value="admin">Admin</option>
-                            <option value="manager">Manager</option>
-                            <option value="agent" selected>Agent</option>
-                        </select>
-                    </div>
-                    <div class="modal-footer px-0 pb-0 border-0">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary shadow-sm">Save User</button>
-                    </div>
-                </form>
+
+            <div class="modal-body pt-2 p-0">
+                <div class="container-fluid">
+                    <form method="post" action="users.php" class="minimal-form">
+                        <input type="hidden" name="action" value="create">
+
+                        <div class="row">
+                            <div class="col-lg-12 col-md-6 mb-3">
+                                <label for="fullName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="fullName" name="full_name" placeholder="Enter full name" required>
+                            </div>
+
+                            <div class="col-lg-12 col-md-6 mb-3">
+                                <label for="emailAddress" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="emailAddress" name="email" placeholder="Enter email address" required>
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 mb-3">
+                                <label for="contactNumber" class="form-label">Contact Number</label>
+                                <input type="tel" class="form-control" id="contactNumber" name="contact_number" placeholder="e.g. +1 555 0123" inputmode="tel">
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 mb-3">
+                                <label for="addPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="addPassword" name="password" placeholder="Enter password" required autocomplete="new-password">
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 mb-3">
+                                <label for="addConfirmPassword" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password" placeholder="Re-enter password" required autocomplete="new-password">
+                            </div>
+
+                            <div class="col-lg-6 col-md-6 mb-3">
+                                <label for="userRole" class="form-label">Role</label>
+                                <select id="userRole" class="form-select" name="role" data-choices required>
+                                    <option value="admin">Admin</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="agent" selected>Agent</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer px-0 border-0">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary shadow-sm">Save User</button>
+                        </div>
+                    </form>
+                </div> <!-- /.container -->
             </div>
         </div>
     </div>
 </div>
+
 
 <?php foreach ($users as $user): ?>
     <!-- Edit User Modal -->
@@ -411,96 +424,6 @@ unset($_SESSION['flash']);
     </div>
 <?php endforeach; ?>
 
-<style>
-    .minimal-modal-dialog {
-        transition: transform 0.3s ease, opacity 0.3s ease;
-    }
 
-    .modal.fade .minimal-modal-dialog {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-
-    .modal.show .minimal-modal-dialog {
-        transform: translateY(0);
-        opacity: 1;
-    }
-
-    .minimal-modal {
-        border: none;
-        border-radius: 18px;
-        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
-        padding: 18px 24px 24px;
-        background: #ffffff;
-    }
-
-    .minimal-modal .modal-title {
-        font-weight: 600;
-        font-size: 1.25rem;
-    }
-
-    .minimal-form .form-label {
-        font-size: 0.9rem;
-        color: #6b7280;
-        margin-bottom: 0.35rem;
-    }
-
-    .minimal-form .form-control,
-    .minimal-form .form-select {
-        border-radius: 12px;
-        border: 1px solid #e5e7eb;
-        padding: 0.65rem 0.85rem;
-        font-size: 0.95rem;
-        background-color: #f9fafb;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .minimal-form .form-control:focus,
-    .minimal-form .form-select:focus {
-        background-color: #ffffff;
-        border-color: #6366f1;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-
-    .minimal-form .form-text {
-        color: #9ca3af;
-        font-size: 0.8rem;
-    }
-
-    .minimal-modal .modal-footer {
-        gap: 0.75rem;
-    }
-
-    .minimal-modal .btn-light {
-        border-radius: 10px;
-        border: 1px solid #e5e7eb;
-        background: #f3f4f6;
-        color: #4b5563;
-        padding: 0.55rem 1.35rem;
-        font-weight: 500;
-    }
-
-    .minimal-modal .btn-light:hover {
-        background: #e5e7eb;
-    }
-
-    .minimal-modal .btn-primary {
-        border-radius: 10px;
-        padding: 0.55rem 1.6rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        border: none;
-    }
-
-    .minimal-modal .btn-primary:hover {
-        filter: brightness(0.95);
-    }
-
-    @media (max-width: 576px) {
-        .minimal-modal {
-            padding: 16px;
-        }
-    }
-</style>
 
 <?php include 'includes/common-footer.php'; ?>

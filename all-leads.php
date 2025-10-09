@@ -258,7 +258,7 @@ include __DIR__ . '/includes/common-header.php';
             </div>
 
             <div class="row g-3 lead-summary-row mb-4">
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-4 col-md-6">
                     <div class="stats-card leads-stats-card">
                         <div class="stats-card-icon total">
                             <i class="bx bx-group"></i>
@@ -272,7 +272,7 @@ include __DIR__ . '/includes/common-header.php';
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-4 col-md-6">
                     <div class="stats-card leads-stats-card">
                         <div class="stats-card-icon active">
                             <i class="bx bx-target-lock"></i>
@@ -286,7 +286,7 @@ include __DIR__ . '/includes/common-header.php';
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-4 col-md-6">
                     <div class="stats-card leads-stats-card">
                         <div class="stats-card-icon conversion">
                             <i class="bx bx-line-chart"></i>
@@ -297,20 +297,6 @@ include __DIR__ . '/includes/common-header.php';
                         </div>
                         <div class="stats-card-footer">
                             <?php echo renderTrend($conversionTrend); ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="stats-card leads-stats-card">
-                        <div class="stats-card-icon rating">
-                            <i class="bx bx-star"></i>
-                        </div>
-                        <div class="stats-card-body">
-                            <span class="stats-label">Avg Rating</span>
-                            <h2 class="mb-0"><?php echo $averageRating !== null ? $averageRating : '—'; ?></h2>
-                        </div>
-                        <div class="stats-card-footer">
-                            <span class="trend trend-neutral">Updated in real time</span>
                         </div>
                     </div>
                 </div>
@@ -359,23 +345,6 @@ include __DIR__ . '/includes/common-header.php';
             </div>
 
             <div class="card lead-table-card">
-                <div class="card-header border-0 pb-0">
-                    <div class="lead-table-header d-flex flex-wrap gap-3 align-items-center justify-content-between">
-                        <div>
-                            <h5 class="mb-1">Leads Overview</h5>
-                            <p class="text-muted mb-0">Stay on top of every prospect with quick insights and smart sorting.</p>
-                        </div>
-                        <div class="table-header-meta d-flex flex-wrap align-items-center gap-3">
-                            <div class="badge rounded-pill bg-light text-body-tertiary px-3 py-2">
-                                <i class="bx bx-time-five me-1"></i>Updated just now
-                            </div>
-                            <a href="add-leads.php" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
-                                <i class="bx bx-plus"></i>
-                                <span>Quick Add</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">

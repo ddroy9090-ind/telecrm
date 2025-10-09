@@ -1196,6 +1196,7 @@ select{
     font-weight: 600;
     color: #64748b;
     border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    padding: 18px 20px;
 }
 
 .lead-table-card tbody td {

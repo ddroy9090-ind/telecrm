@@ -378,7 +378,7 @@ include __DIR__ . '/includes/common-header.php';
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table id="leadDataTable" class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th scope="col">Name</th>

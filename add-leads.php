@@ -116,40 +116,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
                 <form id="addLeadForm" action="" method="post" class="row g-3" novalidate data-reset-on-success="<?php echo $successMessage ? 'true' : 'false'; ?>">
                     <div class="col-md-3">
-                        <label for="stage" class="form-label">Stage</label>
-                        <select id="stage" name="stage" class="form-select" data-choices>
-                            <option value="" disabled <?php echo $formData['stage'] === '' ? 'selected' : ''; ?>>Select stage</option>
-                            <option value="New" <?php echo $formData['stage'] === 'New' ? 'selected' : ''; ?>>New</option>
-                            <option value="Contacted" <?php echo $formData['stage'] === 'Contacted' ? 'selected' : ''; ?>>Contacted</option>
-                            <option value="Qualified" <?php echo $formData['stage'] === 'Qualified' ? 'selected' : ''; ?>>Qualified</option>
-                            <option value="Proposal" <?php echo $formData['stage'] === 'Proposal' ? 'selected' : ''; ?>>Proposal</option>
-                            <option value="Negotiation" <?php echo $formData['stage'] === 'Negotiation' ? 'selected' : ''; ?>>Negotiation</option>
-                            <option value="Closed" <?php echo $formData['stage'] === 'Closed' ? 'selected' : ''; ?>>Closed</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="rating" class="form-label">Rating</label>
-                        <select id="rating" name="rating" class="form-select" data-choices>
-                            <option value="" disabled <?php echo $formData['rating'] === '' ? 'selected' : ''; ?>>Select rating</option>
-                            <option value="Hot" <?php echo $formData['rating'] === 'Hot' ? 'selected' : ''; ?>>Hot</option>
-                            <option value="Warm" <?php echo $formData['rating'] === 'Warm' ? 'selected' : ''; ?>>Warm</option>
-                            <option value="Cold" <?php echo $formData['rating'] === 'Cold' ? 'selected' : ''; ?>>Cold</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="assignedTo" class="form-label">Assigned To</label>
-                        <select id="assignedTo" name="assigned_to" class="form-select" data-choices>
-                            <option value="" disabled <?php echo $formData['assigned_to'] === '' ? 'selected' : ''; ?>>Select assignee</option>
-                            <option value="Unassigned" <?php echo $formData['assigned_to'] === 'Unassigned' ? 'selected' : ''; ?>>Unassigned</option>
-                            <option value="Agent 1" <?php echo $formData['assigned_to'] === 'Agent 1' ? 'selected' : ''; ?>>Agent 1</option>
-                            <option value="Agent 2" <?php echo $formData['assigned_to'] === 'Agent 2' ? 'selected' : ''; ?>>Agent 2</option>
-                            <option value="Agent 3" <?php echo $formData['assigned_to'] === 'Agent 3' ? 'selected' : ''; ?>>Agent 3</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
                         <label for="source" class="form-label">Source</label>
                         <select id="source" name="source" class="form-select" data-choices>
                             <option value="" disabled <?php echo $formData['source'] === '' ? 'selected' : ''; ?>>Select source</option>

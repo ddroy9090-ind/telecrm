@@ -149,41 +149,54 @@ document.addEventListener("DOMContentLoaded", function () {
   // Mobile menu toggle
   if (window.innerWidth <= 768) {
     const toggleBtn = document.querySelector(".toggle-btn");
-    toggleBtn.addEventListener("click", function () {
-      document.getElementById("sidebar").classList.toggle("show");
-    });
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", function () {
+        document.getElementById("sidebar").classList.toggle("show");
+      });
 
-    // Close sidebar when clicking outside
-    document.addEventListener("click", function (e) {
-      const sidebar = document.getElementById("sidebar");
-      const toggleBtn = document.querySelector(".toggle-btn");
+      // Close sidebar when clicking outside
+      document.addEventListener("click", function (e) {
+        const sidebar = document.getElementById("sidebar");
 
-      if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
-        sidebar.classList.remove("show");
-      }
-    });
+        if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+          sidebar.classList.remove("show");
+        }
+      });
+    }
   }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
   const filterToggle = document.getElementById("filterToggle");
-  const filtersSection = document.querySelector(".filters-section");
+  const filtersSection = document.getElementById("leadFilters");
 
   if (!filterToggle || !filtersSection) {
     return;
   }
 
-  const setAriaExpanded = (isExpanded) => {
+  const updateExpandedState = (isExpanded) => {
     filterToggle.setAttribute("aria-expanded", String(isExpanded));
+    filtersSection.classList.toggle("is-expanded", isExpanded);
+    filtersSection.style.maxHeight = isExpanded
+      ? `${filtersSection.scrollHeight}px`
+      : null;
   };
 
-  filtersSection.classList.remove("is-expanded");
-  setAriaExpanded(false);
+  updateExpandedState(false);
 
   filterToggle.addEventListener("click", function () {
-    const isExpanded = filtersSection.classList.toggle("is-expanded");
-    setAriaExpanded(isExpanded);
+    const willExpand = !filtersSection.classList.contains("is-expanded");
+    updateExpandedState(willExpand);
   });
+
+  if ("ResizeObserver" in window) {
+    const resizeObserver = new ResizeObserver(() => {
+      if (filtersSection.classList.contains("is-expanded")) {
+        filtersSection.style.maxHeight = `${filtersSection.scrollHeight}px`;
+      }
+    });
+    resizeObserver.observe(filtersSection);
+  }
 });
 
 // Notification Bell Animation

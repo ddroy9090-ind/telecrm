@@ -1184,7 +1184,12 @@ select {
     border-radius: 14px;
     border: 1px solid rgba(15, 23, 42, 0.05);
     box-shadow: 0 18px 42px -28px rgba(15, 23, 42, 0.35);
-    overflow: hidden;
+    overflow: visible;
+}
+
+.lead-table-card .card-body {
+    position: relative;
+    overflow: visible;
 }
 
 .lead-table-card thead {

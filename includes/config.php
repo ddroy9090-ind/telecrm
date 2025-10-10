@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `all_leads` (
 SQL;
 
 if (!$mysqli->query($createAllLeadsTable)) {
-    die('Failed to ensure All leads table exists: ' . $mysqli->error);
+    die('Failed to ensure all_leads table exists: ' . $mysqli->error);
 }
 
 // Ensure password_hash column exists for legacy installations

@@ -165,6 +165,27 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+  const filterToggle = document.getElementById("filterToggle");
+  const filtersSection = document.querySelector(".filters-section");
+
+  if (!filterToggle || !filtersSection) {
+    return;
+  }
+
+  const setAriaExpanded = (isExpanded) => {
+    filterToggle.setAttribute("aria-expanded", String(isExpanded));
+  };
+
+  filtersSection.classList.remove("is-expanded");
+  setAriaExpanded(false);
+
+  filterToggle.addEventListener("click", function () {
+    const isExpanded = filtersSection.classList.toggle("is-expanded");
+    setAriaExpanded(isExpanded);
+  });
+});
+
 // Notification Bell Animation
 const notificationIcon = document.querySelector(".notification-icon");
 if (notificationIcon) {

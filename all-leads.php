@@ -67,7 +67,8 @@ include __DIR__ . '/includes/common-header.php';
                         </div>
                         <div class="col-lg-2">
                             <div class="filterbtn">
-                                <button class="btn btn-light w-100" id="filterToggle"><svg xmlns="http://www.w3.org/2000/svg" width="24"
+                                <button type="button" class="btn btn-light w-100" id="filterToggle" aria-expanded="false"
+                                    aria-controls="leadFilters"><svg xmlns="http://www.w3.org/2000/svg" width="24"
                                         height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                         class="lucide lucide-filter w-5 h-5">
@@ -102,7 +103,7 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                         </div>
                     </div>
-                    <div class="filters-section">
+                    <div class="filters-section" id="leadFilters">
                         <div class="filters-header d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-semibold">FILTERS</h6>
                             <a href="#" class="clear-all"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x "><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg> Clear All</a>

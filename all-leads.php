@@ -559,7 +559,7 @@ include __DIR__ . '/includes/common-header.php';
                                             <td>
                                                 <div class="lead-contact">
                                                     <?php if ($contactEmail !== ''): ?>
-                                                        <a href="mailto:<?php echo htmlspecialchars($contactEmail); ?>" class="contact-item">
+                                                        <a href="javascript:void(0)" class="contact-item">
                                                             <i class="bx bx-envelope"></i>
                                                             <span><?php echo htmlspecialchars($contactEmail); ?></span>
                                                         </a>
@@ -622,7 +622,6 @@ include __DIR__ . '/includes/common-header.php';
                                                             <i class="bx bx-user-plus"></i>
                                                             <span>Assign To</span>
                                                         </a>
-                                                        <hr>
                                                         <a class="action-item text-danger" href="#">
                                                             <i class="bx bx-trash"></i>
                                                             <span>Delete Lead</span>

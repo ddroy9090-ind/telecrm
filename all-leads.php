@@ -207,7 +207,13 @@ include __DIR__ . '/includes/common-header.php';
                                     </div>
                                 </td>
                                 <td>Agent Referral</td>
-                                <td><a href="#" class="view-link">View Details</a></td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
+                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
                             </tr>
 
                             <tr>
@@ -245,7 +251,13 @@ include __DIR__ . '/includes/common-header.php';
                                     </div>
                                 </td>
                                 <td>Website Inquiry</td>
-                                <td><a href="#" class="view-link">View Details</a></td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
+                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
                             </tr>
 
                             <tr>
@@ -283,7 +295,13 @@ include __DIR__ . '/includes/common-header.php';
                                     </div>
                                 </td>
                                 <td>Social Media</td>
-                                <td><a href="#" class="view-link">View Details</a></td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
+                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

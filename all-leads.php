@@ -27,6 +27,9 @@ if ($usersQuery instanceof mysqli_result) {
     $usersQuery->free();
 }
 
+$loggedInUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+$loggedInUserName = trim($_SESSION['username'] ?? '');
+
 /**
  * Extract a displayable stage label from the stored stage value.
  */
@@ -72,30 +75,6 @@ function stage_badge_class(string $stage): string
 {
     $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $stage));
     return $slug !== '' ? $slug : 'new';
-}
-
-function resolve_assigned_to($rawAssignedTo, array $users): string
-{
-    if ($rawAssignedTo === null || $rawAssignedTo === '') {
-        return '';
-    }
-
-    $rawAssignedTo = trim((string) $rawAssignedTo);
-
-    if ($rawAssignedTo !== '' && ctype_digit($rawAssignedTo)) {
-        $userId = (int) $rawAssignedTo;
-        if (isset($users[$userId])) {
-            return $users[$userId];
-        }
-    }
-
-    foreach ($users as $userName) {
-        if (strcasecmp($userName, $rawAssignedTo) === 0) {
-            return $userName;
-        }
-    }
-
-    return $rawAssignedTo;
 }
 
 function lead_avatar_initial(string $name): string
@@ -286,7 +265,6 @@ function lead_avatar_initial(string $name): string
                                     $leadPhone = trim($lead['phone'] ?? '');
                                     $stageLabel = format_lead_stage($lead['stage'] ?? '');
                                     $stageClass = stage_badge_class($stageLabel);
-                                    $assignedName = resolve_assigned_to($lead['assigned_to'] ?? '', $users);
                                     $sourceLabel = trim($lead['source'] ?? '') !== '' ? $lead['source'] : '—';
                                     $avatarInitial = lead_avatar_initial($leadName);
                                     ?>
@@ -316,24 +294,19 @@ function lead_avatar_initial(string $name): string
                                         <td>
                                             <div class="assigned-dropdown">
                                                 <select class="form-select assigned-select">
-                                                    <option value="" <?php echo $assignedName === '' ? 'selected' : ''; ?>>Unassigned</option>
-                                                    <?php $selectedMatchFound = false; ?>
                                                     <?php foreach ($users as $userId => $userName): ?>
                                                         <?php
-                                                        $isSelected = ($lead['assigned_to'] !== null && $lead['assigned_to'] !== '' && ((string) $lead['assigned_to'] === (string) $userId || strcasecmp($lead['assigned_to'], $userName) === 0));
-                                                        if ($isSelected) {
-                                                            $selectedMatchFound = true;
+                                                        $isSelected = false;
+                                                        if ($loggedInUserId !== null) {
+                                                            $isSelected = $loggedInUserId === (int) $userId;
+                                                        } elseif ($loggedInUserName !== '') {
+                                                            $isSelected = strcasecmp($loggedInUserName, $userName) === 0;
                                                         }
                                                         ?>
                                                         <option value="<?php echo htmlspecialchars((string) $userId); ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
                                                             <?php echo htmlspecialchars($userName); ?>
                                                         </option>
                                                     <?php endforeach; ?>
-                                                    <?php if (!$selectedMatchFound && $assignedName !== ''): ?>
-                                                        <option value="<?php echo htmlspecialchars((string) ($lead['assigned_to'] ?? '')); ?>" selected>
-                                                            <?php echo htmlspecialchars($assignedName); ?>
-                                                        </option>
-                                                    <?php endif; ?>
                                                 </select>
                                             </div>
                                         </td>

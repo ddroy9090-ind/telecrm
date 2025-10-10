@@ -336,6 +336,18 @@ button:focus:not(:focus-visible) {
     margin: 0px;
     transform: translate3d(14px, 42.4px, 0px);
     top: 20%;
+    top: -104px !important;
+}
+
+.dropdown-item {
+    font-size: 14px;
+    transition: all 0.3s ease;
+    padding: 5px 10px;
+}
+
+.dropdown-item:hover{
+    background-color: #00a693;
+    color: #fff;
 }
 
 

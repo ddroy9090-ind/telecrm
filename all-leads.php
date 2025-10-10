@@ -179,42 +179,6 @@ include __DIR__ . '/includes/common-header.php';
                             <tr>
                                 <td>
                                     <div class="lead-info">
-                                        <div class="avatar">N</div>
-                                        <div><strong>Nadia Petrov</strong></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contact-info">
-                                        <span><i class="bi bi-envelope"></i> nadia.petrov@email.com</span><br>
-                                        <span><i class="bi bi-telephone"></i> +1 202-555-0143</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="stage-badge new">New</div>
-                                </td>
-                                <td>
-                                    <div class="assigned-dropdown">
-                                        <select class="form-select assigned-select">
-                                            <option selected>John Smith</option>
-                                            <option>Sarah Lee</option>
-                                            <option>David Brown</option>
-                                            <option>Emma Wilson</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td>Agent Referral</td>
-                                <td>
-                                    <div class="action-icons">
-                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
-                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <div class="lead-info">
                                         <div class="avatar">M</div>
                                         <div><strong>Michael Johnson</strong></div>
                                     </div>
@@ -240,46 +204,17 @@ include __DIR__ . '/includes/common-header.php';
                                 </td>
                                 <td>Website Inquiry</td>
                                 <td>
-                                    <div class="action-icons">
-                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
-                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
 
-                            <tr>
-                                <td>
-                                    <div class="lead-info">
-                                        <div class="avatar">A</div>
-                                        <div><strong>Ayesha Khan</strong></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contact-info">
-                                        <span><i class="bi bi-envelope"></i> ayesha.khan@email.com</span><br>
-                                        <span><i class="bi bi-telephone"></i> +971 55 789 4561</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="stage-badge contacted">Contacted</div>
-                                </td>
-                                <td>
-                                    <div class="assigned-dropdown">
-                                        <select class="form-select assigned-select">
-                                            <option>John Smith</option>
-                                            <option>Sarah Lee</option>
-                                            <option selected>David Brown</option>
-                                            <option>Emma Wilson</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td>Social Media</td>
-                                <td>
-                                    <div class="action-icons">
-                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
-                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                    <!-- Bootstrap 5 Dropdown with Vertical Dot Menu -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical fs-5"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><button class="dropdown-item" type="button">View</button></li>
+                                            <li><button class="dropdown-item" type="button">Edit</button></li>
+                                            <li><button class="dropdown-item" type="button">Delete</button></li>
+                                        </ul>
                                     </div>
                                 </td>
                             </tr>

@@ -375,6 +375,177 @@ include __DIR__ . '/includes/common-header.php';
 
     <main class="main-content">
         <div class="container-fluid px-0">
+            <style>
+                body.lead-sidebar-open {
+                    overflow: hidden;
+                }
+
+                .lead-sidebar-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15, 23, 42, 0.45);
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.3s ease;
+                    z-index: 1040;
+                }
+
+                .lead-sidebar-overlay.active {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+
+                .lead-sidebar {
+                    position: fixed;
+                    top: 0;
+                    right: 0;
+                    height: 100vh;
+                    width: min(420px, 92vw);
+                    max-width: 100%;
+                    background: #fff;
+                    box-shadow: -12px 0 30px rgba(15, 23, 42, 0.08);
+                    transform: translateX(100%);
+                    transition: transform 0.35s ease;
+                    z-index: 1050;
+                    display: flex;
+                    flex-direction: column;
+                    border-radius: 20px 0 0 20px;
+                    overflow: hidden;
+                }
+
+                .lead-sidebar.open {
+                    transform: translateX(0);
+                }
+
+                .lead-sidebar-header {
+                    padding: 24px;
+                    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 12px;
+                }
+
+                .lead-sidebar-close {
+                    border: 0;
+                    background: transparent;
+                    color: #64748b;
+                    font-size: 22px;
+                    line-height: 1;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 999px;
+                    width: 34px;
+                    height: 34px;
+                    transition: background 0.2s ease, color 0.2s ease;
+                }
+
+                .lead-sidebar-close:hover {
+                    background: rgba(15, 23, 42, 0.05);
+                    color: #0f172a;
+                }
+
+                .lead-sidebar-body {
+                    padding: 24px;
+                    overflow-y: auto;
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 24px;
+                }
+
+                .lead-sidebar-actions {
+                    display: flex;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                }
+
+                .lead-sidebar-actions .btn {
+                    flex: 1 1 110px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    font-weight: 600;
+                }
+
+                .lead-sidebar-section {
+                    background: #f8fafc;
+                    border-radius: 16px;
+                    padding: 20px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+
+                .lead-sidebar-section h3 {
+                    font-size: 16px;
+                    font-weight: 700;
+                    margin: 0;
+                    color: #0f172a;
+                }
+
+                .lead-sidebar-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                }
+
+                .lead-sidebar-list li {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .lead-sidebar-list .label {
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                    color: #94a3b8;
+                    font-weight: 600;
+                }
+
+                .lead-sidebar-list .value {
+                    font-size: 15px;
+                    color: #0f172a;
+                    font-weight: 600;
+                    word-break: break-word;
+                }
+
+                .lead-sidebar-rating {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: #f59e0b;
+                    font-size: 18px;
+                }
+
+                .lead-sidebar-rating span {
+                    font-size: 14px;
+                    color: #0f172a;
+                    font-weight: 600;
+                }
+
+                .lead-sidebar-empty {
+                    color: #94a3b8;
+                    font-size: 14px;
+                }
+
+                @media (max-width: 768px) {
+                    .lead-sidebar {
+                        width: min(100%, 100vw);
+                        border-radius: 16px 16px 0 0;
+                    }
+
+                    .lead-sidebar.open {
+                        transform: translateX(0) translateY(0);
+                    }
+                }
+            </style>
             <div class="page-header d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
                 <div>
                     <h1 class="mb-1">All Leads</h1>
@@ -541,8 +712,43 @@ include __DIR__ . '/includes/common-header.php';
                                         $sourceDisplay = $sourceText !== '' ? $sourceText : 'Unknown';
                                         $sourceClass = sourceBadgeClass($sourceText);
                                         $leadCountry = trim((string) ($lead['nationality'] ?? ''));
+                                        $leadCreatedAt = trim((string) ($lead['created_at'] ?? ''));
+                                        $leadAlternateEmail = trim((string) ($lead['alternate_email'] ?? ''));
+                                        $leadInterestedIn = trim((string) ($lead['interested_in'] ?? ''));
+                                        $leadPropertyType = trim((string) ($lead['property_type'] ?? ''));
+                                        $leadLocationPreferences = trim((string) ($lead['location_preferences'] ?? ''));
+                                        $leadBudgetRange = trim((string) ($lead['budget_range'] ?? ''));
+                                        $leadSizeRequired = trim((string) ($lead['size_required'] ?? ''));
+                                        $leadPurpose = trim((string) ($lead['purpose'] ?? ''));
+                                        $leadUrgency = trim((string) ($lead['urgency'] ?? ''));
+                                        $leadPayoutReceived = trim((string) ($lead['payout_received'] ?? ''));
                                         ?>
-                                        <tr>
+                                        <tr class="lead-row"
+                                            data-lead-id="<?php echo (int) $lead['id']; ?>"
+                                            data-lead-name="<?php echo htmlspecialchars($leadName, ENT_QUOTES); ?>"
+                                            data-lead-stage="<?php echo htmlspecialchars($stageText, ENT_QUOTES); ?>"
+                                            data-lead-stage-class="<?php echo htmlspecialchars(stageBadgeClass($stageText), ENT_QUOTES); ?>"
+                                            data-lead-rating-text="<?php echo htmlspecialchars((string) $ratingText, ENT_QUOTES); ?>"
+                                            data-lead-rating-value="<?php echo htmlspecialchars($ratingValue !== null ? (string) $ratingValue : '', ENT_QUOTES); ?>"
+                                            data-lead-rating-display="<?php echo htmlspecialchars($ratingDisplay, ENT_QUOTES); ?>"
+                                            data-lead-email="<?php echo htmlspecialchars($contactEmail, ENT_QUOTES); ?>"
+                                            data-lead-alternate-email="<?php echo htmlspecialchars($leadAlternateEmail, ENT_QUOTES); ?>"
+                                            data-lead-phone="<?php echo htmlspecialchars($contactPhone, ENT_QUOTES); ?>"
+                                            data-lead-alternate-phone="<?php echo htmlspecialchars($alternatePhone, ENT_QUOTES); ?>"
+                                            data-lead-nationality="<?php echo htmlspecialchars($leadCountry, ENT_QUOTES); ?>"
+                                            data-lead-assigned="<?php echo htmlspecialchars($assignedName, ENT_QUOTES); ?>"
+                                            data-lead-source="<?php echo htmlspecialchars($sourceDisplay, ENT_QUOTES); ?>"
+                                            data-lead-created-at="<?php echo htmlspecialchars($leadCreatedAt, ENT_QUOTES); ?>"
+                                            data-lead-created-at-formatted="<?php echo htmlspecialchars($formattedDate, ENT_QUOTES); ?>"
+                                            data-lead-interested-in="<?php echo htmlspecialchars($leadInterestedIn, ENT_QUOTES); ?>"
+                                            data-lead-property-type="<?php echo htmlspecialchars($leadPropertyType, ENT_QUOTES); ?>"
+                                            data-lead-location-preferences="<?php echo htmlspecialchars($leadLocationPreferences, ENT_QUOTES); ?>"
+                                            data-lead-budget-range="<?php echo htmlspecialchars($leadBudgetRange, ENT_QUOTES); ?>"
+                                            data-lead-size-required="<?php echo htmlspecialchars($leadSizeRequired, ENT_QUOTES); ?>"
+                                            data-lead-purpose="<?php echo htmlspecialchars($leadPurpose, ENT_QUOTES); ?>"
+                                            data-lead-urgency="<?php echo htmlspecialchars($leadUrgency, ENT_QUOTES); ?>"
+                                            data-lead-payout-received="<?php echo htmlspecialchars($leadPayoutReceived, ENT_QUOTES); ?>"
+                                        >
                                             <td>
                                                 <div class="lead-profile d-flex align-items-center gap-3">
                                                     <div class="lead-avatar" style="background: <?php echo htmlspecialchars($leadPalette['background']); ?>; color: <?php echo htmlspecialchars($leadPalette['color']); ?>;">
@@ -638,6 +844,114 @@ include __DIR__ . '/includes/common-header.php';
                 </div>
             </div>
         </div>
+        <div class="lead-sidebar-overlay" data-lead-sidebar-overlay hidden></div>
+        <aside class="lead-sidebar" data-lead-sidebar aria-hidden="true">
+            <div class="lead-sidebar-header">
+                <div class="lead-sidebar-title">
+                    <h2 class="mb-1" data-lead-field="name">Lead Name</h2>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="status-badge" data-lead-field="stage">Stage</span>
+                        <div class="lead-sidebar-rating" data-lead-field="rating-container" hidden>
+                            <div class="lead-sidebar-stars" data-lead-field="rating-stars"></div>
+                            <span data-lead-field="rating-value"></span>
+                        </div>
+                    </div>
+                    <div class="text-muted mt-2" data-lead-field="assigned">Assigned to —</div>
+                </div>
+                <button type="button" class="lead-sidebar-close" data-lead-sidebar-close aria-label="Close lead details">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+            <div class="lead-sidebar-body">
+                <div class="lead-sidebar-actions">
+                    <a class="btn btn-success" data-lead-action="call" href="#" target="_self">
+                        <i class="bx bx-phone"></i>
+                        Call
+                    </a>
+                    <a class="btn btn-info text-white" data-lead-action="email" href="#" target="_self">
+                        <i class="bx bx-envelope"></i>
+                        Email
+                    </a>
+                    <a class="btn btn-success" style="background: #25D366; border-color: #25D366;" data-lead-action="whatsapp" href="#" target="_blank">
+                        <i class="bx bxl-whatsapp"></i>
+                        WhatsApp
+                    </a>
+                </div>
+
+                <section class="lead-sidebar-section">
+                    <h3>Lead Details</h3>
+                    <ul class="lead-sidebar-list">
+                        <li>
+                            <span class="label">Email</span>
+                            <span class="value" data-lead-field="email">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Phone</span>
+                            <span class="value" data-lead-field="phone">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Alternate Phone</span>
+                            <span class="value" data-lead-field="alternate-phone">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Nationality</span>
+                            <span class="value" data-lead-field="nationality">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Source</span>
+                            <span class="value" data-lead-field="source">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Created</span>
+                            <span class="value" data-lead-field="created-at">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Payout Received</span>
+                            <span class="value" data-lead-field="payout-received">Not provided</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="lead-sidebar-section">
+                    <h3>Property Requirements</h3>
+                    <ul class="lead-sidebar-list">
+                        <li>
+                            <span class="label">Interested In</span>
+                            <span class="value" data-lead-field="interested-in">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Property Type</span>
+                            <span class="value" data-lead-field="property-type">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Location Preferences</span>
+                            <span class="value" data-lead-field="location-preferences">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Budget Range</span>
+                            <span class="value" data-lead-field="budget-range">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Size Required</span>
+                            <span class="value" data-lead-field="size-required">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Purpose</span>
+                            <span class="value" data-lead-field="purpose">Not provided</span>
+                        </li>
+                        <li>
+                            <span class="label">Urgency</span>
+                            <span class="value" data-lead-field="urgency">Not provided</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="lead-sidebar-section">
+                    <h3>Remarks &amp; Updates</h3>
+                    <p class="lead-sidebar-empty mb-0">No remarks recorded yet.</p>
+                </section>
+            </div>
+        </aside>
     </main>
 </div>
 <script>
@@ -692,6 +1006,254 @@ include __DIR__ . '/includes/common-header.php';
                 closeAllMenus();
             }
         });
+
+        const leadRows = document.querySelectorAll('.lead-row');
+        const sidebar = document.querySelector('[data-lead-sidebar]');
+        const overlay = document.querySelector('[data-lead-sidebar-overlay]');
+        const closeSidebarButton = sidebar ? sidebar.querySelector('[data-lead-sidebar-close]') : null;
+
+        if (sidebar && overlay && leadRows.length > 0) {
+            const fields = {
+                name: sidebar.querySelector('[data-lead-field="name"]'),
+                stage: sidebar.querySelector('[data-lead-field="stage"]'),
+                ratingContainer: sidebar.querySelector('[data-lead-field="rating-container"]'),
+                ratingStars: sidebar.querySelector('[data-lead-field="rating-stars"]'),
+                ratingValue: sidebar.querySelector('[data-lead-field="rating-value"]'),
+                assigned: sidebar.querySelector('[data-lead-field="assigned"]'),
+                email: sidebar.querySelector('[data-lead-field="email"]'),
+                phone: sidebar.querySelector('[data-lead-field="phone"]'),
+                alternatePhone: sidebar.querySelector('[data-lead-field="alternate-phone"]'),
+                nationality: sidebar.querySelector('[data-lead-field="nationality"]'),
+                source: sidebar.querySelector('[data-lead-field="source"]'),
+                createdAt: sidebar.querySelector('[data-lead-field="created-at"]'),
+                payoutReceived: sidebar.querySelector('[data-lead-field="payout-received"]'),
+                interestedIn: sidebar.querySelector('[data-lead-field="interested-in"]'),
+                propertyType: sidebar.querySelector('[data-lead-field="property-type"]'),
+                locationPreferences: sidebar.querySelector('[data-lead-field="location-preferences"]'),
+                budgetRange: sidebar.querySelector('[data-lead-field="budget-range"]'),
+                sizeRequired: sidebar.querySelector('[data-lead-field="size-required"]'),
+                purpose: sidebar.querySelector('[data-lead-field="purpose"]'),
+                urgency: sidebar.querySelector('[data-lead-field="urgency"]')
+            };
+
+            const actions = {
+                call: sidebar.querySelector('[data-lead-action="call"]'),
+                email: sidebar.querySelector('[data-lead-action="email"]'),
+                whatsapp: sidebar.querySelector('[data-lead-action="whatsapp"]')
+            };
+
+            function displayValue(field, value, fallback = 'Not provided') {
+                if (!field) {
+                    return;
+                }
+
+                const safeValue = typeof value === 'string' ? value.trim() : '';
+                if (safeValue !== '') {
+                    field.textContent = safeValue;
+                    field.classList.remove('text-muted');
+                } else {
+                    field.textContent = fallback;
+                    field.classList.add('text-muted');
+                }
+            }
+
+            function normalizePhone(value) {
+                const digits = (value || '').replace(/[^+\d]/g, '');
+                return digits;
+            }
+
+            function setAction(button, type, value) {
+                if (!button) {
+                    return;
+                }
+
+                const safeValue = typeof value === 'string' ? value.trim() : '';
+
+                if (safeValue === '') {
+                    button.classList.add('disabled');
+                    button.setAttribute('aria-disabled', 'true');
+                    button.setAttribute('tabindex', '-1');
+                    button.href = '#';
+                    return;
+                }
+
+                button.classList.remove('disabled');
+                button.removeAttribute('aria-disabled');
+                button.setAttribute('tabindex', '0');
+
+                if (type === 'call') {
+                    button.href = 'tel:' + normalizePhone(safeValue);
+                } else if (type === 'email') {
+                    button.href = 'mailto:' + safeValue;
+                } else if (type === 'whatsapp') {
+                    const digits = safeValue.replace(/\D/g, '');
+                    button.href = digits ? 'https://wa.me/' + digits : '#';
+                    if (!digits) {
+                        button.classList.add('disabled');
+                        button.setAttribute('aria-disabled', 'true');
+                        button.setAttribute('tabindex', '-1');
+                    }
+                }
+            }
+
+            function renderStars(value) {
+                if (!fields.ratingStars) {
+                    return;
+                }
+
+                const maxStars = 5;
+                const numeric = Math.max(0, Math.min(maxStars, value));
+                const fullStars = Math.floor(numeric);
+                const hasHalf = numeric - fullStars >= 0.5 && fullStars < maxStars;
+
+                let stars = '';
+                for (let i = 0; i < fullStars; i++) {
+                    stars += '<i class="bx bxs-star"></i>';
+                }
+
+                if (hasHalf) {
+                    stars += '<i class="bx bxs-star-half"></i>';
+                }
+
+                const remaining = maxStars - fullStars - (hasHalf ? 1 : 0);
+                for (let i = 0; i < remaining; i++) {
+                    stars += '<i class="bx bx-star"></i>';
+                }
+
+                fields.ratingStars.innerHTML = stars;
+            }
+
+            function openSidebar(row) {
+                closeAllMenus();
+                const data = row.dataset;
+
+                if (fields.name) {
+                    fields.name.textContent = data.leadName && data.leadName.trim() !== '' ? data.leadName : 'Unnamed Lead';
+                }
+
+                if (fields.stage) {
+                    const stageClass = data.leadStageClass ? 'status-badge ' + data.leadStageClass : 'status-badge badge-stage-default';
+                    fields.stage.className = stageClass;
+                    fields.stage.textContent = data.leadStage && data.leadStage.trim() !== '' ? data.leadStage : 'Not set';
+                }
+
+                if (fields.assigned) {
+                    const assignedText = data.leadAssigned && data.leadAssigned.trim() !== '' ? 'Assigned to ' + data.leadAssigned : 'Unassigned';
+                    fields.assigned.textContent = assignedText;
+                }
+
+                const ratingValueRaw = parseFloat(data.leadRatingValue || '');
+                const ratingDisplay = data.leadRatingDisplay ? data.leadRatingDisplay.trim() : '';
+
+                if (!Number.isNaN(ratingValueRaw) && ratingValueRaw > 0) {
+                    if (fields.ratingContainer) {
+                        fields.ratingContainer.hidden = false;
+                    }
+                    renderStars(ratingValueRaw);
+                    if (fields.ratingValue) {
+                        fields.ratingValue.textContent = ratingDisplay !== '' ? ratingDisplay : ratingValueRaw.toFixed(1) + '/5';
+                    }
+                } else if (ratingDisplay !== '') {
+                    if (fields.ratingContainer) {
+                        fields.ratingContainer.hidden = false;
+                    }
+                    if (fields.ratingStars) {
+                        fields.ratingStars.innerHTML = '<i class="bx bx-star"></i>'.repeat(5);
+                    }
+                    if (fields.ratingValue) {
+                        fields.ratingValue.textContent = ratingDisplay;
+                    }
+                } else if (fields.ratingContainer) {
+                    fields.ratingContainer.hidden = true;
+                    if (fields.ratingStars) {
+                        fields.ratingStars.innerHTML = '';
+                    }
+                    if (fields.ratingValue) {
+                        fields.ratingValue.textContent = '';
+                    }
+                }
+
+                displayValue(fields.email, data.leadEmail || data.leadAlternateEmail || '');
+                displayValue(fields.phone, data.leadPhone || '');
+                displayValue(fields.alternatePhone, data.leadAlternatePhone || '');
+                displayValue(fields.nationality, data.leadNationality || '');
+                displayValue(fields.source, data.leadSource || '');
+
+                const createdAtDisplay = data.leadCreatedAtFormatted && data.leadCreatedAtFormatted !== '—' ? data.leadCreatedAtFormatted : data.leadCreatedAt || '';
+                displayValue(fields.createdAt, createdAtDisplay, 'Not provided');
+
+                displayValue(fields.payoutReceived, data.leadPayoutReceived || '');
+                displayValue(fields.interestedIn, data.leadInterestedIn || '');
+                displayValue(fields.propertyType, data.leadPropertyType || '');
+                displayValue(fields.locationPreferences, data.leadLocationPreferences || '');
+                displayValue(fields.budgetRange, data.leadBudgetRange || '');
+                displayValue(fields.sizeRequired, data.leadSizeRequired || '');
+                displayValue(fields.purpose, data.leadPurpose || '');
+                displayValue(fields.urgency, data.leadUrgency || '');
+
+                setAction(actions.call, 'call', data.leadPhone || data.leadAlternatePhone || '');
+                setAction(actions.email, 'email', data.leadEmail || data.leadAlternateEmail || '');
+                setAction(actions.whatsapp, 'whatsapp', data.leadPhone || data.leadAlternatePhone || '');
+
+                overlay.hidden = false;
+                requestAnimationFrame(function() {
+                    overlay.classList.add('active');
+                    sidebar.classList.add('open');
+                    sidebar.setAttribute('aria-hidden', 'false');
+                    document.body.classList.add('lead-sidebar-open');
+                });
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                sidebar.setAttribute('aria-hidden', 'true');
+                overlay.classList.remove('active');
+                document.body.classList.remove('lead-sidebar-open');
+
+                const hideOverlay = function(event) {
+                    if (event && event.target !== overlay) {
+                        return;
+                    }
+
+                    if (!sidebar.classList.contains('open')) {
+                        overlay.hidden = true;
+                    }
+
+                    overlay.removeEventListener('transitionend', hideOverlay);
+                };
+
+                overlay.addEventListener('transitionend', hideOverlay);
+                window.setTimeout(hideOverlay, 400);
+            }
+
+            leadRows.forEach(function(row) {
+                row.addEventListener('click', function(event) {
+                    if (event.target.closest('.lead-actions')) {
+                        return;
+                    }
+
+                    openSidebar(row);
+                });
+            });
+
+            if (closeSidebarButton) {
+                closeSidebarButton.addEventListener('click', function() {
+                    closeSidebar();
+                });
+            }
+
+            overlay.addEventListener('click', function(event) {
+                if (event.target === overlay) {
+                    closeSidebar();
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && sidebar.classList.contains('open')) {
+                    closeSidebar();
+                }
+            });
+        }
     });
 </script>
 <?php include __DIR__ . '/includes/common-footer.php'; ?>

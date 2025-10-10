@@ -8,6 +8,104 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 require_once __DIR__ . '/includes/config.php';
 include __DIR__ . '/includes/common-header.php';
+
+$leads = [];
+$leadsQuery = $mysqli->query('SELECT * FROM all_leads ORDER BY created_at DESC');
+if ($leadsQuery instanceof mysqli_result) {
+    while ($row = $leadsQuery->fetch_assoc()) {
+        $leads[] = $row;
+    }
+    $leadsQuery->free();
+}
+
+$users = [];
+$usersQuery = $mysqli->query('SELECT id, full_name FROM users ORDER BY full_name ASC');
+if ($usersQuery instanceof mysqli_result) {
+    while ($userRow = $usersQuery->fetch_assoc()) {
+        $users[(int) $userRow['id']] = $userRow['full_name'];
+    }
+    $usersQuery->free();
+}
+
+/**
+ * Extract a displayable stage label from the stored stage value.
+ */
+function format_lead_stage(?string $rawStage): string
+{
+    if ($rawStage === null || trim($rawStage) === '') {
+        return 'New';
+    }
+
+    $decoded = json_decode($rawStage, true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+        if (is_array($decoded)) {
+            $first = reset($decoded);
+            if (is_array($first)) {
+                $first = reset($first);
+            }
+            if (is_string($first) && trim($first) !== '') {
+                return trim($first);
+            }
+        } elseif (is_string($decoded) && trim($decoded) !== '') {
+            return trim($decoded);
+        }
+    }
+
+    $parts = array_filter(array_map('trim', explode(',', $rawStage)), static function ($part) {
+        return $part !== '';
+    });
+
+    if (!empty($parts)) {
+        $firstPart = (string) array_shift($parts);
+        $firstPart = trim($firstPart, " \t\n\r\0\x0B\"'[]");
+        if ($firstPart !== '') {
+            return $firstPart;
+        }
+    }
+
+    $cleaned = trim($rawStage, " \t\n\r\0\x0B\"[]");
+
+    return $cleaned !== '' ? $cleaned : 'New';
+}
+
+function stage_badge_class(string $stage): string
+{
+    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $stage));
+    return $slug !== '' ? $slug : 'new';
+}
+
+function resolve_assigned_to($rawAssignedTo, array $users): string
+{
+    if ($rawAssignedTo === null || $rawAssignedTo === '') {
+        return '';
+    }
+
+    $rawAssignedTo = trim((string) $rawAssignedTo);
+
+    if ($rawAssignedTo !== '' && ctype_digit($rawAssignedTo)) {
+        $userId = (int) $rawAssignedTo;
+        if (isset($users[$userId])) {
+            return $users[$userId];
+        }
+    }
+
+    foreach ($users as $userName) {
+        if (strcasecmp($userName, $rawAssignedTo) === 0) {
+            return $userName;
+        }
+    }
+
+    return $rawAssignedTo;
+}
+
+function lead_avatar_initial(string $name): string
+{
+    if (function_exists('mb_substr')) {
+        return strtoupper(mb_substr($name, 0, 1, 'UTF-8'));
+    }
+
+    return strtoupper(substr($name, 0, 1));
+}
 ?>
 
 <div id="adminPanel">
@@ -176,48 +274,85 @@ include __DIR__ . '/includes/common-header.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>
-                                    <div class="lead-info">
-                                        <div class="avatar">M</div>
-                                        <div><strong>Michael Johnson</strong></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contact-info">
-                                        <span><i class="bi bi-envelope"></i> michael.j@email.com</span><br>
-                                        <span><i class="bi bi-telephone"></i> +1 202-555-0199</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="stage-badge proposal">Proposal</div>
-                                </td>
-                                <td>
-                                    <div class="assigned-dropdown">
-                                        <select class="form-select assigned-select">
-                                            <option>John Smith</option>
-                                            <option selected>Sarah Lee</option>
-                                            <option>David Brown</option>
-                                            <option>Emma Wilson</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td>Website Inquiry</td>
-                                <td>
-
-                                    <!-- Bootstrap 5 Dropdown with Vertical Dot Menu -->
-                                    <div class="dropdown">
-                                        <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-three-dots-vertical fs-5"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><button class="dropdown-item" type="button">View</button></li>
-                                            <li><button class="dropdown-item" type="button">Edit</button></li>
-                                            <li><button class="dropdown-item" type="button">Delete</button></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
+                            <?php if (empty($leads)): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">No leads found.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($leads as $lead): ?>
+                                    <?php
+                                    $leadName = trim($lead['name'] ?? '') !== '' ? $lead['name'] : 'Unnamed Lead';
+                                    $leadEmail = trim($lead['email'] ?? '');
+                                    $leadPhone = trim($lead['phone'] ?? '');
+                                    $stageLabel = format_lead_stage($lead['stage'] ?? '');
+                                    $stageClass = stage_badge_class($stageLabel);
+                                    $assignedName = resolve_assigned_to($lead['assigned_to'] ?? '', $users);
+                                    $sourceLabel = trim($lead['source'] ?? '') !== '' ? $lead['source'] : '—';
+                                    $avatarInitial = lead_avatar_initial($leadName);
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <div class="lead-info">
+                                                <div class="avatar"><?php echo htmlspecialchars($avatarInitial); ?></div>
+                                                <div><strong><?php echo htmlspecialchars($leadName); ?></strong></div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="contact-info">
+                                                <?php if ($leadEmail !== ''): ?>
+                                                    <span><i class="bi bi-envelope"></i> <?php echo htmlspecialchars($leadEmail); ?></span><br>
+                                                <?php endif; ?>
+                                                <?php if ($leadPhone !== ''): ?>
+                                                    <span><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($leadPhone); ?></span>
+                                                <?php endif; ?>
+                                                <?php if ($leadEmail === '' && $leadPhone === ''): ?>
+                                                    <span class="text-muted">No contact details</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="stage-badge <?php echo htmlspecialchars($stageClass); ?>"><?php echo htmlspecialchars($stageLabel); ?></div>
+                                        </td>
+                                        <td>
+                                            <div class="assigned-dropdown">
+                                                <select class="form-select assigned-select">
+                                                    <option value="" <?php echo $assignedName === '' ? 'selected' : ''; ?>>Unassigned</option>
+                                                    <?php $selectedMatchFound = false; ?>
+                                                    <?php foreach ($users as $userId => $userName): ?>
+                                                        <?php
+                                                        $isSelected = ($lead['assigned_to'] !== null && $lead['assigned_to'] !== '' && ((string) $lead['assigned_to'] === (string) $userId || strcasecmp($lead['assigned_to'], $userName) === 0));
+                                                        if ($isSelected) {
+                                                            $selectedMatchFound = true;
+                                                        }
+                                                        ?>
+                                                        <option value="<?php echo htmlspecialchars((string) $userId); ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($userName); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                    <?php if (!$selectedMatchFound && $assignedName !== ''): ?>
+                                                        <option value="<?php echo htmlspecialchars((string) ($lead['assigned_to'] ?? '')); ?>" selected>
+                                                            <?php echo htmlspecialchars($assignedName); ?>
+                                                        </option>
+                                                    <?php endif; ?>
+                                                </select>
+                                            </div>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($sourceLabel); ?></td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="bi bi-three-dots-vertical fs-5"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><button class="dropdown-item" type="button">View</button></li>
+                                                    <li><button class="dropdown-item" type="button">Edit</button></li>
+                                                    <li><button class="dropdown-item" type="button">Delete</button></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
 

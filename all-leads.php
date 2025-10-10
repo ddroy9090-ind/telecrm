@@ -422,7 +422,7 @@ include __DIR__ . '/includes/common-header.php';
                         </div>
                         <div class="stats-card-body">
                             <span class="stats-label">Conversion Rate</span>
-                            <h2 class="mb-0"><?php echo $totalLeads > 0 ? $conversionRate . '%': '0%'; ?></h2>
+                            <h2 class="mb-0"><?php echo $totalLeads > 0 ? $conversionRate . '%' : '0%'; ?></h2>
                         </div>
                         <div class="stats-card-footer">
                             <?php echo renderTrend($conversionTrend); ?>
@@ -475,14 +475,13 @@ include __DIR__ . '/includes/common-header.php';
 
             <div class="card lead-table-card">
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                    <div class="">
+                        <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
                                     <th scope="col">Name</th>
                                     <th scope="col">Contact</th>
                                     <th scope="col">Stage</th>
-                                    <th scope="col">Rating</th>
                                     <th scope="col">Assigned To</th>
                                     <th scope="col">Source</th>
                                     <th scope="col" class="text-end">Action</th>
@@ -502,46 +501,46 @@ include __DIR__ . '/includes/common-header.php';
                                 <?php else: ?>
                                     <?php foreach ($leads as $lead): ?>
                                         <?php
-                                            $stageText = $lead['stage'] ?? '';
-                                            $ratingText = $lead['rating'] ?? '';
-                                            $createdAt = $lead['created_at'] ?? null;
-                                            $formattedDate = '—';
-                                            if ($createdAt) {
-                                                $timestamp = DateTime::createFromFormat('Y-m-d H:i:s', $createdAt) ?: DateTime::createFromFormat('Y-m-d', $createdAt);
-                                                if ($timestamp) {
-                                                    $formattedDate = $timestamp->format('d M, Y');
-                                                }
+                                        $stageText = $lead['stage'] ?? '';
+                                        $ratingText = $lead['rating'] ?? '';
+                                        $createdAt = $lead['created_at'] ?? null;
+                                        $formattedDate = '—';
+                                        if ($createdAt) {
+                                            $timestamp = DateTime::createFromFormat('Y-m-d H:i:s', $createdAt) ?: DateTime::createFromFormat('Y-m-d', $createdAt);
+                                            if ($timestamp) {
+                                                $formattedDate = $timestamp->format('d M, Y');
                                             }
+                                        }
 
-        $leadName = $lead['name'] ?? 'Untitled Lead';
-        $leadPalette = avatarPalette($leadName);
-        $leadInitials = leadInitials($leadName);
-        $contactEmail = trim((string) ($lead['email'] ?? ''));
-        $contactPhone = trim((string) ($lead['phone'] ?? ''));
-        $alternatePhone = trim((string) ($lead['alternate_phone'] ?? ''));
+                                        $leadName = $lead['name'] ?? 'Untitled Lead';
+                                        $leadPalette = avatarPalette($leadName);
+                                        $leadInitials = leadInitials($leadName);
+                                        $contactEmail = trim((string) ($lead['email'] ?? ''));
+                                        $contactPhone = trim((string) ($lead['phone'] ?? ''));
+                                        $alternatePhone = trim((string) ($lead['alternate_phone'] ?? ''));
 
-        $ratingValue = ratingValue($ratingText);
-        $ratingDisplay = '';
-        if ($ratingValue !== null) {
-            if ($ratingText !== '' && !is_numeric($ratingText)) {
-                $ratingDisplay = (string) $ratingText;
-            } elseif ($ratingText !== '') {
-                $ratingDisplay = number_format((float) $ratingText, 1) . '/5';
-            } else {
-                $ratingDisplay = number_format($ratingValue, 1) . '/5';
-            }
-        } elseif ($ratingText !== '') {
-            $ratingDisplay = (string) $ratingText;
-        }
+                                        $ratingValue = ratingValue($ratingText);
+                                        $ratingDisplay = '';
+                                        if ($ratingValue !== null) {
+                                            if ($ratingText !== '' && !is_numeric($ratingText)) {
+                                                $ratingDisplay = (string) $ratingText;
+                                            } elseif ($ratingText !== '') {
+                                                $ratingDisplay = number_format((float) $ratingText, 1) . '/5';
+                                            } else {
+                                                $ratingDisplay = number_format($ratingValue, 1) . '/5';
+                                            }
+                                        } elseif ($ratingText !== '') {
+                                            $ratingDisplay = (string) $ratingText;
+                                        }
 
-        $assignedName = trim((string) ($lead['assigned_to'] ?? ''));
-        $assignedPalette = avatarPalette($assignedName !== '' ? $assignedName : 'Unassigned');
-        $assignedInitials = $assignedName !== '' ? leadInitials($assignedName) : leadInitials('Unassigned');
+                                        $assignedName = trim((string) ($lead['assigned_to'] ?? ''));
+                                        $assignedPalette = avatarPalette($assignedName !== '' ? $assignedName : 'Unassigned');
+                                        $assignedInitials = $assignedName !== '' ? leadInitials($assignedName) : leadInitials('Unassigned');
 
-        $sourceText = trim((string) ($lead['source'] ?? ''));
-        $sourceDisplay = $sourceText !== '' ? $sourceText : 'Unknown';
-        $sourceClass = sourceBadgeClass($sourceText);
-        $leadCountry = trim((string) ($lead['nationality'] ?? ''));
+                                        $sourceText = trim((string) ($lead['source'] ?? ''));
+                                        $sourceDisplay = $sourceText !== '' ? $sourceText : 'Unknown';
+                                        $sourceClass = sourceBadgeClass($sourceText);
+                                        $leadCountry = trim((string) ($lead['nationality'] ?? ''));
                                         ?>
                                         <tr>
                                             <td>
@@ -552,7 +551,6 @@ include __DIR__ . '/includes/common-header.php';
                                                     <div class="lead-info">
                                                         <div class="lead-title"><?php echo htmlspecialchars($leadName); ?></div>
                                                         <div class="lead-country<?php echo $leadCountry === '' ? ' text-muted' : ''; ?>">
-                                                            <i class="bx bx-flag"></i>
                                                             <span><?php echo $leadCountry !== '' ? htmlspecialchars($leadCountry) : 'Country not provided'; ?></span>
                                                         </div>
                                                     </div>
@@ -582,13 +580,6 @@ include __DIR__ . '/includes/common-header.php';
                                             </td>
                                             <td>
                                                 <span class="status-badge <?php echo stageBadgeClass($stageText); ?>"><?php echo $stageText !== '' ? htmlspecialchars($stageText) : 'Not set'; ?></span>
-                                            </td>
-                                            <td>
-                                                <?php if ($ratingDisplay !== ''): ?>
-                                                    <span class="rating-text-only"><?php echo htmlspecialchars($ratingDisplay); ?></span>
-                                                <?php else: ?>
-                                                    <span class="text-muted">—</span>
-                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?php if ($assignedName !== ''): ?>
@@ -651,11 +642,11 @@ include __DIR__ . '/includes/common-header.php';
     </main>
 </div>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
         const actionContainers = document.querySelectorAll('.lead-actions');
 
         function closeAllMenus(except) {
-            actionContainers.forEach(function (container) {
+            actionContainers.forEach(function(container) {
                 if (container === except) {
                     return;
                 }
@@ -669,7 +660,7 @@ include __DIR__ . '/includes/common-header.php';
             });
         }
 
-        actionContainers.forEach(function (container) {
+        actionContainers.forEach(function(container) {
             const toggleButton = container.querySelector('[data-action-toggle]');
             const menu = container.querySelector('.actions-menu');
 
@@ -677,7 +668,7 @@ include __DIR__ . '/includes/common-header.php';
                 return;
             }
 
-            toggleButton.addEventListener('click', function (event) {
+            toggleButton.addEventListener('click', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
 
@@ -693,11 +684,11 @@ include __DIR__ . '/includes/common-header.php';
             });
         });
 
-        document.addEventListener('click', function () {
+        document.addEventListener('click', function() {
             closeAllMenus();
         });
 
-        document.addEventListener('keydown', function (event) {
+        document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeAllMenus();
             }

@@ -43,7 +43,7 @@ button:focus:not(:focus-visible) {
     border: 1px #e5e7eb solid;
     background-color: #fefefe;
     font-size: 14px;
-    padding: 5px 30px;
+    padding: 8px 30px;
     /* width: 100%; */
     color: #333;
 }
@@ -307,6 +307,7 @@ button:focus:not(:focus-visible) {
 .btn-outline-secondary,
 .btn-outline-danger {
     border-radius: 5px;
+    border: none;
 }
 
 .btn-outline-secondary:hover,

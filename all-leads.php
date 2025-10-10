@@ -1324,6 +1324,21 @@ include __DIR__ . '/includes/common-header.php';
                 });
             });
 
+            const actionItems = document.querySelectorAll('.lead-actions .action-item');
+            actionItems.forEach(function(actionItem) {
+                actionItem.addEventListener('click', function(event) {
+                    event.preventDefault();
+
+                    const row = actionItem.closest('.lead-row');
+                    if (!row) {
+                        return;
+                    }
+
+                    closeAllMenus();
+                    openSidebar(row);
+                });
+            });
+
             if (closeSidebarButton) {
                 closeSidebarButton.addEventListener('click', function() {
                     closeSidebar();

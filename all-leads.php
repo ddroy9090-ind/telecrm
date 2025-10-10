@@ -400,7 +400,7 @@ include __DIR__ . '/includes/common-header.php';
                     top: 0;
                     right: 0;
                     height: 100vh;
-                    width: min(420px, 92vw);
+                    width: 50vw;
                     max-width: 100%;
                     background: #fff;
                     box-shadow: -12px 0 30px rgba(15, 23, 42, 0.08);
@@ -409,7 +409,6 @@ include __DIR__ . '/includes/common-header.php';
                     z-index: 1050;
                     display: flex;
                     flex-direction: column;
-                    border-radius: 20px 0 0 20px;
                     overflow: hidden;
                 }
 
@@ -497,8 +496,8 @@ include __DIR__ . '/includes/common-header.php';
 
                 .lead-sidebar-list li {
                     display: flex;
-                    flex-direction: column;
-                    gap: 4px;
+                    align-items: flex-start;
+                    gap: 12px;
                 }
 
                 .lead-sidebar-list .label {
@@ -514,6 +513,26 @@ include __DIR__ . '/includes/common-header.php';
                     color: #0f172a;
                     font-weight: 600;
                     word-break: break-word;
+                }
+
+                .lead-sidebar-list .detail-icon {
+                    flex-shrink: 0;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 10px;
+                    background: rgba(15, 23, 42, 0.05);
+                    color: #0f172a;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                }
+
+                .lead-sidebar-list .detail-content {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    flex: 1;
                 }
 
                 .lead-sidebar-rating {
@@ -538,7 +557,6 @@ include __DIR__ . '/includes/common-header.php';
                 @media (max-width: 768px) {
                     .lead-sidebar {
                         width: min(100%, 100vw);
-                        border-radius: 16px 16px 0 0;
                     }
 
                     .lead-sidebar.open {
@@ -882,32 +900,67 @@ include __DIR__ . '/includes/common-header.php';
                     <h3>Lead Details</h3>
                     <ul class="lead-sidebar-list">
                         <li>
-                            <span class="label">Email</span>
-                            <span class="value" data-lead-field="email">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-envelope"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Email</span>
+                                <span class="value" data-lead-field="email">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Phone</span>
-                            <span class="value" data-lead-field="phone">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-phone"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Phone</span>
+                                <span class="value" data-lead-field="phone">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Alternate Phone</span>
-                            <span class="value" data-lead-field="alternate-phone">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-phone-call"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Alternate Phone</span>
+                                <span class="value" data-lead-field="alternate-phone">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Nationality</span>
-                            <span class="value" data-lead-field="nationality">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-globe"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Nationality</span>
+                                <span class="value" data-lead-field="nationality">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Source</span>
-                            <span class="value" data-lead-field="source">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-share-alt"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Source</span>
+                                <span class="value" data-lead-field="source">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Created</span>
-                            <span class="value" data-lead-field="created-at">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-calendar"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Created</span>
+                                <span class="value" data-lead-field="created-at">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Payout Received</span>
-                            <span class="value" data-lead-field="payout-received">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-wallet"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Payout Received</span>
+                                <span class="value" data-lead-field="payout-received">Not provided</span>
+                            </div>
                         </li>
                     </ul>
                 </section>
@@ -916,32 +969,67 @@ include __DIR__ . '/includes/common-header.php';
                     <h3>Property Requirements</h3>
                     <ul class="lead-sidebar-list">
                         <li>
-                            <span class="label">Interested In</span>
-                            <span class="value" data-lead-field="interested-in">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-heart"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Interested In</span>
+                                <span class="value" data-lead-field="interested-in">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Property Type</span>
-                            <span class="value" data-lead-field="property-type">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-home"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Property Type</span>
+                                <span class="value" data-lead-field="property-type">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Location Preferences</span>
-                            <span class="value" data-lead-field="location-preferences">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-map"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Location Preferences</span>
+                                <span class="value" data-lead-field="location-preferences">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Budget Range</span>
-                            <span class="value" data-lead-field="budget-range">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-money"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Budget Range</span>
+                                <span class="value" data-lead-field="budget-range">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Size Required</span>
-                            <span class="value" data-lead-field="size-required">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-ruler"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Size Required</span>
+                                <span class="value" data-lead-field="size-required">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Purpose</span>
-                            <span class="value" data-lead-field="purpose">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-bullseye"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Purpose</span>
+                                <span class="value" data-lead-field="purpose">Not provided</span>
+                            </div>
                         </li>
                         <li>
-                            <span class="label">Urgency</span>
-                            <span class="value" data-lead-field="urgency">Not provided</span>
+                            <span class="detail-icon">
+                                <i class="bx bx-timer"></i>
+                            </span>
+                            <div class="detail-content">
+                                <span class="label">Urgency</span>
+                                <span class="value" data-lead-field="urgency">Not provided</span>
+                            </div>
                         </li>
                     </ul>
                 </section>

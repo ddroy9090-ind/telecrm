@@ -18,9 +18,9 @@ include __DIR__ . '/includes/common-header.php';
         <form action="">
             <div class="allLeads">
                 <div class="container-fluid p-0">
-                    <div class="row align-items-center">
+                    <div class="row align-items-center mb-4">
                         <div class="col-lg-5">
-                            <h1 class="main-heading">Leads Managements</h1>
+                            <h1 class="main-heading">My Leads</h1>
                             <p class="subheading">Manage and track all your real estate leads</p>
                         </div>
 
@@ -45,32 +45,6 @@ include __DIR__ . '/includes/common-header.php';
                                         </svg>Export</button>
                                 </div>
 
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row g-3 lead-stats">
-                        <div class="col-md-3">
-                            <div class="stat-card total-leads">
-                                <h6>Total Leads</h6>
-                                <h2>0</h2>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-card active-leads">
-                                <h6>Active Leads</h6>
-                                <h2>0</h2>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-card closed-leads">
-                                <h6>Closed Leads</h6>
-                                <h2>0</h2>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-card lost-leads">
-                                <h6>Lost Leads</h6>
-                                <h2>0</h2>
                             </div>
                         </div>
                     </div>
@@ -103,7 +77,6 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="filters-section" id="leadFilters">
                         <div class="filters-header d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-semibold">FILTERS</h6>
@@ -226,7 +199,7 @@ include __DIR__ . '/includes/common-header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="stage-badge proposal">Proposal</div>
+                                    <div class="stage-badge new">New</div>
                                 </td>
                                 <td>
                                     <div class="assigned-dropdown">
@@ -262,7 +235,7 @@ include __DIR__ . '/includes/common-header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="stage-badge contacted">Contacted</div>
+                                    <div class="stage-badge new">New</div>
                                 </td>
                                 <td>
                                     <div class="assigned-dropdown">
@@ -289,7 +262,6 @@ include __DIR__ . '/includes/common-header.php';
                 </div>
             </div>
         </div>
-
     </main>
 </div>
 

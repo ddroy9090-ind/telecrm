@@ -98,10 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">Add Lead</h1>
-        </div>
-
+        <h1 class="main-heading">Add Leads</h1>
+        <p class="subheading mb-4">Manage and track all your real estate leads</p>
         <div class="card">
             <div class="card-body">
                 <?php if ($successMessage): ?>

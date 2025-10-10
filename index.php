@@ -2,7 +2,7 @@
 session_start();
 
 // Check if user is logged in
-if(!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("Location: login.php");
     exit;
 }
@@ -12,13 +12,14 @@ if(!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 <div id="adminPanel">
     <!-- Sidebar -->
     <?php include 'includes/sidebar.php'; ?>
-    
+
     <!-- Topbar -->
     <?php include 'includes/topbar.php'; ?>
-    
+
     <!-- Main Content -->
     <main class="main-content">
-        <h1 class="mb-4">Dashboard</h1>
+        <h1 class="main-heading">Dashboard</h1>
+        <p class="subheading">Manage and track all your real estate leads</p>
     </main>
 </div>
 

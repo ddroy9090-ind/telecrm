@@ -1291,9 +1291,24 @@ select {
 
 .filters-section {
   background: #f9fbfc;
-  padding: 20px 25px;
+  padding: 0 25px;
   border-radius: 10px;
-  border: 1px solid #e4e9ee;
+  border: 1px solid transparent;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height 0.35s ease, opacity 0.35s ease, padding 0.35s ease,
+    margin-top 0.35s ease, border-color 0.35s ease;
+}
+
+.filters-section.is-expanded {
+  padding: 20px 25px;
+  max-height: 600px;
+  opacity: 1;
+  pointer-events: auto;
+  margin-top: 25px;
+  border-color: #e4e9ee;
 }
 
 .filters-header h6 {

@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
                 <form id="addLeadForm" action="" method="post" class="row g-3" novalidate data-reset-on-success="<?php echo $successMessage ? 'true' : 'false'; ?>">
-                    <div class="col-md-3">
+                    <div class="col-md-12">
                         <label for="source" class="form-label">Source</label>
                         <select id="source" name="source" class="form-select" data-choices>
                             <option value="" disabled <?php echo $formData['source'] === '' ? 'selected' : ''; ?>>Select source</option>

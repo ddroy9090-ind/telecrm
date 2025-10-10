@@ -35,7 +35,7 @@ if (!$mysqli->query($createUsersTable)) {
 }
 
 $createAllLeadsTable = <<<SQL
-CREATE TABLE IF NOT EXISTS `All leads` (
+CREATE TABLE IF NOT EXISTS `all_leads` (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     stage VARCHAR(50) DEFAULT NULL,
     rating VARCHAR(50) DEFAULT NULL,

@@ -9,6 +9,57 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 require_once __DIR__ . '/includes/config.php';
 include __DIR__ . '/includes/common-header.php';
 
+if (!isset($_SESSION['lead_delete_message'], $_SESSION['lead_delete_type'])) {
+    $_SESSION['lead_delete_message'] = null;
+    $_SESSION['lead_delete_type'] = null;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_lead_id'])) {
+    $deleteMessage = 'Unable to delete the selected lead. Please try again.';
+    $deleteType = 'danger';
+
+    $leadId = filter_input(INPUT_POST, 'delete_lead_id', FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1],
+    ]);
+
+    if ($leadId) {
+        $deleteStatement = $mysqli->prepare('DELETE FROM all_leads WHERE id = ?');
+        if ($deleteStatement instanceof mysqli_stmt) {
+            $deleteStatement->bind_param('i', $leadId);
+            if ($deleteStatement->execute()) {
+                if ($deleteStatement->affected_rows > 0) {
+                    $deleteMessage = 'Lead deleted successfully.';
+                    $deleteType = 'success';
+                } else {
+                    $deleteMessage = 'Lead not found or already deleted.';
+                    $deleteType = 'warning';
+                }
+            }
+            $deleteStatement->close();
+        }
+    } else {
+        $deleteMessage = 'Invalid lead selected for deletion.';
+        $deleteType = 'danger';
+    }
+
+    $_SESSION['lead_delete_message'] = $deleteMessage;
+    $_SESSION['lead_delete_type'] = $deleteType;
+
+    header('Location: all-leads.php');
+    exit;
+}
+
+$deleteFlashMessage = $_SESSION['lead_delete_message'] ?? null;
+$deleteFlashType = $_SESSION['lead_delete_type'] ?? 'info';
+
+$_SESSION['lead_delete_message'] = null;
+$_SESSION['lead_delete_type'] = null;
+
+$validAlertTypes = ['success', 'warning', 'danger', 'info'];
+if (!in_array($deleteFlashType, $validAlertTypes, true)) {
+    $deleteFlashType = 'info';
+}
+
 $leads = [];
 $leadsQuery = $mysqli->query('SELECT * FROM all_leads ORDER BY created_at DESC');
 if ($leadsQuery instanceof mysqli_result) {
@@ -92,6 +143,13 @@ function lead_avatar_initial(string $name): string
     <?php include __DIR__ . '/includes/topbar.php'; ?>
 
     <main class="main-content">
+        <?php if ($deleteFlashMessage): ?>
+            <div class="alert alert-<?php echo htmlspecialchars($deleteFlashType); ?> alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($deleteFlashMessage); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <form action="">
             <div class="allLeads">
                 <div class="container-fluid p-0">
@@ -238,6 +296,10 @@ function lead_avatar_initial(string $name): string
             </div>
         </form>
 
+        <form method="post" class="d-none" id="deleteLeadForm" data-prevent-lead-open>
+            <input type="hidden" name="delete_lead_id" id="deleteLeadInput">
+        </form>
+
         <div class="card lead-table-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -332,7 +394,7 @@ function lead_avatar_initial(string $name): string
 
                                     $leadJson = htmlspecialchars(json_encode($leadPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
                                     ?>
-                                    <tr class="lead-table-row" data-lead-json="<?php echo $leadJson; ?>" tabindex="0" role="button" aria-label="View details for <?php echo htmlspecialchars($leadName); ?>">
+                                    <tr class="lead-table-row" data-lead-json="<?php echo $leadJson; ?>" data-lead-id="<?php echo isset($lead['id']) ? (int) $lead['id'] : 0; ?>" data-lead-name="<?php echo htmlspecialchars($leadName); ?>" tabindex="0" role="button" aria-label="View details for <?php echo htmlspecialchars($leadName); ?>">
                                         <td>
                                             <div class="lead-info">
                                                 <div class="avatar"><?php echo htmlspecialchars($avatarInitial); ?></div>
@@ -381,9 +443,9 @@ function lead_avatar_initial(string $name): string
                                                     <i class="bi bi-three-dots-vertical fs-5"></i>
                                                 </button>
                                                 <ul class="dropdown-menu">
-                                                    <li><button class="dropdown-item" type="button">View</button></li>
+                                                    <li><button class="dropdown-item" type="button" data-lead-action="view">View</button></li>
                                                     <li><button class="dropdown-item" type="button">Edit</button></li>
-                                                    <li><button class="dropdown-item" type="button">Delete</button></li>
+                                                    <li><button class="dropdown-item text-danger" type="button" data-lead-action="delete" data-lead-id="<?php echo isset($lead['id']) ? (int) $lead['id'] : 0; ?>" data-lead-name="<?php echo htmlspecialchars($leadName); ?>">Delete</button></li>
                                                 </ul>
                                             </div>
                                         </td>
@@ -433,20 +495,32 @@ function lead_avatar_initial(string $name): string
                     <h3 class="lead-sidebar__section-title">Contact Information</h3>
                     <div class="lead-sidebar__details">
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Email</span>
-                            <a href="#" class="lead-sidebar__item-value" data-lead-field="email" data-empty-text="No email provided">No email provided</a>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-envelope"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Email</span>
+                                <a href="#" class="lead-sidebar__item-value" data-lead-field="email" data-empty-text="No email provided">No email provided</a>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Phone Number</span>
-                            <a href="#" class="lead-sidebar__item-value" data-lead-field="phone" data-empty-text="No phone number">No phone number</a>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-telephone"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Phone Number</span>
+                                <a href="#" class="lead-sidebar__item-value" data-lead-field="phone" data-empty-text="No phone number">No phone number</a>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Nationality</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="nationality">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-flag"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Nationality</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="nationality">—</span>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Location</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="location">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-geo-alt"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Location</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="location">—</span>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -455,20 +529,32 @@ function lead_avatar_initial(string $name): string
                     <h3 class="lead-sidebar__section-title">Property Preferences</h3>
                     <div class="lead-sidebar__details">
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Property Type</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="propertyType">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-building"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Property Type</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="propertyType">—</span>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Properties Interested In</span>
-                            <div class="lead-sidebar__chips" data-lead-field="interestedIn"></div>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-collection"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Properties Interested In</span>
+                                <div class="lead-sidebar__chips" data-lead-field="interestedIn"></div>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Budget Range</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="budget">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-cash-coin"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Budget Range</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="budget">—</span>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Timeline / Expected Move-in</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="moveIn">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-calendar-event"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Timeline / Expected Move-in</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="moveIn">—</span>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -477,20 +563,32 @@ function lead_avatar_initial(string $name): string
                     <h3 class="lead-sidebar__section-title">Lead Information</h3>
                     <div class="lead-sidebar__details">
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Source</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="source">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-megaphone"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Source</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="source">—</span>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Assigned To</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="assignedTo">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-person-check"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Assigned To</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="assignedTo">—</span>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Created At</span>
-                            <span class="lead-sidebar__item-value" data-lead-field="createdAt">—</span>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-clock-history"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Created At</span>
+                                <span class="lead-sidebar__item-value" data-lead-field="createdAt">—</span>
+                            </div>
                         </div>
                         <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-label">Tags</span>
-                            <div class="lead-sidebar__chips" data-lead-field="tags"></div>
+                            <span class="lead-sidebar__item-icon"><i class="bi bi-tags"></i></span>
+                            <div class="lead-sidebar__item-content">
+                                <span class="lead-sidebar__item-label">Tags</span>
+                                <div class="lead-sidebar__chips" data-lead-field="tags"></div>
+                            </div>
                         </div>
                     </div>
                 </section>

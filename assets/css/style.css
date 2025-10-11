@@ -320,8 +320,28 @@ button:focus:not(:focus-visible) {
 
 .lead-sidebar__item {
     display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.lead-sidebar__item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #02796f;
+    font-size: 16px;
+    flex: 0 0 auto;
+}
+
+.lead-sidebar__item-content {
+    display: flex;
     flex-direction: column;
     gap: 6px;
+    flex: 1 1 auto;
 }
 
 .lead-sidebar__item-label {

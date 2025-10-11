@@ -263,8 +263,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const sidebarForm = leadSidebar.querySelector('[data-lead-form]');
   const sidebarFeedback = leadSidebar.querySelector('[data-lead-feedback]');
   const editButton = leadSidebar.querySelector('[data-action="edit"]');
-  const cancelEditButton = leadSidebar.querySelector('[data-action="cancel-edit"]');
-  const saveButton = leadSidebar.querySelector('[data-action="save-lead"]');
   const ratingStars = leadSidebar.querySelectorAll('[data-rating-star]');
   const remarksContainer = leadSidebar.querySelector('[data-lead-remarks]');
   const filesContainer = leadSidebar.querySelector('[data-lead-files]');
@@ -299,8 +297,32 @@ document.addEventListener("DOMContentLoaded", function () {
   const idInput = sidebarForm ? sidebarForm.querySelector('[data-edit-id]') : null;
 
   let isEditing = false;
+  let isSaving = false;
   let currentLeadData = null;
   let currentLeadRow = null;
+
+  const updateEditButtonState = () => {
+    if (!editButton) {
+      return;
+    }
+
+    const label = isSaving
+      ? 'Saving lead details'
+      : isEditing
+        ? 'Save lead details'
+        : 'Edit lead details';
+    const iconClass = isEditing || isSaving ? 'bi bi-save' : 'bi bi-pencil-square';
+
+    editButton.setAttribute('aria-label', label);
+    editButton.setAttribute('title', label);
+
+    const icon = editButton.querySelector('i');
+    if (icon) {
+      icon.className = iconClass;
+    }
+  };
+
+  updateEditButtonState();
 
   const setOverlayVisibility = (isVisible) => {
     if (overlayHideTimer) {
@@ -534,10 +556,18 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!shouldEdit && currentLeadData) {
         applyFormValues(currentLeadData);
       }
+      updateEditButtonState();
       return;
     }
 
     isEditing = shouldEdit;
+    isSaving = false;
+
+    if (editButton) {
+      editButton.disabled = false;
+      editButton.removeAttribute('aria-busy');
+    }
+
     leadSidebar.classList.toggle('is-editing', isEditing);
 
     Object.values(editableFields).forEach((field) => {
@@ -560,16 +590,25 @@ document.addEventListener("DOMContentLoaded", function () {
     } else if (currentLeadData) {
       applyFormValues(currentLeadData);
     }
+
+    updateEditButtonState();
   };
 
-  const setSavingState = (isSaving) => {
-    if (!saveButton) {
+  const setSavingState = (nextState) => {
+    isSaving = Boolean(nextState);
+
+    if (!editButton) {
       return;
     }
 
-    saveButton.disabled = Boolean(isSaving);
-    saveButton.classList.toggle('is-loading', Boolean(isSaving));
-    saveButton.setAttribute('aria-busy', isSaving ? 'true' : 'false');
+    editButton.disabled = isSaving;
+    if (isSaving) {
+      editButton.setAttribute('aria-busy', 'true');
+    } else {
+      editButton.removeAttribute('aria-busy');
+    }
+
+    updateEditButtonState();
   };
 
   const normalizeInputValue = (input) => {
@@ -1060,24 +1099,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (editButton) {
     editButton.addEventListener('click', () => {
-      if (!currentLeadData) {
+      if (!currentLeadData || isSaving) {
         return;
       }
-      setEditing(true);
-    });
-  }
 
-  if (cancelEditButton) {
-    cancelEditButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      setEditing(false);
-      clearFeedback();
-    });
-  }
+      if (!isEditing) {
+        setEditing(true);
+        return;
+      }
 
-  if (saveButton) {
-    saveButton.addEventListener('click', (event) => {
-      event.preventDefault();
       if (sidebarForm) {
         sidebarForm.requestSubmit();
       }

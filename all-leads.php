@@ -1799,7 +1799,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                             </div>
                             <div class="lead-sidebar-tabpanels">
                                 <div class="lead-sidebar-panel is-active" data-tab-panel="remarks" role="tabpanel">
-                                    <div class="lead-remarks" data-lead-remarks></div>
+                                    <div class="lead-remarks" data-lead-remarks role="log" aria-live="polite" aria-label="Lead remarks"></div>
                                     <form class="lead-remark-form" action="#" method="post" onsubmit="return false;">
                                         <label for="leadRemarkInput" class="form-label">Add Remark</label>
                                         <textarea id="leadRemarkInput" class="form-control" rows="3" placeholder="Add a note about this lead..."></textarea>

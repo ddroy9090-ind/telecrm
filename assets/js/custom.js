@@ -270,6 +270,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const remarkForm = leadSidebar.querySelector('.lead-remark-form');
   const remarkInput = remarkForm ? remarkForm.querySelector('textarea') : null;
   const remarkFileInput = remarkForm ? remarkForm.querySelector('.lead-file-upload__input') : null;
+  let highlightNextRemark = false;
   const filesUploadInput = leadSidebar.querySelector('[data-tab-panel="files"] .lead-file-upload__input');
   const tabs = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-tab"));
   const panels = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-panel"));
@@ -901,36 +902,72 @@ document.addEventListener("DOMContentLoaded", function () {
     remarksContainer.innerHTML = "";
     const items = Array.isArray(remarks) ? remarks : [];
 
-    const dataset = items.length
-      ? items
-      : [
-          {
-            author: fallbackAuthor || "System",
-            timestamp: fallbackTimestamp || "—",
-            text: "Lead created in the system.",
-            attachments: [],
-          },
-        ];
+    const sanitizedRemarks = items
+      .map((remark) => {
+        const author = remark?.author && String(remark.author).trim() !== "" ? String(remark.author).trim() : null;
+        const timestamp = remark?.timestamp && String(remark.timestamp).trim() !== "" ? String(remark.timestamp).trim() : null;
+        const text = remark?.text && String(remark.text).trim() !== "" ? String(remark.text).trim() : null;
+        const attachments = Array.isArray(remark?.attachments)
+          ? remark.attachments
+              .map((file) => ({
+                name: file?.name && String(file.name).trim() !== "" ? String(file.name).trim() : "Attachment",
+                url: file?.url || file?.path || "",
+              }))
+              .filter((file) => file.url !== "")
+          : [];
 
-    dataset.forEach((remark) => {
+        return {
+          author: author || "Team",
+          timestamp: timestamp || "—",
+          text: text || "No remark details provided.",
+          attachments,
+        };
+      })
+      .filter((remark) => remark.text || remark.attachments.length);
+
+    if (!sanitizedRemarks.length) {
+      const empty = document.createElement("p");
+      empty.className = "lead-empty-state lead-remarks__empty";
+      empty.textContent = "No remarks yet. Add one to keep track of updates.";
+      remarksContainer.appendChild(empty);
+      remarksContainer.setAttribute("data-has-remarks", "false");
+      highlightNextRemark = false;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    let highlightedRemark = null;
+
+    sanitizedRemarks.forEach((remark, index) => {
       const remarkBlock = document.createElement("div");
       remarkBlock.className = "lead-remark";
 
       const meta = document.createElement("div");
       meta.className = "lead-remark__meta";
+
       const author = document.createElement("span");
-      author.textContent = remark.author || "Team";
+      author.className = "lead-remark__author";
+      author.textContent = remark.author;
+
+      const separator = document.createElement("span");
+      separator.className = "lead-remark__separator";
+      separator.textContent = "•";
+
       const time = document.createElement("span");
-      time.textContent = remark.timestamp || "—";
-      meta.append(author, time);
+      time.className = "lead-remark__timestamp";
+      time.textContent = remark.timestamp;
+
+      meta.append(author);
+      meta.append(separator);
+      meta.append(time);
 
       const text = document.createElement("div");
       text.className = "lead-remark__text";
-      text.textContent = remark.text || "No remark details provided.";
+      text.textContent = remark.text;
 
       remarkBlock.append(meta, text);
 
-      if (Array.isArray(remark.attachments) && remark.attachments.length) {
+      if (remark.attachments.length) {
         const attachmentsWrapper = document.createElement("div");
         attachmentsWrapper.className = "lead-remark__attachments";
 
@@ -938,16 +975,35 @@ document.addEventListener("DOMContentLoaded", function () {
           const attachmentLink = document.createElement("a");
           attachmentLink.className = "lead-remark__attachment";
           attachmentLink.textContent = file.name || "Attachment";
-          attachmentLink.href = file.url || file.path || "#";
+          attachmentLink.href = file.url;
           attachmentLink.target = "_blank";
+          attachmentLink.rel = "noreferrer noopener";
           attachmentsWrapper.appendChild(attachmentLink);
         });
 
         remarkBlock.appendChild(attachmentsWrapper);
       }
 
-      remarksContainer.appendChild(remarkBlock);
+      if (highlightNextRemark && index === 0) {
+        remarkBlock.classList.add("is-new");
+        remarkBlock.setAttribute("tabindex", "-1");
+        highlightedRemark = remarkBlock;
+      }
+
+      fragment.appendChild(remarkBlock);
     });
+
+    remarksContainer.appendChild(fragment);
+    remarksContainer.setAttribute("data-has-remarks", "true");
+
+    if (highlightedRemark) {
+      requestAnimationFrame(() => {
+        highlightedRemark.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        highlightedRemark.focus?.();
+      });
+    }
+
+    highlightNextRemark = false;
   };
 
   const renderFiles = (files) => {
@@ -1336,6 +1392,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
         .then((response) => parseJsonResponse(response, 'Unable to save the remark.'))
         .then((data) => {
+          highlightNextRemark = true;
           applyLeadResponse(data.lead);
           const successMessage = data.message || 'Remark saved successfully.';
           showFeedback(successMessage, 'success');

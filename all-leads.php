@@ -60,15 +60,6 @@ if (!in_array($deleteFlashType, $validAlertTypes, true)) {
     $deleteFlashType = 'info';
 }
 
-$leads = [];
-$leadsQuery = $mysqli->query('SELECT * FROM all_leads ORDER BY created_at DESC');
-if ($leadsQuery instanceof mysqli_result) {
-    while ($row = $leadsQuery->fetch_assoc()) {
-        $leads[] = $row;
-    }
-    $leadsQuery->free();
-}
-
 $users = [];
 $usersQuery = $mysqli->query('SELECT id, full_name FROM users ORDER BY full_name ASC');
 if ($usersQuery instanceof mysqli_result) {
@@ -228,6 +219,153 @@ $ratingOptions = [
     'Hot',
     'Nurture',
 ];
+
+$stageFilterOptions = $stageOptions;
+$dynamicStageLabels = [];
+$distinctStageQuery = $mysqli->query('SELECT DISTINCT stage FROM all_leads WHERE stage IS NOT NULL AND stage <> ""');
+if ($distinctStageQuery instanceof mysqli_result) {
+    while ($stageRow = $distinctStageQuery->fetch_assoc()) {
+        $formattedStage = format_lead_stage($stageRow['stage'] ?? '');
+        if ($formattedStage !== '' && !in_array($formattedStage, $dynamicStageLabels, true)) {
+            $dynamicStageLabels[] = $formattedStage;
+        }
+    }
+    $distinctStageQuery->free();
+}
+$stageFilterOptions = array_values(array_unique(array_merge($stageFilterOptions, $dynamicStageLabels)));
+
+$assignedFilterOptions = array_values(array_filter(array_map('trim', $users), static function ($value) {
+    return $value !== '';
+}));
+$assignedQuery = $mysqli->query('SELECT DISTINCT assigned_to FROM all_leads WHERE assigned_to IS NOT NULL AND assigned_to <> "" ORDER BY assigned_to ASC');
+if ($assignedQuery instanceof mysqli_result) {
+    while ($assignedRow = $assignedQuery->fetch_assoc()) {
+        $assignedName = trim((string) ($assignedRow['assigned_to'] ?? ''));
+        if ($assignedName !== '' && !in_array($assignedName, $assignedFilterOptions, true)) {
+            $assignedFilterOptions[] = $assignedName;
+        }
+    }
+    $assignedQuery->free();
+}
+sort($assignedFilterOptions, SORT_NATURAL | SORT_FLAG_CASE);
+
+$sourceFilterOptions = [];
+$sourceQuery = $mysqli->query('SELECT DISTINCT source FROM all_leads WHERE source IS NOT NULL AND source <> "" ORDER BY source ASC');
+if ($sourceQuery instanceof mysqli_result) {
+    while ($sourceRow = $sourceQuery->fetch_assoc()) {
+        $sourceValue = trim((string) ($sourceRow['source'] ?? ''));
+        if ($sourceValue !== '' && !in_array($sourceValue, $sourceFilterOptions, true)) {
+            $sourceFilterOptions[] = $sourceValue;
+        }
+    }
+    $sourceQuery->free();
+}
+
+$filterStage = isset($_GET['stage']) ? trim((string) $_GET['stage']) : '';
+if (strcasecmp($filterStage, 'all') === 0) {
+    $filterStage = '';
+}
+
+$filterAssignedTo = isset($_GET['assigned_to']) ? trim((string) $_GET['assigned_to']) : '';
+$filterSource = isset($_GET['source']) ? trim((string) $_GET['source']) : '';
+$filterNationality = isset($_GET['nationality']) ? trim((string) $_GET['nationality']) : '';
+$filterSearch = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
+
+if (strlen($filterStage) > 100) {
+    $filterStage = function_exists('mb_substr') ? mb_substr($filterStage, 0, 100, 'UTF-8') : substr($filterStage, 0, 100);
+}
+if (strlen($filterAssignedTo) > 255) {
+    $filterAssignedTo = function_exists('mb_substr') ? mb_substr($filterAssignedTo, 0, 255, 'UTF-8') : substr($filterAssignedTo, 0, 255);
+}
+if (strlen($filterSource) > 100) {
+    $filterSource = function_exists('mb_substr') ? mb_substr($filterSource, 0, 100, 'UTF-8') : substr($filterSource, 0, 100);
+}
+if (strlen($filterNationality) > 100) {
+    $filterNationality = function_exists('mb_substr') ? mb_substr($filterNationality, 0, 100, 'UTF-8') : substr($filterNationality, 0, 100);
+}
+if (strlen($filterSearch) > 255) {
+    $filterSearch = function_exists('mb_substr') ? mb_substr($filterSearch, 0, 255, 'UTF-8') : substr($filterSearch, 0, 255);
+}
+
+$whereClauses = [];
+$queryParams = [];
+$paramTypes = '';
+
+if ($filterStage !== '') {
+    $whereClauses[] = '`stage` LIKE ?';
+    $queryParams[] = '%' . $filterStage . '%';
+    $paramTypes .= 's';
+}
+
+if ($filterAssignedTo !== '') {
+    if ($filterAssignedTo === '__unassigned__') {
+        $whereClauses[] = "(`assigned_to` IS NULL OR `assigned_to` = '')";
+    } else {
+        $whereClauses[] = '`assigned_to` = ?';
+        $queryParams[] = $filterAssignedTo;
+        $paramTypes .= 's';
+    }
+}
+
+if ($filterSource !== '') {
+    $whereClauses[] = '`source` = ?';
+    $queryParams[] = $filterSource;
+    $paramTypes .= 's';
+}
+
+if ($filterNationality !== '') {
+    $whereClauses[] = '`nationality` LIKE ?';
+    $queryParams[] = '%' . $filterNationality . '%';
+    $paramTypes .= 's';
+}
+
+if ($filterSearch !== '') {
+    $searchTerm = '%' . $filterSearch . '%';
+    $whereClauses[] = '(`name` LIKE ? OR `email` LIKE ? OR `phone` LIKE ?)';
+    $queryParams[] = $searchTerm;
+    $queryParams[] = $searchTerm;
+    $queryParams[] = $searchTerm;
+    $paramTypes .= 'sss';
+}
+
+$querySql = 'SELECT * FROM all_leads';
+if (!empty($whereClauses)) {
+    $querySql .= ' WHERE ' . implode(' AND ', $whereClauses);
+}
+$querySql .= ' ORDER BY created_at DESC';
+
+$leads = [];
+if (!empty($queryParams)) {
+    $statement = $mysqli->prepare($querySql);
+    if ($statement instanceof mysqli_stmt) {
+        $bindParams = array_merge([$paramTypes], $queryParams);
+        $bindReferences = [];
+        foreach ($bindParams as $key => &$value) {
+            $bindReferences[$key] = &$value;
+        }
+        unset($value);
+
+        $bindResult = $statement->bind_param(...$bindReferences);
+        if ($bindResult && $statement->execute()) {
+            $result = $statement->get_result();
+            if ($result instanceof mysqli_result) {
+                while ($row = $result->fetch_assoc()) {
+                    $leads[] = $row;
+                }
+                $result->free();
+            }
+        }
+        $statement->close();
+    }
+} else {
+    $leadsQuery = $mysqli->query($querySql);
+    if ($leadsQuery instanceof mysqli_result) {
+        while ($row = $leadsQuery->fetch_assoc()) {
+            $leads[] = $row;
+        }
+        $leadsQuery->free();
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['action'] === 'update-lead')) {
     header('Content-Type: application/json; charset=utf-8');
@@ -395,7 +533,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
             </div>
         <?php endif; ?>
 
-        <form action="">
+        <form method="get" action="all-leads.php">
             <div class="allLeads">
                 <div class="container-fluid p-0">
                     <div class="row align-items-center">
@@ -458,7 +596,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                         <div class="col-lg-10">
                             <div class="lead-search">
                                 <div class="form-group">
-                                    <input type="text" class="form-control"
+                                    <input type="text" class="form-control" name="search"
+                                        value="<?php echo htmlspecialchars($filterSearch); ?>"
                                         placeholder="Search leads by name, email, or phone...">
                                     <span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -487,7 +626,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                     <div class="filters-section" id="leadFilters">
                         <div class="filters-header d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-semibold">FILTERS</h6>
-                            <a href="#" class="clear-all"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x ">
+                            <a href="all-leads.php" class="clear-all"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x ">
                                     <path d="M18 6 6 18"></path>
                                     <path d="m6 6 12 12"></path>
                                 </svg> Clear All</a>
@@ -496,31 +635,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                         <div class="row g-3 align-items-end">
                             <div class="col-md-2">
                                 <label class="form-label">Stage</label>
-                                <select class="form-select">
-                                    <option>All</option>
-                                    <option>New</option>
-                                    <option>Contacted</option>
-                                    <option>Qualified</option>
-                                    <option>Proposal</option>
-                                    <option>Closed</option>
+                                <select class="form-select" name="stage">
+                                    <option value="">All</option>
+                                    <?php foreach ($stageFilterOptions as $stageOption): ?>
+                                        <option value="<?php echo htmlspecialchars($stageOption); ?>" <?php echo strcasecmp($filterStage, $stageOption) === 0 ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($stageOption); ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Assigned To</label>
-                                <select class="form-select">
-                                    <option>All</option>
-                                    <option>John Smith</option>
-                                    <option>Sarah Lee</option>
-                                    <option>David Brown</option>
+                                <select class="form-select" name="assigned_to">
+                                    <option value="">All</option>
+                                    <option value="__unassigned__" <?php echo $filterAssignedTo === '__unassigned__' ? 'selected' : ''; ?>>Unassigned</option>
+                                    <?php foreach ($assignedFilterOptions as $assignedOption): ?>
+                                        <option value="<?php echo htmlspecialchars($assignedOption); ?>" <?php echo strcasecmp($filterAssignedTo, $assignedOption) === 0 ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($assignedOption); ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Source</label>
-                                <select class="form-select">
-                                    <option>All</option>
-                                    <option>Website Inquiry</option>
-                                    <option>Agent Referral</option>
-                                    <option>Social Media</option>
+                                <select class="form-select" name="source">
+                                    <option value="">All</option>
+                                    <?php foreach ($sourceFilterOptions as $sourceOption): ?>
+                                        <option value="<?php echo htmlspecialchars($sourceOption); ?>" <?php echo strcasecmp($filterSource, $sourceOption) === 0 ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($sourceOption); ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -533,7 +677,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Nationality</label>
-                                <input type="text" class="form-control" placeholder="e.g., UAE">
+                                <input type="text" class="form-control" name="nationality"
+                                    value="<?php echo htmlspecialchars($filterNationality); ?>" placeholder="e.g., UAE">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col text-end">
+                                <button type="submit" class="btn btn-primary">Apply Filters</button>
                             </div>
                         </div>
                     </div>

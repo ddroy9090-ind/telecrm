@@ -2000,6 +2000,44 @@ select {
     color: #166534;
 }
 
+.stage-badge.follow-up-in-progress {
+  background: #d8e7e7;
+  color: #024b43;
+}
+
+
+
+.stage-badge.meeting-scheduled {
+  background: #fff2cc;
+  color: #7a5a00;
+}
+
+.stage-badge.meeting-done {
+  background: #e6e6e6;  /* neutral grey */
+  color: #2e2e2e;
+}
+
+.stage-badge.offer-made {
+  background: #d8e6ff;  /* light blue */
+  color: #003f88;
+}
+
+.stage-badge.negotiation {
+  background: #e9d8f6;  /* soft lavender */
+  color: #572b82;
+}
+
+.stage-badge.site-visit {
+  background: #d8f5e6;  /* mint green */
+  color: #046b47;
+}
+
+.stage-badge.closed {
+  background: #e6ffe9;  /* success green */
+  color: #166534;
+}
+
+
 
 .right-align {
     display: flex;

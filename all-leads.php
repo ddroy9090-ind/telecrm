@@ -658,7 +658,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                     <div class="lead-sidebar__header-content">
                         <div class="lead-sidebar__header-text">
                             <p class="lead-sidebar__header-title">Lead Details</p>
-                            <p class="lead-sidebar__header-subtitle">Complete information and activity history</p>
+                            <!-- <p class="lead-sidebar__header-subtitle">Complete information and activity history</p> -->
                         </div>
                         <div class="lead-sidebar__profile">
                             <div class="lead-sidebar__avatar" data-lead-field="avatarInitial">J</div>

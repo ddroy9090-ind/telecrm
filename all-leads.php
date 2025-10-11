@@ -350,6 +350,10 @@ function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
             }
             $historyEntry['type'] = $activityType;
 
+            if (!empty($metadata)) {
+                $historyEntry['metadata'] = $metadata;
+            }
+
             $activities[$leadId]['history'][] = $historyEntry;
 
             if ($activityType === 'remark') {
@@ -399,6 +403,15 @@ function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
 
                 if ($actorName !== '') {
                     $fileEntry['uploadedBy'] = $actorName;
+                }
+
+                // Surface file metadata for history rendering.
+                $historyIndex = count($activities[$leadId]['history']) - 1;
+                if ($historyIndex >= 0) {
+                    $activities[$leadId]['history'][$historyIndex]['file'] = [
+                        'name' => $fileName,
+                        'url' => $fileUrl,
+                    ];
                 }
 
                 $activities[$leadId]['files'][] = $fileEntry;

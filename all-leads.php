@@ -167,7 +167,8 @@ function ensure_lead_activity_table(mysqli $mysqli): bool
         return true;
     }
 
-    $createSql = <<<SQL
+    $tableDefinitions = [
+        <<<SQL
 CREATE TABLE IF NOT EXISTS `lead_activity_log` (
     `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
     `lead_id` INT(10) UNSIGNED NOT NULL,
@@ -182,11 +183,31 @@ CREATE TABLE IF NOT EXISTS `lead_activity_log` (
     KEY `lead_activity_type` (`activity_type`),
     CONSTRAINT `lead_activity_log_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-SQL;
+SQL,
+        <<<SQL
+CREATE TABLE IF NOT EXISTS `lead_activity_log` (
+    `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `lead_id` INT(10) UNSIGNED NOT NULL,
+    `activity_type` VARCHAR(50) NOT NULL,
+    `description` TEXT NOT NULL,
+    `metadata` LONGTEXT DEFAULT NULL,
+    `created_by` INT(10) UNSIGNED DEFAULT NULL,
+    `created_by_name` VARCHAR(255) DEFAULT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `lead_activity_lead_id` (`lead_id`),
+    KEY `lead_activity_type` (`activity_type`),
+    CONSTRAINT `lead_activity_log_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL,
+    ];
 
-    if ($mysqli->query($createSql)) {
-        $isReady = true;
-    } else {
+    foreach ($tableDefinitions as $definition) {
+        if ($mysqli->query($definition)) {
+            $isReady = true;
+            break;
+        }
+
         error_log('Unable to create lead_activity_log table: ' . $mysqli->error);
     }
 

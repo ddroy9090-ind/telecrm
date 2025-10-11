@@ -572,24 +572,56 @@ document.addEventListener("DOMContentLoaded", function () {
     saveButton.setAttribute('aria-busy', isSaving ? 'true' : 'false');
   };
 
+  const normalizeInputValue = (input) => {
+    if (!input) {
+      return '';
+    }
+
+    if (input instanceof HTMLInputElement) {
+      if (input.type === 'checkbox' || input.type === 'radio') {
+        return input.checked ? input.value : '';
+      }
+
+      return input.value ?? '';
+    }
+
+    if (input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement) {
+      return input.value ?? '';
+    }
+
+    return String(input.value ?? '');
+  };
+
   const gatherFormPayload = () => {
     if (!sidebarForm) {
       return null;
     }
 
-    const formData = new FormData(sidebarForm);
     const payload = {};
 
-    Object.keys(formFieldMap).forEach((fieldKey) => {
-      if (!editableFields[fieldKey]) {
+    Object.entries(formFieldMap).forEach(([fieldKey, payloadKey]) => {
+      const field = editableFields[fieldKey];
+      if (!field) {
         return;
       }
 
-      const rawValue = formData.get(fieldKey);
-      payload[fieldKey] = rawValue === null ? '' : String(rawValue).trim();
+      if (field.input) {
+        payload[fieldKey] = normalizeInputValue(field.input).trim();
+        return;
+      }
+
+      if (currentLeadData && Object.prototype.hasOwnProperty.call(currentLeadData, payloadKey)) {
+        const existingValue = currentLeadData[payloadKey];
+        payload[fieldKey] = Array.isArray(existingValue)
+          ? existingValue.join(', ').trim()
+          : String(existingValue ?? '').trim();
+        return;
+      }
+
+      payload[fieldKey] = '';
     });
 
-    const idValue = formData.get('id') ?? currentLeadData?.id ?? '';
+    const idValue = idInput?.value ?? currentLeadData?.id ?? '';
     payload.id = Number(idValue || 0);
 
     return payload;

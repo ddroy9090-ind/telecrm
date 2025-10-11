@@ -264,6 +264,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const tabs = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-tab"));
   const panels = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-panel"));
   const closeButton = leadSidebar.querySelector('[data-action="close"]');
+  const deleteForm = document.getElementById("deleteLeadForm");
+  const deleteInput = document.getElementById("deleteLeadInput");
 
   const setOverlayVisibility = (isVisible) => {
     if (overlayHideTimer) {
@@ -712,31 +714,106 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const interactiveSelectors = "a, button, select, input, textarea, label, [data-prevent-lead-open], .dropdown-menu";
 
+  const closeDropdownMenu = (element) => {
+    if (!element) {
+      return;
+    }
+
+    const dropdown = element.closest(".dropdown");
+    if (!dropdown) {
+      return;
+    }
+
+    const toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+    if (toggle && typeof bootstrap !== "undefined" && bootstrap.Dropdown) {
+      const dropdownInstance =
+        bootstrap.Dropdown.getInstance(toggle) || new bootstrap.Dropdown(toggle);
+      dropdownInstance.hide();
+      return;
+    }
+
+    dropdown.classList.remove("show");
+    const menu = dropdown.querySelector(".dropdown-menu");
+    if (menu) {
+      menu.classList.remove("show");
+    }
+  };
+
+  const openLeadFromRow = (row, trigger = null) => {
+    if (!row) {
+      return;
+    }
+
+    const payload = row.dataset.leadJson;
+    if (!payload) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(payload);
+      populateSidebar(parsed);
+      activeTrigger = trigger || row;
+      openSidebar();
+    } catch (error) {
+      console.error("Failed to parse lead data", error);
+    }
+  };
+
   leadTable.querySelectorAll("tbody tr[data-lead-json]").forEach((row) => {
     row.addEventListener("click", (event) => {
       if (event.target.closest(interactiveSelectors)) {
         return;
       }
 
-      const payload = row.dataset.leadJson;
-      if (!payload) {
-        return;
-      }
-
-      try {
-        const parsed = JSON.parse(payload);
-        populateSidebar(parsed);
-        activeTrigger = row;
-        openSidebar();
-      } catch (error) {
-        console.error("Failed to parse lead data", error);
-      }
+      openLeadFromRow(row);
     });
 
     row.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        row.click();
+        openLeadFromRow(row);
+      }
+    });
+  });
+
+  const actionButtons = leadTable.querySelectorAll("[data-lead-action]");
+  actionButtons.forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const action = button.getAttribute("data-lead-action");
+      if (!action) {
+        return;
+      }
+
+      if (action === "view") {
+        const row = button.closest("tr[data-lead-json]");
+        if (row) {
+          closeDropdownMenu(button);
+          openLeadFromRow(row, button);
+        }
+        return;
+      }
+
+      if (action === "delete") {
+        const leadId = Number(button.getAttribute("data-lead-id") || 0);
+        if (!leadId || !deleteForm || !deleteInput) {
+          closeDropdownMenu(button);
+          return;
+        }
+
+        const leadName = button.getAttribute("data-lead-name") || "";
+        const confirmationMessage = leadName
+          ? `Are you sure you want to delete "${leadName}"? This action cannot be undone.`
+          : "Are you sure you want to delete this lead? This action cannot be undone.";
+
+        closeDropdownMenu(button);
+
+        if (window.confirm(confirmationMessage)) {
+          deleteInput.value = String(leadId);
+          deleteForm.submit();
+        }
       }
     });
   });

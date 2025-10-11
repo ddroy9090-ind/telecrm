@@ -652,9 +652,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
             <div class="lead-sidebar__inner">
                 <header class="lead-sidebar__header">
                     <div class="lead-sidebar__header-background"></div>
-                    <button type="button" class="lead-sidebar__close" data-action="close" aria-label="Close lead details">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
+                    <div class="lead-sidebar__header-actions">
+                        <button type="button" class="lead-sidebar__action-btn lead-sidebar__edit" data-action="edit" aria-label="Edit lead details">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button type="button" class="lead-sidebar__action-btn lead-sidebar__close" data-action="close" aria-label="Close lead details">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
                     <div class="lead-sidebar__header-content">
                         <div class="lead-sidebar__header-text">
                             <p class="lead-sidebar__header-title">Lead Details</p>
@@ -666,9 +671,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                 <div class="lead-sidebar__title-row" data-edit-field="name">
                                     <h2 class="lead-sidebar__name" data-lead-field="name" data-role="display">Lead Name</h2>
                                     <input type="text" class="form-control lead-sidebar__input lead-sidebar__name-input" data-role="input" name="name" placeholder="Enter lead name">
-                                    <button type="button" class="lead-sidebar__edit" data-action="edit" aria-label="Edit lead details">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
                                 </div>
                                 <div class="lead-sidebar__status-group">
                                     <div class="lead-sidebar__stage" data-edit-field="stage">
@@ -897,10 +899,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                         </section>
                     </form>
                 </div>
-                <footer class="lead-sidebar__footer">
-                    <button type="button" class="btn btn-light lead-sidebar__footer-btn" data-action="cancel-edit">Cancel</button>
-                    <button type="submit" class="btn btn-primary lead-sidebar__footer-btn" data-action="save-lead" form="leadSidebarForm">Save Changes</button>
-                </footer>
             </div>
         </aside>
     </main>

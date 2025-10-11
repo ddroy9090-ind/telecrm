@@ -267,6 +267,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const remarksContainer = leadSidebar.querySelector('[data-lead-remarks]');
   const filesContainer = leadSidebar.querySelector('[data-lead-files]');
   const historyContainer = leadSidebar.querySelector('[data-lead-history]');
+  const remarkForm = leadSidebar.querySelector('.lead-remark-form');
+  const remarkInput = remarkForm ? remarkForm.querySelector('textarea') : null;
+  const remarkFileInput = remarkForm ? remarkForm.querySelector('.lead-file-upload__input') : null;
+  const filesUploadInput = leadSidebar.querySelector('[data-tab-panel="files"] .lead-file-upload__input');
   const tabs = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-tab"));
   const panels = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-panel"));
   const closeButton = leadSidebar.querySelector('[data-action="close"]');
@@ -486,6 +490,66 @@ document.addEventListener("DOMContentLoaded", function () {
       sidebarFeedback.classList.add('is-error');
     } else {
       sidebarFeedback.classList.add('is-success');
+    }
+  };
+
+  const parseJsonResponse = (response, fallbackMessage = 'Unable to process the request.') =>
+    response
+      .json()
+      .catch(() => ({}))
+      .then((data) => {
+        if (!response.ok || data?.success === false) {
+          const errorMessage = data?.message || fallbackMessage;
+          throw new Error(errorMessage);
+        }
+        return data;
+      });
+
+  const setRemarkFormSubmitting = (isSubmitting) => {
+    if (!remarkForm) {
+      return;
+    }
+
+    remarkForm.classList.toggle('is-loading', Boolean(isSubmitting));
+    const formElements = remarkForm.querySelectorAll('textarea, input, button');
+    formElements.forEach((element) => {
+      element.disabled = Boolean(isSubmitting);
+    });
+  };
+
+  const setFilesUploading = (isUploading) => {
+    if (!filesUploadInput) {
+      return;
+    }
+
+    filesUploadInput.disabled = Boolean(isUploading);
+    filesUploadInput.setAttribute('aria-busy', String(Boolean(isUploading)));
+
+    if (isUploading) {
+      filesUploadInput.classList.add('is-uploading');
+    } else {
+      filesUploadInput.classList.remove('is-uploading');
+    }
+  };
+
+  const applyLeadResponse = (leadResponse) => {
+    if (!leadResponse) {
+      return;
+    }
+
+    const { row, payload, json } = leadResponse;
+
+    if (row && typeof row.id !== 'undefined') {
+      const updatedRow = updateTableRowDom(row, json || leadResponse.json);
+      if (updatedRow) {
+        currentLeadRow = updatedRow;
+      }
+    } else if (json && currentLeadRow) {
+      currentLeadRow.dataset.leadJson = json;
+    }
+
+    if (payload) {
+      populateSidebar(payload);
     }
   };
 
@@ -905,9 +969,24 @@ document.addEventListener("DOMContentLoaded", function () {
     items.forEach((file) => {
       const item = document.createElement("a");
       item.className = "lead-remark__attachment";
-      item.textContent = file.name || "Document";
-      item.href = file.url || "#";
+      const fileName = file?.name || "Document";
+      const fileUrl = file?.url || "#";
+      item.textContent = fileName;
+      item.href = fileUrl;
       item.target = "_blank";
+      item.rel = "noreferrer noopener";
+
+      const metaParts = [];
+      if (file?.uploadedBy) {
+        metaParts.push(String(file.uploadedBy));
+      }
+      if (file?.timestamp) {
+        metaParts.push(String(file.timestamp));
+      }
+      if (metaParts.length) {
+        item.title = metaParts.join(' • ');
+      }
+
       filesContainer.appendChild(item);
     });
   };
@@ -931,9 +1010,23 @@ document.addEventListener("DOMContentLoaded", function () {
     entries.forEach((entry) => {
       const item = document.createElement("div");
       item.className = "lead-history__item";
+      if (entry?.type) {
+        item.dataset.historyType = String(entry.type);
+      }
 
       const description = document.createElement("span");
-      description.textContent = entry.description || "Update";
+      description.className = "lead-history__description";
+      const entryDescription = entry?.description || "Update";
+      const actorName = entry?.actor ? String(entry.actor).trim() : "";
+
+      if (actorName && !entryDescription.toLowerCase().includes(actorName.toLowerCase())) {
+        const actorLabel = document.createElement("strong");
+        actorLabel.textContent = actorName;
+        description.append(actorLabel);
+        description.append(document.createTextNode(` — ${entryDescription}`));
+      } else {
+        description.textContent = entryDescription;
+      }
 
       const timestamp = document.createElement("span");
       timestamp.className = "lead-history__timestamp";
@@ -1050,6 +1143,24 @@ document.addEventListener("DOMContentLoaded", function () {
     renderFiles(currentLeadData.files);
     renderHistory(currentLeadData.history);
 
+    if (remarkForm) {
+      setRemarkFormSubmitting(false);
+      if (typeof remarkForm.reset === 'function') {
+        remarkForm.reset();
+      }
+      if (remarkInput) {
+        remarkInput.value = '';
+      }
+      if (remarkFileInput) {
+        remarkFileInput.value = '';
+      }
+    }
+
+    if (filesUploadInput) {
+      setFilesUploading(false);
+      filesUploadInput.value = '';
+    }
+
     setQuickAction("call", currentLeadData.phone || currentLeadData.alternatePhone);
     setQuickAction("email", currentLeadData.email || currentLeadData.alternateEmail);
     setQuickAction("whatsapp", currentLeadData.phone || currentLeadData.alternatePhone);
@@ -1136,29 +1247,10 @@ document.addEventListener("DOMContentLoaded", function () {
         },
         body: JSON.stringify(payload),
       })
-        .then(async (response) => {
-          const data = await response
-            .json()
-            .catch(() => ({ success: false, message: 'Unable to update the lead.' }));
-
-          if (!response.ok || !data.success) {
-            const errorMessage = data?.message || 'Unable to update the lead.';
-            throw new Error(errorMessage);
-          }
-
-          return data;
-        })
+        .then((response) => parseJsonResponse(response, 'Unable to update the lead.'))
         .then((data) => {
-          if (data.lead?.row) {
-            const updatedRow = updateTableRowDom(data.lead.row, data.lead?.json);
-            if (updatedRow) {
-              currentLeadRow = updatedRow;
-            }
-          }
-
-          if (data.lead?.payload) {
-            populateSidebar(data.lead.payload);
-          } else {
+          applyLeadResponse(data.lead);
+          if (!data.lead?.payload) {
             setEditing(false);
           }
 
@@ -1174,6 +1266,99 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .finally(() => {
           setSavingState(false);
+        });
+    });
+  }
+
+  if (remarkForm) {
+    remarkForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!currentLeadData || !currentLeadData.id) {
+        showFeedback('Please select a lead before adding a remark.', 'error');
+        return;
+      }
+
+      const remarkValue = remarkInput ? remarkInput.value.trim() : '';
+      const attachments = remarkFileInput?.files ? Array.from(remarkFileInput.files) : [];
+
+      if (!remarkValue && !attachments.length) {
+        showFeedback('Please add a remark or attach at least one file.', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('lead_id', currentLeadData.id);
+      if (remarkValue) {
+        formData.append('remark', remarkValue);
+      }
+      attachments.forEach((file) => {
+        formData.append('attachments[]', file);
+      });
+
+      setRemarkFormSubmitting(true);
+      fetch('all-leads.php?action=add-remark', {
+        method: 'POST',
+        body: formData,
+      })
+        .then((response) => parseJsonResponse(response, 'Unable to save the remark.'))
+        .then((data) => {
+          applyLeadResponse(data.lead);
+          const successMessage = data.message || 'Remark saved successfully.';
+          showFeedback(successMessage, 'success');
+        })
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : 'Unable to save the remark.';
+          showFeedback(message, 'error');
+        })
+        .finally(() => {
+          setRemarkFormSubmitting(false);
+          if (remarkFileInput) {
+            remarkFileInput.value = '';
+          }
+          if (remarkInput) {
+            remarkInput.value = '';
+          }
+        });
+    });
+  }
+
+  if (filesUploadInput) {
+    filesUploadInput.addEventListener('change', () => {
+      if (!currentLeadData || !currentLeadData.id) {
+        showFeedback('Please select a lead before uploading files.', 'error');
+        filesUploadInput.value = '';
+        return;
+      }
+
+      const selectedFiles = filesUploadInput.files ? Array.from(filesUploadInput.files) : [];
+      if (!selectedFiles.length) {
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('lead_id', currentLeadData.id);
+      selectedFiles.forEach((file) => {
+        formData.append('attachments[]', file);
+      });
+
+      setFilesUploading(true);
+      fetch('all-leads.php?action=upload-files', {
+        method: 'POST',
+        body: formData,
+      })
+        .then((response) => parseJsonResponse(response, 'Unable to upload files.'))
+        .then((data) => {
+          applyLeadResponse(data.lead);
+          const successMessage = data.message || 'Files uploaded successfully.';
+          showFeedback(successMessage, 'success');
+        })
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : 'Unable to upload files.';
+          showFeedback(message, 'error');
+        })
+        .finally(() => {
+          setFilesUploading(false);
+          filesUploadInput.value = '';
         });
     });
   }

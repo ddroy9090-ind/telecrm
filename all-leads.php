@@ -133,6 +133,380 @@ function normalize_stage_label(string $label): string
     return trim((string) $singleSpaced);
 }
 
+function format_activity_timestamp(?string $rawTimestamp): string
+{
+    if ($rawTimestamp === null || trim($rawTimestamp) === '') {
+        return '—';
+    }
+
+    $timestamp = strtotime((string) $rawTimestamp);
+    if ($timestamp === false) {
+        return trim((string) $rawTimestamp);
+    }
+
+    return date('M d, Y g:i A', $timestamp);
+}
+
+function ensure_lead_activity_table(mysqli $mysqli): bool
+{
+    static $isReady = null;
+    if ($isReady !== null) {
+        return $isReady;
+    }
+
+    $isReady = false;
+    $result = $mysqli->query("SHOW TABLES LIKE 'lead_activity_log'");
+    if ($result instanceof mysqli_result) {
+        if ($result->num_rows > 0) {
+            $isReady = true;
+        }
+        $result->free();
+    }
+
+    if ($isReady) {
+        return true;
+    }
+
+    $createSql = <<<SQL
+CREATE TABLE IF NOT EXISTS `lead_activity_log` (
+    `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `lead_id` INT(10) UNSIGNED NOT NULL,
+    `activity_type` VARCHAR(50) NOT NULL,
+    `description` TEXT NOT NULL,
+    `metadata` JSON DEFAULT NULL,
+    `created_by` INT(10) UNSIGNED DEFAULT NULL,
+    `created_by_name` VARCHAR(255) DEFAULT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `lead_activity_lead_id` (`lead_id`),
+    KEY `lead_activity_type` (`activity_type`),
+    CONSTRAINT `lead_activity_log_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+    if ($mysqli->query($createSql)) {
+        $isReady = true;
+    } else {
+        error_log('Unable to create lead_activity_log table: ' . $mysqli->error);
+    }
+
+    return $isReady;
+}
+
+function log_lead_activity(mysqli $mysqli, int $leadId, string $type, string $description, array $metadata = [], ?int $userId = null, string $userName = ''): bool
+{
+    if ($leadId <= 0 || trim($type) === '') {
+        return false;
+    }
+
+    if (!ensure_lead_activity_table($mysqli)) {
+        return false;
+    }
+
+    $metadataJson = null;
+    if (!empty($metadata)) {
+        $metadataJson = json_encode($metadata, JSON_UNESCAPED_UNICODE);
+        if ($metadataJson === false) {
+            $metadataJson = null;
+        }
+    }
+
+    $typeValue = trim($type);
+    $descriptionValue = trim($description) !== '' ? trim($description) : 'Lead activity recorded';
+    $userIdValue = $userId !== null ? $userId : null;
+    $userNameValue = trim($userName) !== '' ? trim($userName) : null;
+
+    $statement = $mysqli->prepare('INSERT INTO lead_activity_log (lead_id, activity_type, description, metadata, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?)');
+    if (!$statement instanceof mysqli_stmt) {
+        return false;
+    }
+
+    $statement->bind_param('isssis', $leadId, $typeValue, $descriptionValue, $metadataJson, $userIdValue, $userNameValue);
+    $result = $statement->execute();
+    $statement->close();
+
+    return $result;
+}
+
+function normalize_field_value_for_compare(string $fieldKey, $value): string
+{
+    if ($value === null) {
+        return '';
+    }
+
+    $stringValue = is_scalar($value) ? (string) $value : json_encode($value);
+    $stringValue = trim((string) $stringValue);
+
+    switch ($fieldKey) {
+        case 'stage':
+            return normalize_stage_label(format_lead_stage($stringValue));
+        case 'assigned_to':
+            return function_exists('mb_strtolower') ? mb_strtolower($stringValue, 'UTF-8') : strtolower($stringValue);
+        default:
+            return $stringValue;
+    }
+}
+
+function lead_field_has_changed(string $fieldKey, $oldValue, $newValue): bool
+{
+    return normalize_field_value_for_compare($fieldKey, $oldValue) !== normalize_field_value_for_compare($fieldKey, $newValue);
+}
+
+function format_field_display_value(string $fieldKey, $value): string
+{
+    if ($value === null || $value === '') {
+        return '—';
+    }
+
+    switch ($fieldKey) {
+        case 'stage':
+            return format_lead_stage((string) $value);
+        case 'assigned_to':
+        case 'name':
+        case 'source':
+        case 'purpose':
+        case 'size_required':
+        case 'location_preferences':
+        case 'property_type':
+        case 'interested_in':
+            return (string) $value;
+        case 'rating':
+            return trim((string) $value) !== '' ? (string) $value : 'Not rated';
+        default:
+            return (string) $value;
+    }
+}
+
+function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
+{
+    if (empty($leadIds) || !ensure_lead_activity_table($mysqli)) {
+        return [];
+    }
+
+    $uniqueIds = array_values(array_unique(array_map('intval', $leadIds)));
+    if (empty($uniqueIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+    $types = str_repeat('i', count($uniqueIds));
+
+    $statement = $mysqli->prepare("SELECT id, lead_id, activity_type, description, metadata, created_by_name, created_at FROM lead_activity_log WHERE lead_id IN ({$placeholders}) ORDER BY created_at DESC, id DESC");
+    if (!$statement instanceof mysqli_stmt) {
+        return [];
+    }
+
+    $bindParams = array_merge([$types], $uniqueIds);
+    $bindReferences = [];
+    foreach ($bindParams as $key => &$value) {
+        $bindReferences[$key] = &$value;
+    }
+    unset($value);
+
+    $statement->bind_param(...$bindReferences);
+
+    if (!$statement->execute()) {
+        $statement->close();
+        return [];
+    }
+
+    $result = $statement->get_result();
+    $activities = [];
+
+    if ($result instanceof mysqli_result) {
+        while ($row = $result->fetch_assoc()) {
+            $leadId = isset($row['lead_id']) ? (int) $row['lead_id'] : 0;
+            if ($leadId <= 0) {
+                continue;
+            }
+
+            if (!isset($activities[$leadId])) {
+                $activities[$leadId] = [
+                    'history' => [],
+                    'remarks' => [],
+                    'files' => [],
+                ];
+            }
+
+            $activityType = trim((string) ($row['activity_type'] ?? 'update'));
+            $actorName = trim((string) ($row['created_by_name'] ?? ''));
+            $timestamp = format_activity_timestamp($row['created_at'] ?? null);
+            $description = trim((string) ($row['description'] ?? 'Activity recorded'));
+
+            $metadata = [];
+            if (!empty($row['metadata'])) {
+                $decoded = json_decode((string) $row['metadata'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $metadata = $decoded;
+                }
+            }
+
+            $historyEntry = [
+                'description' => $description,
+                'timestamp' => $timestamp,
+            ];
+            if ($actorName !== '') {
+                $historyEntry['actor'] = $actorName;
+            }
+            $historyEntry['type'] = $activityType;
+
+            $activities[$leadId]['history'][] = $historyEntry;
+
+            if ($activityType === 'remark') {
+                $remarkText = isset($metadata['remark_text']) ? (string) $metadata['remark_text'] : $description;
+                $attachments = [];
+                if (!empty($metadata['attachments']) && is_array($metadata['attachments'])) {
+                    foreach ($metadata['attachments'] as $attachment) {
+                        if (!is_array($attachment)) {
+                            continue;
+                        }
+                        $fileName = trim((string) ($attachment['name'] ?? 'Attachment'));
+                        $fileUrl = trim((string) ($attachment['url'] ?? ($attachment['path'] ?? '')));
+                        if ($fileUrl === '') {
+                            continue;
+                        }
+                        $attachments[] = [
+                            'name' => $fileName !== '' ? $fileName : 'Attachment',
+                            'url' => $fileUrl,
+                        ];
+                    }
+                }
+
+                $activities[$leadId]['remarks'][] = [
+                    'author' => $actorName !== '' ? $actorName : 'Team',
+                    'timestamp' => $timestamp,
+                    'text' => $remarkText !== '' ? $remarkText : 'No remark details provided.',
+                    'attachments' => $attachments,
+                ];
+            }
+
+            if ($activityType === 'file_upload') {
+                $fileName = trim((string) ($metadata['file_name'] ?? $description));
+                if ($fileName === '') {
+                    $fileName = 'Document';
+                }
+
+                $fileUrl = trim((string) ($metadata['file_url'] ?? ($metadata['file_path'] ?? '')));
+                if ($fileUrl === '') {
+                    $fileUrl = '#';
+                }
+
+                $fileEntry = [
+                    'name' => $fileName,
+                    'url' => $fileUrl,
+                    'timestamp' => $timestamp,
+                ];
+
+                if ($actorName !== '') {
+                    $fileEntry['uploadedBy'] = $actorName;
+                }
+
+                $activities[$leadId]['files'][] = $fileEntry;
+            }
+        }
+        $result->free();
+    }
+
+    $statement->close();
+
+    return $activities;
+}
+
+function reformat_uploaded_files_array(array $files): array
+{
+    if (!isset($files['name'])) {
+        return [];
+    }
+
+    if (is_array($files['name'])) {
+        $normalized = [];
+        foreach ($files['name'] as $index => $name) {
+            $normalized[] = [
+                'name' => $name,
+                'type' => $files['type'][$index] ?? null,
+                'tmp_name' => $files['tmp_name'][$index] ?? null,
+                'error' => $files['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+                'size' => $files['size'][$index] ?? 0,
+            ];
+        }
+        return $normalized;
+    }
+
+    return [$files];
+}
+
+function save_lead_attachments(array $files, int $leadId): array
+{
+    if ($leadId <= 0) {
+        return [];
+    }
+
+    $saved = [];
+    $baseDirectory = __DIR__ . '/uploads/leads/' . $leadId;
+    if (!is_dir($baseDirectory) && !mkdir($baseDirectory, 0775, true) && !is_dir($baseDirectory)) {
+        return [];
+    }
+
+    foreach ($files as $file) {
+        if (!is_array($file)) {
+            continue;
+        }
+
+        $errorCode = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+        if ($errorCode !== UPLOAD_ERR_OK || empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            continue;
+        }
+
+        $originalName = trim((string) ($file['name'] ?? 'document'));
+        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+        $cleanExtension = $extension !== '' ? preg_replace('/[^a-z0-9]/i', '', $extension) : '';
+
+        $uniqueName = uniqid('lead_' . $leadId . '_', true);
+        if ($cleanExtension !== '') {
+            $uniqueName .= '.' . strtolower($cleanExtension);
+        }
+
+        $targetPath = rtrim($baseDirectory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $uniqueName;
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            continue;
+        }
+
+        $relativePath = 'uploads/leads/' . $leadId . '/' . $uniqueName;
+
+        $saved[] = [
+            'name' => $originalName !== '' ? $originalName : 'Document',
+            'path' => $relativePath,
+            'url' => $relativePath,
+        ];
+    }
+
+    return $saved;
+}
+
+function fetch_lead_by_id(mysqli $mysqli, int $leadId): ?array
+{
+    if ($leadId <= 0) {
+        return null;
+    }
+
+    $statement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+    if (!$statement instanceof mysqli_stmt) {
+        return null;
+    }
+
+    $statement->bind_param('i', $leadId);
+    if (!$statement->execute()) {
+        $statement->close();
+        return null;
+    }
+
+    $result = $statement->get_result();
+    $leadRow = $result ? $result->fetch_assoc() : null;
+    $statement->close();
+
+    return $leadRow ?: null;
+}
+
 function lead_avatar_initial(string $name): string
 {
     if (function_exists('mb_substr')) {
@@ -142,7 +516,7 @@ function lead_avatar_initial(string $name): string
     return strtoupper(substr($name, 0, 1));
 }
 
-function build_lead_payload(array $lead): array
+function build_lead_payload(array $lead, array $relatedActivities = []): array
 {
     $leadName = trim($lead['name'] ?? '') !== '' ? $lead['name'] : 'Unnamed Lead';
     $stageLabel = format_lead_stage($lead['stage'] ?? '');
@@ -167,23 +541,52 @@ function build_lead_payload(array $lead): array
         return $tag !== '';
     }));
 
-    $historyEntries = [];
+    $existingHistory = [];
+    if (isset($relatedActivities['history']) && is_array($relatedActivities['history'])) {
+        $existingHistory = $relatedActivities['history'];
+    }
+
+    $historyEntries = $existingHistory;
+    $historyDescriptions = array_map(static function ($entry) {
+        return isset($entry['description']) ? trim((string) $entry['description']) : '';
+    }, $historyEntries);
+
     if ($stageLabel !== '') {
-        $historyEntries[] = [
-            'description' => 'Stage set to ' . $stageLabel,
-            'timestamp' => $createdAtDisplay,
-        ];
+        $stageDescription = 'Stage set to ' . $stageLabel;
+        if (!in_array($stageDescription, $historyDescriptions, true)) {
+            $historyEntries[] = [
+                'description' => $stageDescription,
+                'timestamp' => $createdAtDisplay,
+            ];
+        }
     }
+
     if ($assignedTo !== '') {
+        $assignmentDescription = 'Assigned to ' . $assignedTo;
+        if (!in_array($assignmentDescription, $historyDescriptions, true)) {
+            $historyEntries[] = [
+                'description' => $assignmentDescription,
+                'timestamp' => $createdAtDisplay,
+            ];
+        }
+    }
+
+    if (!in_array('Lead created', $historyDescriptions, true)) {
         $historyEntries[] = [
-            'description' => 'Assigned to ' . $assignedTo,
+            'description' => 'Lead created',
             'timestamp' => $createdAtDisplay,
         ];
     }
-    $historyEntries[] = [
-        'description' => 'Lead created',
-        'timestamp' => $createdAtDisplay,
-    ];
+
+    $existingRemarks = [];
+    if (isset($relatedActivities['remarks']) && is_array($relatedActivities['remarks'])) {
+        $existingRemarks = $relatedActivities['remarks'];
+    }
+
+    $existingFiles = [];
+    if (isset($relatedActivities['files']) && is_array($relatedActivities['files'])) {
+        $existingFiles = $relatedActivities['files'];
+    }
 
     return [
         'id' => isset($lead['id']) ? (int) $lead['id'] : null,
@@ -209,8 +612,8 @@ function build_lead_payload(array $lead): array
         'createdAt' => $createdAtRaw,
         'createdAtDisplay' => $createdAtDisplay,
         'tags' => $leadTags,
-        'remarks' => [],
-        'files' => [],
+        'remarks' => $existingRemarks,
+        'files' => $existingFiles,
         'history' => $historyEntries,
         'avatarInitial' => lead_avatar_initial($leadName),
     ];
@@ -455,6 +858,20 @@ if (!empty($queryParams)) {
     }
 }
 
+$leadActivities = [];
+if (!empty($leads)) {
+    $leadIds = [];
+    foreach ($leads as $leadRow) {
+        if (isset($leadRow['id'])) {
+            $leadIds[] = (int) $leadRow['id'];
+        }
+    }
+
+    if (!empty($leadIds)) {
+        $leadActivities = fetch_lead_activities($mysqli, $leadIds);
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['action'] === 'update-lead')) {
     header('Content-Type: application/json; charset=utf-8');
 
@@ -471,6 +888,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
     if ($leadId <= 0) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+        exit;
+    }
+
+    $existingStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+    if (!$existingStatement instanceof mysqli_stmt) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to prepare the lookup statement.']);
+        exit;
+    }
+
+    $existingStatement->bind_param('i', $leadId);
+    if (!$existingStatement->execute()) {
+        $existingStatement->close();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to look up the existing lead.']);
+        exit;
+    }
+
+    $existingResult = $existingStatement->get_result();
+    $existingLeadRow = $existingResult ? $existingResult->fetch_assoc() : null;
+    $existingStatement->close();
+
+    if (!$existingLeadRow) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
         exit;
     }
 
@@ -497,6 +939,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
     $updates = [];
     $types = '';
     $params = [];
+    $changeSet = [];
 
     foreach ($fieldsMap as $payloadKey => $columnName) {
         if (array_key_exists($payloadKey, $payload)) {
@@ -509,15 +952,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                 $value = trim((string) $value);
             }
 
+            $normalizedValue = $value === '' ? null : $value;
+            $previousValue = $existingLeadRow[$columnName] ?? null;
+
+            if (!lead_field_has_changed($payloadKey, $previousValue, $normalizedValue)) {
+                continue;
+            }
+
             $updates[] = "`{$columnName}` = ?";
-            $params[] = $value === '' ? null : $value;
+            $params[] = $normalizedValue;
             $types .= 's';
+
+            $changeSet[$payloadKey] = [
+                'column' => $columnName,
+                'from' => $previousValue,
+                'to' => $normalizedValue,
+            ];
         }
     }
 
     if (empty($updates)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'No changes were provided.']);
+        echo json_encode(['success' => false, 'message' => 'No changes were provided or all values remained the same.']);
         exit;
     }
 
@@ -577,7 +1033,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
         exit;
     }
 
-    $updatedPayload = build_lead_payload($updatedLeadRow);
+    if (!empty($changeSet)) {
+        ensure_lead_activity_table($mysqli);
+        $fieldLabels = [
+            'name' => 'Name',
+            'stage' => 'Stage',
+            'rating' => 'Rating',
+            'assigned_to' => 'Assignee',
+            'source' => 'Source',
+            'phone' => 'Primary Phone',
+            'alternate_phone' => 'Alternate Phone',
+            'email' => 'Email',
+            'alternate_email' => 'Alternate Email',
+            'nationality' => 'Nationality',
+            'location_preferences' => 'Location Preferences',
+            'property_type' => 'Property Type',
+            'interested_in' => 'Interested In',
+            'budget_range' => 'Budget Range',
+            'urgency' => 'Move-in Timeline',
+            'purpose' => 'Purpose',
+            'size_required' => 'Size Requirement',
+        ];
+
+        $actorId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $actorName = $loggedInUserName !== '' ? $loggedInUserName : 'System';
+
+        foreach ($changeSet as $fieldKey => $change) {
+            $fromDisplay = format_field_display_value($fieldKey, $change['from'] ?? null);
+            $toDisplay = format_field_display_value($fieldKey, $change['to'] ?? null);
+            $fieldLabel = $fieldLabels[$fieldKey] ?? ucfirst(str_replace('_', ' ', $fieldKey));
+
+            if ($fieldKey === 'assigned_to') {
+                $description = $toDisplay !== '—'
+                    ? sprintf('%s assigned the lead to %s', $actorName, $toDisplay)
+                    : sprintf('%s unassigned the lead', $actorName);
+                log_lead_activity($mysqli, $leadId, 'assignment', $description, [], $actorId, $actorName);
+                continue;
+            }
+
+            if ($fromDisplay === '—' && $toDisplay !== '—') {
+                $description = sprintf('%s set %s to %s', $actorName, $fieldLabel, $toDisplay);
+            } elseif ($toDisplay === '—') {
+                $description = sprintf('%s cleared %s (was %s)', $actorName, $fieldLabel, $fromDisplay);
+            } else {
+                $description = sprintf('%s updated %s from %s to %s', $actorName, $fieldLabel, $fromDisplay, $toDisplay);
+            }
+
+            log_lead_activity($mysqli, $leadId, 'update', $description, [], $actorId, $actorName);
+        }
+    }
+
+    $activitySnapshot = fetch_lead_activities($mysqli, [$leadId]);
+    $relatedActivities = $activitySnapshot[$leadId] ?? [];
+    $updatedPayload = build_lead_payload($updatedLeadRow, $relatedActivities);
     $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
 
     if ($encodedPayload === false) {
@@ -607,6 +1115,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
     ]);
     exit;
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['action'] === 'add-remark')) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $leadId = isset($_POST['lead_id']) ? (int) $_POST['lead_id'] : 0;
+    if ($leadId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+        exit;
+    }
+
+    $remarkText = isset($_POST['remark']) ? trim((string) $_POST['remark']) : '';
+    $uploadedFiles = isset($_FILES['attachments']) ? reformat_uploaded_files_array($_FILES['attachments']) : [];
+    $savedFiles = !empty($uploadedFiles) ? save_lead_attachments($uploadedFiles, $leadId) : [];
+
+    if ($remarkText === '' && empty($savedFiles)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Please add a remark or attach at least one file.']);
+        exit;
+    }
+
+    $actorId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $actorName = $loggedInUserName !== '' ? $loggedInUserName : 'System';
+
+    $remarkSnippet = $remarkText;
+    if (function_exists('mb_strlen')) {
+        if (mb_strlen($remarkSnippet) > 80) {
+            $remarkSnippet = mb_substr($remarkSnippet, 0, 77) . '…';
+        }
+    } elseif (strlen($remarkSnippet) > 80) {
+        $remarkSnippet = substr($remarkSnippet, 0, 77) . '…';
+    }
+    $remarkSnippet = trim(preg_replace('/\s+/u', ' ', $remarkSnippet));
+
+    $historyDescription = $remarkSnippet !== ''
+        ? sprintf('%s added a remark: "%s"', $actorName, $remarkSnippet)
+        : sprintf('%s added a remark', $actorName);
+
+    $remarkMetadata = [
+        'remark_text' => $remarkText,
+        'attachments' => $savedFiles,
+    ];
+
+    log_lead_activity($mysqli, $leadId, 'remark', $historyDescription, $remarkMetadata, $actorId, $actorName);
+
+    foreach ($savedFiles as $file) {
+        $fileDescription = sprintf('%s uploaded %s', $actorName, $file['name']);
+        $fileMetadata = [
+            'file_name' => $file['name'],
+            'file_path' => $file['path'],
+            'file_url' => $file['url'],
+        ];
+        log_lead_activity($mysqli, $leadId, 'file_upload', $fileDescription, $fileMetadata, $actorId, $actorName);
+    }
+
+    $updatedLeadRow = fetch_lead_by_id($mysqli, $leadId);
+    if (!$updatedLeadRow) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+        exit;
+    }
+
+    $activitySnapshot = fetch_lead_activities($mysqli, [$leadId]);
+    $relatedActivities = $activitySnapshot[$leadId] ?? [];
+    $updatedPayload = build_lead_payload($updatedLeadRow, $relatedActivities);
+    $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
+    if ($encodedPayload === false) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to encode the updated lead payload.']);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Remark saved successfully.',
+        'lead' => [
+            'payload' => $updatedPayload,
+            'json' => $encodedPayload,
+        ],
+    ]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['action'] === 'upload-files')) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $leadId = isset($_POST['lead_id']) ? (int) $_POST['lead_id'] : 0;
+    if ($leadId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+        exit;
+    }
+
+    $uploadedFiles = isset($_FILES['attachments']) ? reformat_uploaded_files_array($_FILES['attachments']) : [];
+    $savedFiles = !empty($uploadedFiles) ? save_lead_attachments($uploadedFiles, $leadId) : [];
+
+    if (empty($savedFiles)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Please choose at least one file to upload.']);
+        exit;
+    }
+
+    $actorId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $actorName = $loggedInUserName !== '' ? $loggedInUserName : 'System';
+
+    foreach ($savedFiles as $file) {
+        $fileDescription = sprintf('%s uploaded %s', $actorName, $file['name']);
+        $fileMetadata = [
+            'file_name' => $file['name'],
+            'file_path' => $file['path'],
+            'file_url' => $file['url'],
+        ];
+        log_lead_activity($mysqli, $leadId, 'file_upload', $fileDescription, $fileMetadata, $actorId, $actorName);
+    }
+
+    $updatedLeadRow = fetch_lead_by_id($mysqli, $leadId);
+    if (!$updatedLeadRow) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+        exit;
+    }
+
+    $activitySnapshot = fetch_lead_activities($mysqli, [$leadId]);
+    $relatedActivities = $activitySnapshot[$leadId] ?? [];
+    $updatedPayload = build_lead_payload($updatedLeadRow, $relatedActivities);
+    $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
+    if ($encodedPayload === false) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to encode the updated lead payload.']);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Files uploaded successfully.',
+        'lead' => [
+            'payload' => $updatedPayload,
+            'json' => $encodedPayload,
+        ],
+    ]);
+    exit;
+}
+
 ?>
 
 <div id="adminPanel">
@@ -805,7 +1458,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                             <?php else: ?>
                                 <?php foreach ($leads as $lead): ?>
                                     <?php
-                                    $leadPayload = build_lead_payload($lead);
+                                    $leadIdValue = isset($lead['id']) ? (int) $lead['id'] : 0;
+                                    $leadRelated = $leadIdValue && isset($leadActivities[$leadIdValue]) ? $leadActivities[$leadIdValue] : [];
+                                    $leadPayload = build_lead_payload($lead, $leadRelated);
                                     $leadJson = htmlspecialchars(json_encode($leadPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
                                     $leadName = $leadPayload['name'];
                                     $leadEmail = $leadPayload['email'];

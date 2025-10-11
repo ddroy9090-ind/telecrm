@@ -83,6 +83,23 @@ INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `contact_numbe
 (6, 'Shoaib Ahmad', 'shoaib@reliantsurveyors.com', '$2y$10$E7jMZWFOxdLdtMGE3dVu9eQlDzOr0beyw5Ok99goRnKq6UgtL9hqe', '+918400438136', 'manager', '2025-10-09 06:41:29', '2025-10-09 06:41:29'),
 (7, 'Dev', 'dev@gmail.com', '$2y$10$fSbgZF.4QqsoEIhOITTmKuWaeMRTPibWyIyd72GUrt.LV8TYch3/.', '+918400438136', 'agent', '2025-10-09 06:42:01', '2025-10-09 06:42:01');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lead_activity_log`
+--
+
+CREATE TABLE `lead_activity_log` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `lead_id` int(10) UNSIGNED NOT NULL,
+  `activity_type` varchar(50) NOT NULL,
+  `description` text NOT NULL,
+  `metadata` json DEFAULT NULL,
+  `created_by` int(10) UNSIGNED DEFAULT NULL,
+  `created_by_name` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 --
 -- Indexes for dumped tables
 --
@@ -101,6 +118,14 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Indexes for table `lead_activity_log`
+--
+ALTER TABLE `lead_activity_log`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `lead_activity_lead_id` (`lead_id`),
+  ADD KEY `lead_activity_type` (`activity_type`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -115,6 +140,18 @@ ALTER TABLE `all_leads`
 --
 ALTER TABLE `users`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `lead_activity_log`
+--
+ALTER TABLE `lead_activity_log`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for table `lead_activity_log`
+--
+ALTER TABLE `lead_activity_log`
+  ADD CONSTRAINT `lead_activity_log_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

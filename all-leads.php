@@ -219,6 +219,14 @@ $stageCategories = [
         'Booking Confirmed',
         'Lost',
     ],
+    'Reason for Lost Leads' => [
+        'Unresponsive',
+        'Not Qualified',
+        'Budget Issues',
+        'Incorrect Number',
+        'Lost to Competitor',
+        'Unknown Reason',
+    ],
 ];
 
 $stageOptions = [];

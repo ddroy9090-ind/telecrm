@@ -870,7 +870,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                                 </button>
                                                 <ul class="dropdown-menu">
                                                     <li><button class="dropdown-item" type="button" data-lead-action="view">View</button></li>
-                                                    <li><button class="dropdown-item" type="button">Edit</button></li>
+                                                    <li><button class="dropdown-item" type="button" data-lead-action="edit">Edit</button></li>
                                                     <li><button class="dropdown-item text-danger" type="button" data-lead-action="delete" data-lead-id="<?php echo isset($leadPayload['id']) ? (int) $leadPayload['id'] : 0; ?>" data-lead-name="<?php echo htmlspecialchars($leadName); ?>">Delete</button></li>
                                                 </ul>
                                             </div>

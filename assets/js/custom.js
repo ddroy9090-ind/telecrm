@@ -1255,11 +1255,16 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      if (action === "view") {
+      if (action === "view" || action === "edit") {
         const row = button.closest("tr[data-lead-json]");
         if (row) {
           closeDropdownMenu(button);
           openLeadFromRow(row, button);
+          if (action === "edit") {
+            window.requestAnimationFrame(() => {
+              setEditing(true);
+            });
+          }
         }
         return;
       }

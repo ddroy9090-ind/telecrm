@@ -219,19 +219,524 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// Simple enhancements for leads table
+// Leads sidebar interactions
 document.addEventListener("DOMContentLoaded", function () {
   const leadTable = document.querySelector(".lead-table-card table");
+  const leadSidebar = document.getElementById("leadSidebar");
+  const sidebarOverlay = document.getElementById("leadSidebarOverlay");
 
-  if (!leadTable) {
+  if (!leadTable || !leadSidebar || !sidebarOverlay) {
     return;
   }
 
-  leadTable.querySelectorAll("tbody tr").forEach((row) => {
-    row.addEventListener("click", function () {
-      const firstCell = this.cells?.[0];
-      if (firstCell) {
-        console.log("Row clicked:", firstCell.textContent.trim());
+  const body = document.body;
+  let overlayHideTimer = null;
+  let activeTrigger = null;
+
+  const sidebarFields = {
+    name: leadSidebar.querySelector('[data-lead-field="name"]'),
+    stage: leadSidebar.querySelector('[data-lead-field="stage"]'),
+    ratingLabel: leadSidebar.querySelector('[data-lead-field="ratingLabel"]'),
+    email: leadSidebar.querySelector('[data-lead-field="email"]'),
+    phone: leadSidebar.querySelector('[data-lead-field="phone"]'),
+    nationality: leadSidebar.querySelector('[data-lead-field="nationality"]'),
+    location: leadSidebar.querySelector('[data-lead-field="location"]'),
+    propertyType: leadSidebar.querySelector('[data-lead-field="propertyType"]'),
+    interestedIn: leadSidebar.querySelector('[data-lead-field="interestedIn"]'),
+    budget: leadSidebar.querySelector('[data-lead-field="budget"]'),
+    moveIn: leadSidebar.querySelector('[data-lead-field="moveIn"]'),
+    source: leadSidebar.querySelector('[data-lead-field="source"]'),
+    assignedTo: leadSidebar.querySelector('[data-lead-field="assignedTo"]'),
+    createdAt: leadSidebar.querySelector('[data-lead-field="createdAt"]'),
+    tags: leadSidebar.querySelector('[data-lead-field="tags"]'),
+  };
+
+  const quickActions = {
+    call: leadSidebar.querySelector('[data-action="call"]'),
+    email: leadSidebar.querySelector('[data-action="email"]'),
+    whatsapp: leadSidebar.querySelector('[data-action="whatsapp"]'),
+  };
+
+  const ratingStars = leadSidebar.querySelectorAll('[data-rating-star]');
+  const remarksContainer = leadSidebar.querySelector('[data-lead-remarks]');
+  const filesContainer = leadSidebar.querySelector('[data-lead-files]');
+  const historyContainer = leadSidebar.querySelector('[data-lead-history]');
+  const tabs = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-tab"));
+  const panels = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-panel"));
+  const closeButton = leadSidebar.querySelector('[data-action="close"]');
+
+  const setOverlayVisibility = (isVisible) => {
+    if (overlayHideTimer) {
+      window.clearTimeout(overlayHideTimer);
+      overlayHideTimer = null;
+    }
+
+    if (isVisible) {
+      sidebarOverlay.hidden = false;
+      requestAnimationFrame(() => {
+        sidebarOverlay.classList.add("is-visible");
+      });
+    } else {
+      sidebarOverlay.classList.remove("is-visible");
+      overlayHideTimer = window.setTimeout(() => {
+        sidebarOverlay.hidden = true;
+      }, 260);
+    }
+  };
+
+  const openSidebar = () => {
+    leadSidebar.classList.add("is-open");
+    leadSidebar.setAttribute("aria-hidden", "false");
+    setOverlayVisibility(true);
+    body.classList.add("lead-sidebar-open");
+  };
+
+  const closeSidebar = () => {
+    leadSidebar.classList.remove("is-open");
+    leadSidebar.setAttribute("aria-hidden", "true");
+    setOverlayVisibility(false);
+    body.classList.remove("lead-sidebar-open");
+
+    if (activeTrigger) {
+      activeTrigger.focus();
+      activeTrigger = null;
+    }
+  };
+
+  sidebarOverlay.addEventListener("click", closeSidebar);
+  if (closeButton) {
+    closeButton.addEventListener("click", closeSidebar);
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && leadSidebar.classList.contains("is-open")) {
+      closeSidebar();
+    }
+  });
+
+  const sanitizeList = (value) => {
+    if (!value) {
+      return [];
+    }
+
+    if (Array.isArray(value)) {
+      return value.filter((item) => String(item).trim() !== "");
+    }
+
+    return String(value)
+      .split(/[,|]/)
+      .map((item) => item.trim())
+      .filter((item) => item !== "");
+  };
+
+  const setTextContent = (element, value, fallback = "—") => {
+    if (!element) {
+      return;
+    }
+
+    const displayValue = value && String(value).trim() !== "" ? value : fallback;
+    element.textContent = displayValue;
+    if (displayValue === fallback) {
+      element.classList.add("is-empty");
+    } else {
+      element.classList.remove("is-empty");
+    }
+  };
+
+  const setLinkField = (element, value, formatter, fallback) => {
+    if (!element) {
+      return;
+    }
+
+    const hasValue = value && String(value).trim() !== "";
+    const textValue = hasValue ? String(value).trim() : fallback;
+    element.textContent = textValue;
+
+    if (hasValue) {
+      const linkValue = formatter(String(value).trim());
+      element.setAttribute("href", linkValue || "#");
+      element.classList.remove("is-empty");
+    } else {
+      element.setAttribute("href", "#");
+      element.classList.add("is-empty");
+    }
+  };
+
+  const renderChips = (container, values, emptyText) => {
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+    const items = sanitizeList(values);
+
+    if (!items.length) {
+      const empty = document.createElement("span");
+      empty.className = "lead-empty-text";
+      empty.textContent = emptyText || "No data available";
+      container.appendChild(empty);
+      return;
+    }
+
+    items.forEach((value) => {
+      const chip = document.createElement("span");
+      chip.className = "lead-chip";
+      chip.textContent = value;
+      container.appendChild(chip);
+    });
+  };
+
+  const buildWhatsappLink = (phoneNumber) => {
+    const numeric = String(phoneNumber || "").replace(/[^0-9+]/g, "");
+    if (!numeric) {
+      return "#";
+    }
+    return `https://wa.me/${numeric.replace(/^\+/, "")}`;
+  };
+
+  const formatPhoneLink = (phoneNumber) => {
+    const sanitized = String(phoneNumber || "").replace(/[^0-9+]/g, "");
+    return sanitized ? `tel:${sanitized}` : "#";
+  };
+
+  const formatRatingLabel = (rawValue, numericValue, isUserUpdate = false) => {
+    if (isUserUpdate && numericValue) {
+      return `${numericValue} / 5`;
+    }
+
+    const cleanedRaw = rawValue && String(rawValue).trim() !== "" ? String(rawValue).trim() : null;
+
+    if (cleanedRaw && !Number.isNaN(Number(cleanedRaw))) {
+      const numericRaw = Number(cleanedRaw);
+      return `${numericRaw} / 5`;
+    }
+
+    if (cleanedRaw && numericValue) {
+      return `${cleanedRaw} • ${numericValue} / 5`;
+    }
+
+    if (cleanedRaw) {
+      return cleanedRaw;
+    }
+
+    if (numericValue) {
+      return `${numericValue} / 5`;
+    }
+
+    return "Not rated";
+  };
+
+  const ratingValueFromString = (value) => {
+    if (!value) {
+      return 0;
+    }
+
+    const numeric = Number(value);
+    if (!Number.isNaN(numeric) && numeric >= 0) {
+      return Math.max(0, Math.min(5, Math.round(numeric)));
+    }
+
+    const normalized = String(value).toLowerCase();
+    if (normalized.includes("hot")) {
+      return 5;
+    }
+    if (normalized.includes("warm")) {
+      return 3;
+    }
+    if (normalized.includes("cold")) {
+      return 1;
+    }
+    if (normalized.includes("new")) {
+      return 2;
+    }
+
+    return 0;
+  };
+
+  const updateRatingStars = (value) => {
+    ratingStars.forEach((star) => {
+      const starValue = Number(star.dataset.ratingStar || 0);
+      const isActive = starValue <= value && starValue > 0;
+      star.classList.toggle("is-active", isActive);
+      star.setAttribute("aria-pressed", String(isActive && starValue === value));
+      const icon = star.querySelector("i");
+      if (icon) {
+        icon.classList.toggle("bi-star-fill", isActive);
+        icon.classList.toggle("bi-star", !isActive);
+      }
+    });
+  };
+
+  const renderRemarks = (remarks, fallbackTimestamp, fallbackAuthor) => {
+    if (!remarksContainer) {
+      return;
+    }
+
+    remarksContainer.innerHTML = "";
+    const items = Array.isArray(remarks) ? remarks : [];
+
+    const dataset = items.length
+      ? items
+      : [
+          {
+            author: fallbackAuthor || "System",
+            timestamp: fallbackTimestamp || "—",
+            text: "Lead created in the system.",
+            attachments: [],
+          },
+        ];
+
+    dataset.forEach((remark) => {
+      const remarkBlock = document.createElement("div");
+      remarkBlock.className = "lead-remark";
+
+      const meta = document.createElement("div");
+      meta.className = "lead-remark__meta";
+      const author = document.createElement("span");
+      author.textContent = remark.author || "Team";
+      const time = document.createElement("span");
+      time.textContent = remark.timestamp || "—";
+      meta.append(author, time);
+
+      const text = document.createElement("div");
+      text.className = "lead-remark__text";
+      text.textContent = remark.text || "No remark details provided.";
+
+      remarkBlock.append(meta, text);
+
+      if (Array.isArray(remark.attachments) && remark.attachments.length) {
+        const attachmentsWrapper = document.createElement("div");
+        attachmentsWrapper.className = "lead-remark__attachments";
+
+        remark.attachments.forEach((file) => {
+          const attachmentLink = document.createElement("a");
+          attachmentLink.className = "lead-remark__attachment";
+          attachmentLink.textContent = file.name || "Attachment";
+          attachmentLink.href = file.url || "#";
+          attachmentLink.target = "_blank";
+          attachmentsWrapper.appendChild(attachmentLink);
+        });
+
+        remarkBlock.appendChild(attachmentsWrapper);
+      }
+
+      remarksContainer.appendChild(remarkBlock);
+    });
+  };
+
+  const renderFiles = (files) => {
+    if (!filesContainer) {
+      return;
+    }
+
+    filesContainer.innerHTML = "";
+    const items = Array.isArray(files) ? files : [];
+
+    if (!items.length) {
+      const empty = document.createElement("p");
+      empty.className = "lead-empty-state";
+      empty.textContent = "No files uploaded yet.";
+      filesContainer.appendChild(empty);
+      return;
+    }
+
+    items.forEach((file) => {
+      const item = document.createElement("a");
+      item.className = "lead-remark__attachment";
+      item.textContent = file.name || "Document";
+      item.href = file.url || "#";
+      item.target = "_blank";
+      filesContainer.appendChild(item);
+    });
+  };
+
+  const renderHistory = (history) => {
+    if (!historyContainer) {
+      return;
+    }
+
+    historyContainer.innerHTML = "";
+    const entries = Array.isArray(history) ? history : [];
+
+    if (!entries.length) {
+      const empty = document.createElement("p");
+      empty.className = "lead-empty-state";
+      empty.textContent = "No history available.";
+      historyContainer.appendChild(empty);
+      return;
+    }
+
+    entries.forEach((entry) => {
+      const item = document.createElement("div");
+      item.className = "lead-history__item";
+
+      const description = document.createElement("span");
+      description.textContent = entry.description || "Update";
+
+      const timestamp = document.createElement("span");
+      timestamp.className = "lead-history__timestamp";
+      timestamp.textContent = entry.timestamp || "—";
+
+      item.append(description, timestamp);
+      historyContainer.appendChild(item);
+    });
+  };
+
+  const setQuickAction = (action, value) => {
+    const button = quickActions[action];
+    if (!button) {
+      return;
+    }
+
+    const hasValue = value && String(value).trim() !== "";
+    button.classList.toggle("is-disabled", !hasValue);
+
+    if (!hasValue) {
+      button.setAttribute("href", "#");
+      button.removeAttribute("target");
+      button.removeAttribute("rel");
+      return;
+    }
+
+    if (action === "call") {
+      button.setAttribute("href", formatPhoneLink(value));
+      button.removeAttribute("target");
+      button.removeAttribute("rel");
+    } else if (action === "email") {
+      button.setAttribute("href", `mailto:${value}`);
+      button.removeAttribute("target");
+      button.removeAttribute("rel");
+    } else if (action === "whatsapp") {
+      button.setAttribute("href", buildWhatsappLink(value));
+      button.setAttribute("target", "_blank");
+      button.setAttribute("rel", "noreferrer noopener");
+    }
+  };
+
+  const populateSidebar = (payload) => {
+    const leadData = payload || {};
+
+    setTextContent(sidebarFields.name, leadData.name || "Unnamed Lead", "Unnamed Lead");
+
+    if (sidebarFields.stage) {
+      sidebarFields.stage.textContent = leadData.stage || "New";
+      sidebarFields.stage.className = "lead-stage-pill stage-badge";
+      if (leadData.stageClass) {
+        sidebarFields.stage.classList.add(leadData.stageClass);
+      }
+    }
+
+    const numericRating = ratingValueFromString(leadData.rating);
+    updateRatingStars(numericRating);
+    if (sidebarFields.ratingLabel) {
+      sidebarFields.ratingLabel.textContent = formatRatingLabel(
+        leadData.rating,
+        numericRating,
+        false
+      );
+      sidebarFields.ratingLabel.dataset.rawRating = String(leadData.rating || "");
+    }
+
+    setLinkField(
+      sidebarFields.email,
+      leadData.email,
+      (value) => `mailto:${value}`,
+      sidebarFields.email?.dataset.emptyText || "No email provided"
+    );
+
+    setLinkField(
+      sidebarFields.phone,
+      leadData.phone,
+      formatPhoneLink,
+      sidebarFields.phone?.dataset.emptyText || "No phone number"
+    );
+
+    setTextContent(sidebarFields.nationality, leadData.nationality);
+    setTextContent(sidebarFields.location, leadData.locationPreferences || leadData.propertiesInterestedIn);
+    setTextContent(sidebarFields.propertyType, leadData.propertyType);
+    renderChips(sidebarFields.interestedIn, leadData.interestedIn, "No property interests added.");
+    setTextContent(sidebarFields.budget, leadData.budgetRange);
+    setTextContent(sidebarFields.moveIn, leadData.moveInTimeline);
+    setTextContent(sidebarFields.source, leadData.source);
+    setTextContent(sidebarFields.assignedTo, leadData.assignedTo);
+    setTextContent(sidebarFields.createdAt, leadData.createdAtDisplay || leadData.createdAt);
+    renderChips(sidebarFields.tags, leadData.tags, "No tags yet.");
+
+    renderRemarks(leadData.remarks, leadData.createdAtDisplay, leadData.assignedTo);
+    renderFiles(leadData.files);
+    renderHistory(leadData.history);
+
+    setQuickAction("call", leadData.phone || leadData.alternatePhone);
+    setQuickAction("email", leadData.email || leadData.alternateEmail);
+    setQuickAction("whatsapp", leadData.phone || leadData.alternatePhone);
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.getAttribute("data-tab-target");
+      if (!target) {
+        return;
+      }
+
+      tabs.forEach((button) => {
+        const isActive = button === tab;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-selected", String(isActive));
+      });
+
+      panels.forEach((panel) => {
+        const isActive = panel.getAttribute("data-tab-panel") === target;
+        panel.classList.toggle("is-active", isActive);
+        panel.setAttribute("aria-hidden", String(!isActive));
+      });
+    });
+  });
+
+  ratingStars.forEach((star) => {
+    star.addEventListener("click", () => {
+      const value = Number(star.dataset.ratingStar || 0);
+      if (!value) {
+        return;
+      }
+
+      updateRatingStars(value);
+      if (sidebarFields.ratingLabel) {
+        sidebarFields.ratingLabel.textContent = formatRatingLabel(
+          sidebarFields.ratingLabel.dataset.rawRating || value,
+          value,
+          true
+        );
+      }
+    });
+  });
+
+  const interactiveSelectors = "a, button, select, input, textarea, label, [data-prevent-lead-open], .dropdown-menu";
+
+  leadTable.querySelectorAll("tbody tr[data-lead-json]").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest(interactiveSelectors)) {
+        return;
+      }
+
+      const payload = row.dataset.leadJson;
+      if (!payload) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(payload);
+        populateSidebar(parsed);
+        activeTrigger = row;
+        openSidebar();
+      } catch (error) {
+        console.error("Failed to parse lead data", error);
+      }
+    });
+
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        row.click();
       }
     });
   });

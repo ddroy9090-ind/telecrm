@@ -267,8 +267,72 @@ function lead_avatar_initial(string $name): string
                                     $stageClass = stage_badge_class($stageLabel);
                                     $sourceLabel = trim($lead['source'] ?? '') !== '' ? $lead['source'] : '—';
                                     $avatarInitial = lead_avatar_initial($leadName);
+                                    $createdAtRaw = $lead['created_at'] ?? null;
+                                    $createdAtDisplay = '—';
+                                    if ($createdAtRaw) {
+                                        $createdTimestamp = strtotime((string) $createdAtRaw);
+                                        if ($createdTimestamp !== false) {
+                                            $createdAtDisplay = date('M d, Y g:i A', $createdTimestamp);
+                                        }
+                                    }
+
+                                    $leadTags = array_values(array_filter(array_map('trim', [
+                                        $lead['purpose'] ?? '',
+                                        $lead['urgency'] ?? '',
+                                        $lead['size_required'] ?? '',
+                                    ]), static function ($tag) {
+                                        return $tag !== '';
+                                    }));
+
+                                    $historyEntries = [];
+                                    if ($stageLabel !== '') {
+                                        $historyEntries[] = [
+                                            'description' => 'Stage set to ' . $stageLabel,
+                                            'timestamp' => $createdAtDisplay,
+                                        ];
+                                    }
+                                    if (!empty($lead['assigned_to'])) {
+                                        $historyEntries[] = [
+                                            'description' => 'Assigned to ' . trim((string) $lead['assigned_to']),
+                                            'timestamp' => $createdAtDisplay,
+                                        ];
+                                    }
+                                    $historyEntries[] = [
+                                        'description' => 'Lead created',
+                                        'timestamp' => $createdAtDisplay,
+                                    ];
+
+                                    $leadPayload = [
+                                        'id' => isset($lead['id']) ? (int) $lead['id'] : null,
+                                        'name' => $leadName,
+                                        'stage' => $stageLabel,
+                                        'stageClass' => $stageClass,
+                                        'rating' => trim((string) ($lead['rating'] ?? '')),
+                                        'phone' => $leadPhone,
+                                        'alternatePhone' => trim((string) ($lead['alternate_phone'] ?? '')),
+                                        'email' => $leadEmail,
+                                        'alternateEmail' => trim((string) ($lead['alternate_email'] ?? '')),
+                                        'nationality' => trim((string) ($lead['nationality'] ?? '')),
+                                        'locationPreferences' => trim((string) ($lead['location_preferences'] ?? '')),
+                                        'propertyType' => trim((string) ($lead['property_type'] ?? '')),
+                                        'interestedIn' => trim((string) ($lead['interested_in'] ?? '')),
+                                        'budgetRange' => trim((string) ($lead['budget_range'] ?? '')),
+                                        'moveInTimeline' => trim((string) ($lead['urgency'] ?? '')),
+                                        'propertiesInterestedIn' => trim((string) ($lead['location_preferences'] ?? '')),
+                                        'purpose' => trim((string) ($lead['purpose'] ?? '')),
+                                        'source' => $sourceLabel,
+                                        'assignedTo' => trim((string) ($lead['assigned_to'] ?? '')),
+                                        'createdAt' => $createdAtRaw,
+                                        'createdAtDisplay' => $createdAtDisplay,
+                                        'tags' => $leadTags,
+                                        'remarks' => [],
+                                        'files' => [],
+                                        'history' => $historyEntries,
+                                    ];
+
+                                    $leadJson = htmlspecialchars(json_encode($leadPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
                                     ?>
-                                    <tr>
+                                    <tr class="lead-table-row" data-lead-json="<?php echo $leadJson; ?>" tabindex="0" role="button" aria-label="View details for <?php echo htmlspecialchars($leadName); ?>">
                                         <td>
                                             <div class="lead-info">
                                                 <div class="avatar"><?php echo htmlspecialchars($avatarInitial); ?></div>
@@ -292,7 +356,7 @@ function lead_avatar_initial(string $name): string
                                             <div class="stage-badge <?php echo htmlspecialchars($stageClass); ?>"><?php echo htmlspecialchars($stageLabel); ?></div>
                                         </td>
                                         <td>
-                                            <div class="assigned-dropdown">
+                                            <div class="assigned-dropdown" data-prevent-lead-open>
                                                 <select class="form-select assigned-select">
                                                     <?php foreach ($users as $userId => $userName): ?>
                                                         <?php
@@ -312,7 +376,7 @@ function lead_avatar_initial(string $name): string
                                         </td>
                                         <td><?php echo htmlspecialchars($sourceLabel); ?></td>
                                         <td>
-                                            <div class="dropdown">
+                                            <div class="dropdown" data-prevent-lead-open>
                                                 <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="bi bi-three-dots-vertical fs-5"></i>
                                                 </button>
@@ -333,6 +397,149 @@ function lead_avatar_initial(string $name): string
             </div>
         </div>
 
+        <div class="lead-sidebar-overlay" id="leadSidebarOverlay" hidden></div>
+        <aside class="lead-sidebar" id="leadSidebar" aria-hidden="true">
+            <div class="lead-sidebar__inner">
+                <div class="lead-sidebar__header">
+                    <div class="lead-sidebar__headline">
+                        <h2 class="lead-sidebar__name" data-lead-field="name">Lead Name</h2>
+                        <div class="lead-sidebar__stage">
+                            <span class="lead-stage-pill" data-lead-field="stage">Stage</span>
+                        </div>
+                    </div>
+                    <button type="button" class="lead-sidebar__close" data-action="close" aria-label="Close lead details">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="lead-sidebar__meta">
+                    <div class="lead-rating" data-lead-rating>
+                        <div class="lead-rating__stars" role="radiogroup" aria-label="Lead rating">
+                            <?php for ($star = 1; $star <= 5; $star++): ?>
+                                <button type="button" class="lead-rating__star" data-rating-star="<?php echo $star; ?>" aria-label="Rate <?php echo $star; ?> star<?php echo $star === 1 ? '' : 's'; ?>" aria-pressed="false">
+                                    <i class="bi bi-star"></i>
+                                </button>
+                            <?php endfor; ?>
+                        </div>
+                        <span class="lead-rating__value" data-lead-field="ratingLabel">Not rated</span>
+                    </div>
+                    <div class="lead-quick-actions">
+                        <a href="#" class="lead-quick-actions__btn" data-action="call"><i class="bi bi-telephone"></i> Call</a>
+                        <a href="#" class="lead-quick-actions__btn" data-action="email"><i class="bi bi-envelope"></i> Email</a>
+                        <a href="#" class="lead-quick-actions__btn" data-action="whatsapp"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                    </div>
+                </div>
+
+                <section class="lead-sidebar__section">
+                    <h3 class="lead-sidebar__section-title">Contact Information</h3>
+                    <div class="lead-sidebar__details">
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Email</span>
+                            <a href="#" class="lead-sidebar__item-value" data-lead-field="email" data-empty-text="No email provided">No email provided</a>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Phone Number</span>
+                            <a href="#" class="lead-sidebar__item-value" data-lead-field="phone" data-empty-text="No phone number">No phone number</a>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Nationality</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="nationality">—</span>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Location</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="location">—</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lead-sidebar__section">
+                    <h3 class="lead-sidebar__section-title">Property Preferences</h3>
+                    <div class="lead-sidebar__details">
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Property Type</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="propertyType">—</span>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Properties Interested In</span>
+                            <div class="lead-sidebar__chips" data-lead-field="interestedIn"></div>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Budget Range</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="budget">—</span>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Timeline / Expected Move-in</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="moveIn">—</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lead-sidebar__section">
+                    <h3 class="lead-sidebar__section-title">Lead Information</h3>
+                    <div class="lead-sidebar__details">
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Source</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="source">—</span>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Assigned To</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="assignedTo">—</span>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Created At</span>
+                            <span class="lead-sidebar__item-value" data-lead-field="createdAt">—</span>
+                        </div>
+                        <div class="lead-sidebar__item">
+                            <span class="lead-sidebar__item-label">Tags</span>
+                            <div class="lead-sidebar__chips" data-lead-field="tags"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lead-sidebar__section lead-sidebar__section--tabs">
+                    <div class="lead-sidebar-tabs" role="tablist">
+                        <button type="button" class="lead-sidebar-tab is-active" data-tab-target="remarks" role="tab" aria-selected="true">Remarks</button>
+                        <button type="button" class="lead-sidebar-tab" data-tab-target="files" role="tab" aria-selected="false">Files</button>
+                        <button type="button" class="lead-sidebar-tab" data-tab-target="history" role="tab" aria-selected="false">History</button>
+                    </div>
+                    <div class="lead-sidebar-tabpanels">
+                        <div class="lead-sidebar-panel is-active" data-tab-panel="remarks" role="tabpanel">
+                            <div class="lead-remarks" data-lead-remarks></div>
+                            <form class="lead-remark-form" action="#" method="post" onsubmit="return false;">
+                                <label for="leadRemarkInput" class="form-label">Add Remark</label>
+                                <textarea id="leadRemarkInput" class="form-control" rows="3" placeholder="Add a note about this lead..."></textarea>
+                                <div class="lead-remark-form__actions">
+                                    <label class="lead-file-upload">
+                                        <input type="file" class="lead-file-upload__input" multiple>
+                                        <span class="lead-file-upload__btn"><i class="bi bi-paperclip"></i> Attach Files</span>
+                                    </label>
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="lead-sidebar-panel" data-tab-panel="files" role="tabpanel" aria-hidden="true">
+                            <div class="lead-files" data-lead-files>
+                                <p class="lead-empty-state">No files uploaded yet.</p>
+                            </div>
+                            <div class="lead-files__actions">
+                                <label class="lead-file-upload">
+                                    <input type="file" class="lead-file-upload__input" multiple>
+                                    <span class="lead-file-upload__btn"><i class="bi bi-upload"></i> Upload files</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="lead-sidebar-panel" data-tab-panel="history" role="tabpanel" aria-hidden="true">
+                            <div class="lead-history" data-lead-history></div>
+                        </div>
+                    </div>
+                </section>
+
+                <footer class="lead-sidebar__footer">
+                    <button type="button" class="btn btn-outline-primary">Save Changes</button>
+                    <button type="button" class="btn btn-light">Update Stage</button>
+                    <button type="button" class="btn btn-primary">Create Task</button>
+                </footer>
+            </div>
+        </aside>
     </main>
 </div>
 

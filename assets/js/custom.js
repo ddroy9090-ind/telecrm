@@ -1132,7 +1132,11 @@ document.addEventListener("DOMContentLoaded", function () {
             setEditing(false);
           }
 
-          showFeedback(data.message || 'Lead updated successfully.', 'success');
+          const successMessage = data.message || 'Lead details updated successfully.';
+          showFeedback(successMessage, 'success');
+          if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+            window.alert(successMessage);
+          }
         })
         .catch((error) => {
           const message = error instanceof Error ? error.message : 'Unable to update the lead.';

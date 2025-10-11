@@ -305,14 +305,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
         exit;
     }
 
-    $bindParams = [];
-    $bindParams[] = &$types;
-    foreach ($params as $index => $paramValue) {
-        $bindParams[] = &$params[$index];
+    $bindParams = array_merge([$types], $params);
+    $bindReferences = [];
+    foreach ($bindParams as $key => &$value) {
+        $bindReferences[$key] = &$value;
     }
+    unset($value);
 
-    $bindResult = call_user_func_array([$updateStatement, 'bind_param'], $bindParams);
+    $bindResult = $updateStatement->bind_param(...$bindReferences);
     if (!$bindResult || !$updateStatement->execute()) {
+        $errorMessage = $updateStatement->error ?: $mysqli->error;
+        if ($errorMessage) {
+            error_log('Lead update failed: ' . $errorMessage);
+        }
         $updateStatement->close();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Unable to update the lead.']);
@@ -357,7 +362,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
 
     echo json_encode([
         'success' => true,
-        'message' => 'Lead updated successfully.',
+        'message' => 'Lead details updated successfully.',
         'lead' => [
             'row' => [
                 'id' => (int) $updatedLeadRow['id'],

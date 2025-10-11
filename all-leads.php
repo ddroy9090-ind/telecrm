@@ -202,15 +202,31 @@ function build_lead_payload(array $lead): array
     ];
 }
 
-$stageOptions = [
-    'New',
-    'Contacted',
-    'Follow Up - In Progress',
-    'Interested',
-    'Negotiation',
-    'Closed',
-    'Lost',
+$stageCategories = [
+    'Active Stage' => [
+        'New',
+        'Contacted',
+        'Follow Up – In Progress',
+        'Qualified',
+        'Meeting Scheduled',
+        'Meeting Done',
+        'Offer Made',
+        'Negotiation',
+        'Site Visit',
+    ],
+    'Closed Stage' => [
+        'Won',
+        'Booking Confirmed',
+        'Lost',
+    ],
 ];
+
+$stageOptions = [];
+foreach ($stageCategories as $categoryStages) {
+    foreach ($categoryStages as $stageLabel) {
+        $stageOptions[] = $stageLabel;
+    }
+}
 
 $ratingOptions = [
     'New',
@@ -826,8 +842,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                     <div class="lead-sidebar__stage" data-edit-field="stage">
                                         <span class="lead-stage-pill stage-badge" data-lead-field="stage" data-role="display">New</span>
                                         <select class="form-select lead-sidebar__input" data-role="input" name="stage">
-                                            <?php foreach ($stageOptions as $stageOption): ?>
-                                                <option value="<?php echo htmlspecialchars($stageOption); ?>"><?php echo htmlspecialchars($stageOption); ?></option>
+                                            <?php foreach ($stageCategories as $categoryLabel => $categoryStages): ?>
+                                                <optgroup label="<?php echo htmlspecialchars($categoryLabel); ?>">
+                                                    <?php foreach ($categoryStages as $stageOption): ?>
+                                                        <option value="<?php echo htmlspecialchars($stageOption); ?>"><?php echo htmlspecialchars($stageOption); ?></option>
+                                                    <?php endforeach; ?>
+                                                </optgroup>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>

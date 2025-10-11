@@ -1803,12 +1803,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                     <form class="lead-remark-form" action="#" method="post" onsubmit="return false;">
                                         <label for="leadRemarkInput" class="form-label">Add Remark</label>
                                         <textarea id="leadRemarkInput" class="form-control" rows="3" placeholder="Add a note about this lead..."></textarea>
-                                        <div class="lead-remark-form__actions">
-                                            <label class="lead-file-upload">
-                                                <input type="file" class="lead-file-upload__input" multiple>
-                                                <span class="lead-file-upload__btn"><i class="bi bi-paperclip"></i> Attach Files</span>
-                                            </label>
-                                            <button type="submit" class="btn btn-primary">Save</button>
+                                        <div class="lead-remark-form__actions text-end">
+                                            <button type="submit" class="btn btn-primary">Save Remarkes</button>
                                         </div>
                                     </form>
                                 </div>

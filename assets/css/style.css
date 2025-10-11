@@ -692,7 +692,7 @@ button:focus:not(:focus-visible) {
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
-    justify-content: space-between;
+    justify-content:end;
 }
 
 .lead-file-upload {

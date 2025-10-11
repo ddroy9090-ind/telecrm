@@ -119,6 +119,20 @@ function stage_badge_class(string $stage): string
     return $slug !== '' ? $slug : 'new';
 }
 
+function normalize_stage_label(string $label): string
+{
+    $dashNormalized = str_replace([
+        "\xE2\x80\x93", // en dash
+        "\xE2\x80\x94", // em dash
+        "\xE2\x88\x92", // minus sign
+    ], '-', $label);
+
+    $lowered = function_exists('mb_strtolower') ? mb_strtolower($dashNormalized, 'UTF-8') : strtolower($dashNormalized);
+    $singleSpaced = preg_replace('/\s+/u', ' ', $lowered ?? '');
+
+    return trim((string) $singleSpaced);
+}
+
 function lead_avatar_initial(string $name): string
 {
     if (function_exists('mb_substr')) {
@@ -234,6 +248,56 @@ foreach ($stageCategories as $categoryStages) {
     foreach ($categoryStages as $stageLabel) {
         $stageOptions[] = $stageLabel;
     }
+}
+
+$activeStageSet = [];
+foreach ($stageCategories['Active Stage'] as $activeLabel) {
+    $activeStageSet[normalize_stage_label($activeLabel)] = true;
+}
+
+$closedStageSet = [];
+foreach ($stageCategories['Closed Stage'] as $closedLabel) {
+    if (normalize_stage_label($closedLabel) === 'lost') {
+        continue;
+    }
+
+    $closedStageSet[normalize_stage_label($closedLabel)] = true;
+}
+
+$lostStageSet = [];
+foreach ($stageCategories['Reason for Lost Leads'] as $lostLabel) {
+    $lostStageSet[normalize_stage_label($lostLabel)] = true;
+}
+
+$leadStats = [
+    'total' => 0,
+    'active' => 0,
+    'closed' => 0,
+    'lost' => 0,
+];
+
+$statsQuery = $mysqli->query('SELECT stage FROM all_leads');
+if ($statsQuery instanceof mysqli_result) {
+    while ($statsRow = $statsQuery->fetch_assoc()) {
+        $leadStats['total']++;
+
+        $formattedStage = format_lead_stage($statsRow['stage'] ?? '');
+        $normalizedStage = normalize_stage_label($formattedStage);
+
+        if (isset($activeStageSet[$normalizedStage])) {
+            $leadStats['active']++;
+        }
+
+        if (isset($closedStageSet[$normalizedStage])) {
+            $leadStats['closed']++;
+        }
+
+        if ($normalizedStage === 'lost' || isset($lostStageSet[$normalizedStage])) {
+            $leadStats['lost']++;
+        }
+    }
+
+    $statsQuery->free();
 }
 
 $ratingOptions = [
@@ -594,25 +658,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                         <div class="col-md-3">
                             <div class="stat-card total-leads">
                                 <h6>Total Leads</h6>
-                                <h2>0</h2>
+                                <h2><?php echo number_format($leadStats['total']); ?></h2>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card active-leads">
                                 <h6>Active Leads</h6>
-                                <h2>0</h2>
+                                <h2><?php echo number_format($leadStats['active']); ?></h2>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card closed-leads">
                                 <h6>Closed Leads</h6>
-                                <h2>0</h2>
+                                <h2><?php echo number_format($leadStats['closed']); ?></h2>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card lost-leads">
                                 <h6>Lost Leads</h6>
-                                <h2>0</h2>
+                                <h2><?php echo number_format($leadStats['lost']); ?></h2>
                             </div>
                         </div>
                     </div>

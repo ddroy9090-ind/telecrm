@@ -160,8 +160,8 @@ button:focus:not(:focus-visible) {
     top: 0;
     right: 0;
     height: 100%;
-    width: min(45vw, 520px);
-    max-width: 520px;
+    width: min(45vw, 50%);
+    max-width: 50%;
     background: #ffffff;
     box-shadow: -12px 0 32px -24px rgba(15, 23, 42, 0.4);
     transform: translateX(100%);

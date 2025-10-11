@@ -639,13 +639,31 @@ button:focus:not(:focus-visible) {
     gap: 8px;
 }
 
+.lead-remark:focus {
+    outline: 2px solid rgba(2, 121, 111, 0.6);
+    outline-offset: 2px;
+}
+
 .lead-remark__meta {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    gap: 8px;
     font-size: 13px;
     color: #64748b;
     font-weight: 600;
+}
+
+.lead-remark__author {
+    color: #0f172a;
+}
+
+.lead-remark__separator {
+    opacity: 0.5;
+}
+
+.lead-remark__timestamp {
+    font-weight: 500;
 }
 
 .lead-remark__text {
@@ -674,6 +692,16 @@ button:focus:not(:focus-visible) {
     font-size: 14px;
     color: #94a3b8;
     text-align: center;
+}
+
+.lead-remarks__empty {
+    padding: 16px;
+}
+
+.lead-remark.is-new {
+    border-color: rgba(2, 121, 111, 0.35);
+    box-shadow: 0 0 0 2px rgba(2, 121, 111, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .lead-empty-text {

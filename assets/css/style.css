@@ -243,6 +243,7 @@ button:focus:not(:focus-visible) {
     color: #ffffff;
     transition: background-color 0.2s ease, transform 0.2s ease;
     backdrop-filter: blur(6px);
+    z-index: 999;
 }
 
 .lead-sidebar__close:hover {
@@ -359,8 +360,9 @@ button:focus:not(:focus-visible) {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 16px;
+    /* position: fixed;
+    width: 100%; */
 }
-
 .lead-quick-actions__btn {
     display: flex;
     flex-direction: column;
@@ -375,10 +377,11 @@ button:focus:not(:focus-visible) {
     font-weight: 600;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 24px 40px -32px rgba(15, 23, 42, 0.45);
+    z-index: 999;
 }
 
 .lead-quick-actions__btn:hover {
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); */
     box-shadow: 0 28px 52px -32px rgba(15, 23, 42, 0.55);
 }
 
@@ -416,6 +419,7 @@ button:focus:not(:focus-visible) {
     padding: 24px;
     box-shadow: 0 22px 44px -32px rgba(15, 23, 42, 0.25);
     border: 1px solid #e2e8f0;
+   
 }
 
 .lead-sidebar__section-title {
@@ -745,7 +749,10 @@ button:focus:not(:focus-visible) {
 }
 
 .lead-sidebar.is-editing .lead-sidebar__input {
-    display: block;
+        display: inline-block;
+    width: 200px;
+    padding: 10px;
+    border-radius: 5px;
 }
 
 .lead-sidebar.is-editing [data-role="display"] {

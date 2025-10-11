@@ -7,6 +7,191 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 require_once __DIR__ . '/includes/config.php';
+
+/**
+ * Normalize an assignee label for comparison.
+ */
+function normalize_assignee_label(?string $value): string
+{
+    $trimmed = trim((string) $value);
+    if ($trimmed === '') {
+        return '';
+    }
+
+    return function_exists('mb_strtolower')
+        ? mb_strtolower($trimmed, 'UTF-8')
+        : strtolower($trimmed);
+}
+
+/**
+ * Extract a displayable stage label from the stored stage value.
+ */
+function format_lead_stage(?string $rawStage): string
+{
+    if ($rawStage === null || trim($rawStage) === '') {
+        return 'New';
+    }
+
+    $decoded = json_decode($rawStage, true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+        if (is_array($decoded)) {
+            $first = reset($decoded);
+            if (is_array($first)) {
+                $first = reset($first);
+            }
+            if (is_string($first) && trim($first) !== '') {
+                return trim($first);
+            }
+        } elseif (is_string($decoded) && trim($decoded) !== '') {
+            return trim($decoded);
+        }
+    }
+
+    $parts = array_filter(array_map('trim', explode(',', $rawStage)), static function ($part) {
+        return $part !== '';
+    });
+
+    if (!empty($parts)) {
+        $firstPart = (string) array_shift($parts);
+        $firstPart = trim($firstPart, " \t\n\r\0\x0B\"'");
+        if ($firstPart !== '') {
+            return $firstPart;
+        }
+    }
+
+    $cleaned = trim($rawStage, " \t\n\r\0\x0B\"[]");
+
+    return $cleaned !== '' ? $cleaned : 'New';
+}
+
+function stage_badge_class(string $stage): string
+{
+    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $stage));
+    return $slug !== '' ? $slug : 'new';
+}
+
+function lead_avatar_initial(string $name): string
+{
+    $trimmed = trim($name);
+    if ($trimmed === '') {
+        return '—';
+    }
+
+    if (function_exists('mb_substr') && function_exists('mb_strtoupper')) {
+        return mb_strtoupper(mb_substr($trimmed, 0, 1, 'UTF-8'), 'UTF-8');
+    }
+
+    return strtoupper(substr($trimmed, 0, 1));
+}
+
+$currentUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+$currentUserName = trim((string) ($_SESSION['username'] ?? ''));
+$currentUserEmail = trim((string) ($_SESSION['email'] ?? ''));
+$currentUserRole = trim((string) ($_SESSION['role'] ?? ''));
+
+$normalizedIdentifierSet = [];
+$primaryIdentifiers = [];
+
+$addIdentifier = static function (?string $value) use (&$primaryIdentifiers, &$normalizedIdentifierSet): void {
+    $normalized = normalize_assignee_label($value);
+    if ($normalized === '' || isset($normalizedIdentifierSet[$normalized])) {
+        return;
+    }
+    $normalizedIdentifierSet[$normalized] = true;
+    $primaryIdentifiers[] = $normalized;
+};
+
+$addIdentifier($currentUserName);
+$addIdentifier($currentUserEmail);
+
+if ($currentUserId !== null) {
+    $addIdentifier((string) $currentUserId);
+}
+
+$addIdentifier($currentUserRole);
+$addIdentifier($currentUserRole !== '' ? ucfirst($currentUserRole) : '');
+$addIdentifier($currentUserRole !== '' ? strtoupper($currentUserRole) : '');
+
+if ($currentUserRole === 'admin') {
+    $addIdentifier('administrator');
+}
+
+$leadsById = [];
+$leadQueryError = '';
+
+if (!empty($primaryIdentifiers)) {
+    $placeholders = implode(', ', array_fill(0, count($primaryIdentifiers), '?'));
+    $sql = "SELECT id, name, email, phone, stage, assigned_to, source FROM all_leads WHERE assigned_to IS NOT NULL AND TRIM(assigned_to) <> '' AND LOWER(TRIM(assigned_to)) IN ($placeholders) ORDER BY created_at DESC";
+    $stmt = $mysqli->prepare($sql);
+
+    if ($stmt instanceof mysqli_stmt) {
+        $paramTypes = str_repeat('s', count($primaryIdentifiers));
+        $stmt->bind_param($paramTypes, ...$primaryIdentifiers);
+
+        if ($stmt->execute()) {
+            $result = $stmt->get_result();
+            if ($result instanceof mysqli_result) {
+                while ($row = $result->fetch_assoc()) {
+                    if (isset($row['id'])) {
+                        $leadsById[(int) $row['id']] = $row;
+                    }
+                }
+                $result->free();
+            }
+        }
+
+        $stmt->close();
+    } else {
+        $leadQueryError = 'Unable to prepare the lead lookup query. Please try again later.';
+    }
+}
+
+$roleLikePatterns = [];
+
+if ($currentUserRole !== '') {
+    $normalizedRole = normalize_assignee_label($currentUserRole);
+    if ($normalizedRole !== '') {
+        $roleLikePatterns[] = '%' . $normalizedRole . '%';
+        if ($normalizedRole === 'admin') {
+            $roleLikePatterns[] = '%administrator%';
+        }
+    }
+}
+
+if (!empty($roleLikePatterns)) {
+    $roleLikePatterns = array_values(array_unique($roleLikePatterns));
+    $likeFragments = implode(' OR ', array_fill(0, count($roleLikePatterns), 'LOWER(assigned_to) LIKE ?'));
+    $sql = "SELECT id, name, email, phone, stage, assigned_to, source FROM all_leads WHERE assigned_to IS NOT NULL AND TRIM(assigned_to) <> '' AND ($likeFragments) ORDER BY created_at DESC";
+    $stmt = $mysqli->prepare($sql);
+
+    if ($stmt instanceof mysqli_stmt) {
+        $paramTypes = str_repeat('s', count($roleLikePatterns));
+        $stmt->bind_param($paramTypes, ...$roleLikePatterns);
+
+        if ($stmt->execute()) {
+            $result = $stmt->get_result();
+            if ($result instanceof mysqli_result) {
+                while ($row = $result->fetch_assoc()) {
+                    if (!isset($row['id'])) {
+                        continue;
+                    }
+                    $leadId = (int) $row['id'];
+                    if (!isset($leadsById[$leadId])) {
+                        $leadsById[$leadId] = $row;
+                    }
+                }
+                $result->free();
+            }
+        }
+
+        $stmt->close();
+    } elseif ($leadQueryError === '') {
+        $leadQueryError = 'Unable to prepare the role-based lead lookup query. Please try again later.';
+    }
+}
+
+$leads = array_values($leadsById);
+
 include __DIR__ . '/includes/common-header.php';
 ?>
 
@@ -149,113 +334,63 @@ include __DIR__ . '/includes/common-header.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>
-                                    <div class="lead-info">
-                                        <div class="avatar">N</div>
-                                        <div><strong>Nadia Petrov</strong></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contact-info">
-                                        <span><i class="bi bi-envelope"></i> nadia.petrov@email.com</span><br>
-                                        <span><i class="bi bi-telephone"></i> +1 202-555-0143</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="stage-badge new">New</div>
-                                </td>
-                                <td>
-                                    <div class="assigned-dropdown">
-                                        <select class="form-select assigned-select">
-                                            <option selected>John Smith</option>
-                                            <option>Sarah Lee</option>
-                                            <option>David Brown</option>
-                                            <option>Emma Wilson</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td>Agent Referral</td>
-                                <td>
-                                    <div class="action-icons">
-                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
-                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <div class="lead-info">
-                                        <div class="avatar">M</div>
-                                        <div><strong>Michael Johnson</strong></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contact-info">
-                                        <span><i class="bi bi-envelope"></i> michael.j@email.com</span><br>
-                                        <span><i class="bi bi-telephone"></i> +1 202-555-0199</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="stage-badge new">New</div>
-                                </td>
-                                <td>
-                                    <div class="assigned-dropdown">
-                                        <select class="form-select assigned-select">
-                                            <option>John Smith</option>
-                                            <option selected>Sarah Lee</option>
-                                            <option>David Brown</option>
-                                            <option>Emma Wilson</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td>Website Inquiry</td>
-                                <td>
-                                    <div class="action-icons">
-                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
-                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>
-                                    <div class="lead-info">
-                                        <div class="avatar">A</div>
-                                        <div><strong>Ayesha Khan</strong></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contact-info">
-                                        <span><i class="bi bi-envelope"></i> ayesha.khan@email.com</span><br>
-                                        <span><i class="bi bi-telephone"></i> +971 55 789 4561</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="stage-badge new">New</div>
-                                </td>
-                                <td>
-                                    <div class="assigned-dropdown">
-                                        <select class="form-select assigned-select">
-                                            <option>John Smith</option>
-                                            <option>Sarah Lee</option>
-                                            <option selected>David Brown</option>
-                                            <option>Emma Wilson</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td>Social Media</td>
-                                <td>
-                                    <div class="action-icons">
-                                        <a href="#" class="text-primary me-2" title="View"><i class="bi bi-eye"></i></a>
-                                        <a href="#" class="text-warning me-2" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
+                            <?php if ($leadQueryError !== ''): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-danger">
+                                        <?php echo htmlspecialchars($leadQueryError); ?>
+                                    </td>
+                                </tr>
+                            <?php elseif (empty($leads)): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">No leads assigned to you yet.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($leads as $lead): ?>
+                                    <?php
+                                    $leadName = trim((string) ($lead['name'] ?? ''));
+                                    $leadEmail = trim((string) ($lead['email'] ?? ''));
+                                    $leadPhone = trim((string) ($lead['phone'] ?? ''));
+                                    $assignedLabel = trim((string) ($lead['assigned_to'] ?? ''));
+                                    $sourceLabel = trim((string) ($lead['source'] ?? ''));
+                                    $stageLabel = format_lead_stage($lead['stage'] ?? '');
+                                    $stageClass = stage_badge_class($stageLabel);
+                                    $avatarInitial = lead_avatar_initial($leadName !== '' ? $leadName : ($assignedLabel !== '' ? $assignedLabel : ''));
+                                    $displayName = $leadName !== '' ? $leadName : 'Unnamed Lead';
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <div class="lead-info">
+                                                <div class="avatar"><?php echo htmlspecialchars($avatarInitial); ?></div>
+                                                <div><strong><?php echo htmlspecialchars($displayName); ?></strong></div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="contact-info">
+                                                <?php if ($leadEmail !== ''): ?>
+                                                    <span><i class="bi bi-envelope"></i> <?php echo htmlspecialchars($leadEmail); ?></span>
+                                                    <?php if ($leadPhone !== ''): ?><br><?php endif; ?>
+                                                <?php endif; ?>
+                                                <?php if ($leadPhone !== ''): ?>
+                                                    <span><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($leadPhone); ?></span>
+                                                <?php endif; ?>
+                                                <?php if ($leadEmail === '' && $leadPhone === ''): ?>
+                                                    <span class="text-muted">No contact details</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="stage-badge <?php echo htmlspecialchars($stageClass); ?>"><?php echo htmlspecialchars($stageLabel); ?></div>
+                                        </td>
+                                        <td><?php echo $assignedLabel !== '' ? htmlspecialchars($assignedLabel) : '—'; ?></td>
+                                        <td><?php echo $sourceLabel !== '' ? htmlspecialchars($sourceLabel) : '—'; ?></td>
+                                        <td>
+                                            <div class="action-icons">
+                                                <a href="all-leads.php" class="text-primary" title="View details in All Leads"><i class="bi bi-box-arrow-up-right"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
 

@@ -938,7 +938,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const attachmentLink = document.createElement("a");
           attachmentLink.className = "lead-remark__attachment";
           attachmentLink.textContent = file.name || "Attachment";
-          attachmentLink.href = file.url || "#";
+          attachmentLink.href = file.url || file.path || "#";
           attachmentLink.target = "_blank";
           attachmentsWrapper.appendChild(attachmentLink);
         });
@@ -970,7 +970,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const item = document.createElement("a");
       item.className = "lead-remark__attachment";
       const fileName = file?.name || "Document";
-      const fileUrl = file?.url || "#";
+      const fileUrl = file?.url || file?.path || "#";
       item.textContent = fileName;
       item.href = fileUrl;
       item.target = "_blank";
@@ -1033,6 +1033,40 @@ document.addEventListener("DOMContentLoaded", function () {
       timestamp.textContent = entry.timestamp || "—";
 
       item.append(description, timestamp);
+
+      const attachmentLinks = [];
+
+      if (entry?.file) {
+        const fileMeta = entry.file;
+        const link = document.createElement("a");
+        link.className = "lead-history__attachment";
+        link.textContent = fileMeta?.name || "Document";
+        link.href = fileMeta?.url || fileMeta?.path || "#";
+        link.target = "_blank";
+        link.rel = "noreferrer noopener";
+        attachmentLinks.push(link);
+      }
+
+      const metadataAttachments = entry?.metadata?.attachments;
+      if (Array.isArray(metadataAttachments)) {
+        metadataAttachments.forEach((file) => {
+          const link = document.createElement("a");
+          link.className = "lead-history__attachment";
+          link.textContent = file?.name || "Attachment";
+          link.href = file?.url || file?.path || "#";
+          link.target = "_blank";
+          link.rel = "noreferrer noopener";
+          attachmentLinks.push(link);
+        });
+      }
+
+      if (attachmentLinks.length) {
+        const attachmentsWrapper = document.createElement("div");
+        attachmentsWrapper.className = "lead-history__attachments";
+        attachmentLinks.forEach((link) => attachmentsWrapper.appendChild(link));
+        item.appendChild(attachmentsWrapper);
+      }
+
       historyContainer.appendChild(item);
     });
   };

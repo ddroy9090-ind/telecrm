@@ -234,6 +234,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let activeTrigger = null;
 
   const sidebarFields = {
+    avatar: leadSidebar.querySelector('[data-lead-field="avatarInitial"]'),
     name: leadSidebar.querySelector('[data-lead-field="name"]'),
     stage: leadSidebar.querySelector('[data-lead-field="stage"]'),
     ratingLabel: leadSidebar.querySelector('[data-lead-field="ratingLabel"]'),
@@ -249,6 +250,8 @@ document.addEventListener("DOMContentLoaded", function () {
     assignedTo: leadSidebar.querySelector('[data-lead-field="assignedTo"]'),
     createdAt: leadSidebar.querySelector('[data-lead-field="createdAt"]'),
     tags: leadSidebar.querySelector('[data-lead-field="tags"]'),
+    purpose: leadSidebar.querySelector('[data-lead-field="purpose"]'),
+    sizeRequired: leadSidebar.querySelector('[data-lead-field="sizeRequired"]'),
   };
 
   const quickActions = {
@@ -257,6 +260,11 @@ document.addEventListener("DOMContentLoaded", function () {
     whatsapp: leadSidebar.querySelector('[data-action="whatsapp"]'),
   };
 
+  const sidebarForm = leadSidebar.querySelector('[data-lead-form]');
+  const sidebarFeedback = leadSidebar.querySelector('[data-lead-feedback]');
+  const editButton = leadSidebar.querySelector('[data-action="edit"]');
+  const cancelEditButton = leadSidebar.querySelector('[data-action="cancel-edit"]');
+  const saveButton = leadSidebar.querySelector('[data-action="save-lead"]');
   const ratingStars = leadSidebar.querySelectorAll('[data-rating-star]');
   const remarksContainer = leadSidebar.querySelector('[data-lead-remarks]');
   const filesContainer = leadSidebar.querySelector('[data-lead-files]');
@@ -266,6 +274,33 @@ document.addEventListener("DOMContentLoaded", function () {
   const closeButton = leadSidebar.querySelector('[data-action="close"]');
   const deleteForm = document.getElementById("deleteLeadForm");
   const deleteInput = document.getElementById("deleteLeadInput");
+
+  const editableFieldElements = Array.from(leadSidebar.querySelectorAll('[data-edit-field]'));
+  const editableFields = editableFieldElements.reduce((accumulator, element) => {
+    const key = element.getAttribute('data-edit-field');
+    if (!key) {
+      return accumulator;
+    }
+
+    const field = {
+      container: element,
+      display: element.querySelector('[data-role="display"]') || element.querySelector('[data-lead-field]'),
+      input: element.querySelector('[data-role="input"]'),
+    };
+
+    if (field.input) {
+      field.input.disabled = true;
+    }
+
+    accumulator[key] = field;
+    return accumulator;
+  }, {});
+
+  const idInput = sidebarForm ? sidebarForm.querySelector('[data-edit-id]') : null;
+
+  let isEditing = false;
+  let currentLeadData = null;
+  let currentLeadRow = null;
 
   const setOverlayVisibility = (isVisible) => {
     if (overlayHideTimer) {
@@ -298,6 +333,10 @@ document.addEventListener("DOMContentLoaded", function () {
     leadSidebar.setAttribute("aria-hidden", "true");
     setOverlayVisibility(false);
     body.classList.remove("lead-sidebar-open");
+
+    setEditing(false);
+    clearFeedback();
+    currentLeadRow = null;
 
     if (activeTrigger) {
       activeTrigger.focus();
@@ -386,6 +425,256 @@ document.addEventListener("DOMContentLoaded", function () {
       chip.textContent = value;
       container.appendChild(chip);
     });
+  };
+
+  const escapeHtml = (value) =>
+    String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const clearFeedback = () => {
+    if (!sidebarFeedback) {
+      return;
+    }
+
+    sidebarFeedback.textContent = '';
+    sidebarFeedback.classList.remove('is-visible', 'is-success', 'is-error');
+    sidebarFeedback.hidden = true;
+  };
+
+  const showFeedback = (message, type = 'success') => {
+    if (!sidebarFeedback) {
+      return;
+    }
+
+    if (!message) {
+      clearFeedback();
+      return;
+    }
+
+    sidebarFeedback.textContent = message;
+    sidebarFeedback.hidden = false;
+    sidebarFeedback.classList.remove('is-success', 'is-error');
+    sidebarFeedback.classList.add('is-visible');
+
+    if (type === 'error') {
+      sidebarFeedback.classList.add('is-error');
+    } else {
+      sidebarFeedback.classList.add('is-success');
+    }
+  };
+
+  const formFieldMap = {
+    name: 'name',
+    stage: 'stage',
+    rating: 'rating',
+    email: 'email',
+    phone: 'phone',
+    nationality: 'nationality',
+    location_preferences: 'locationPreferences',
+    property_type: 'propertyType',
+    interested_in: 'interestedIn',
+    budget_range: 'budgetRange',
+    urgency: 'moveInTimeline',
+    size_required: 'sizeRequired',
+    source: 'source',
+    assigned_to: 'assignedTo',
+    purpose: 'purpose',
+  };
+
+  const applyFormValues = (leadData) => {
+    if (!sidebarForm) {
+      return;
+    }
+
+    Object.entries(formFieldMap).forEach(([fieldKey, payloadKey]) => {
+      const field = editableFields[fieldKey];
+      if (!field || !field.input) {
+        return;
+      }
+
+      const rawValue = leadData && payloadKey in leadData ? leadData[payloadKey] : '';
+      const value = Array.isArray(rawValue) ? rawValue.join(', ') : String(rawValue ?? '');
+
+      if (field.input.tagName === 'SELECT') {
+        let matched = false;
+        Array.from(field.input.options).forEach((option) => {
+          const isMatch = option.value === value;
+          option.selected = isMatch;
+          if (isMatch) {
+            matched = true;
+          }
+        });
+
+        if (!matched) {
+          if (value === '') {
+            field.input.value = '';
+          } else {
+            const option = new Option(value, value, true, true);
+            field.input.add(option);
+          }
+        }
+      } else {
+        field.input.value = value;
+      }
+    });
+
+    if (idInput) {
+      const idValue = leadData && 'id' in leadData ? leadData.id : '';
+      idInput.value = idValue ?? '';
+    }
+  };
+
+  const setEditing = (nextState) => {
+    const shouldEdit = Boolean(nextState);
+    if (shouldEdit === isEditing) {
+      if (!shouldEdit && currentLeadData) {
+        applyFormValues(currentLeadData);
+      }
+      return;
+    }
+
+    isEditing = shouldEdit;
+    leadSidebar.classList.toggle('is-editing', isEditing);
+
+    Object.values(editableFields).forEach((field) => {
+      if (field && field.input) {
+        field.input.disabled = !isEditing;
+      }
+    });
+
+    if (isEditing) {
+      clearFeedback();
+      const firstEditable = Object.values(editableFields).find((field) => field?.input);
+      if (firstEditable?.input) {
+        window.requestAnimationFrame(() => {
+          firstEditable.input.focus();
+          if (typeof firstEditable.input.select === 'function') {
+            firstEditable.input.select();
+          }
+        });
+      }
+    } else if (currentLeadData) {
+      applyFormValues(currentLeadData);
+    }
+  };
+
+  const setSavingState = (isSaving) => {
+    if (!saveButton) {
+      return;
+    }
+
+    saveButton.disabled = Boolean(isSaving);
+    saveButton.classList.toggle('is-loading', Boolean(isSaving));
+    saveButton.setAttribute('aria-busy', isSaving ? 'true' : 'false');
+  };
+
+  const gatherFormPayload = () => {
+    if (!sidebarForm) {
+      return null;
+    }
+
+    const formData = new FormData(sidebarForm);
+    const payload = {};
+
+    Object.keys(formFieldMap).forEach((fieldKey) => {
+      if (!editableFields[fieldKey]) {
+        return;
+      }
+
+      const rawValue = formData.get(fieldKey);
+      payload[fieldKey] = rawValue === null ? '' : String(rawValue).trim();
+    });
+
+    const idValue = formData.get('id') ?? currentLeadData?.id ?? '';
+    payload.id = Number(idValue || 0);
+
+    return payload;
+  };
+
+  const updateTableRowDom = (rowInfo, encodedJson) => {
+    if (!rowInfo || typeof rowInfo.id === 'undefined') {
+      return;
+    }
+
+    const row = leadTable?.querySelector(`tr[data-lead-id="${rowInfo.id}"]`);
+    if (!row) {
+      return null;
+    }
+
+    if (encodedJson) {
+      row.dataset.leadJson = encodedJson;
+    }
+
+    if (typeof rowInfo.name !== 'undefined') {
+      row.dataset.leadName = rowInfo.name || 'Unnamed Lead';
+      row.setAttribute('aria-label', `View details for ${row.dataset.leadName}`);
+      const nameElement = row.querySelector('[data-lead-name]');
+      if (nameElement) {
+        nameElement.textContent = row.dataset.leadName;
+      }
+    }
+
+    if (typeof rowInfo.avatarInitial !== 'undefined') {
+      const avatarElement = row.querySelector('[data-lead-avatar]');
+      if (avatarElement) {
+        avatarElement.textContent = rowInfo.avatarInitial || '';
+      }
+    }
+
+    const contactContainer = row.querySelector('[data-lead-contact]');
+    if (contactContainer) {
+      const fragments = [];
+      if (rowInfo.email) {
+        fragments.push(`<span data-lead-contact-email><i class="bi bi-envelope"></i> ${escapeHtml(rowInfo.email)}</span>`);
+      }
+      if (rowInfo.phone) {
+        const phoneMarkup = `<span data-lead-contact-phone><i class="bi bi-telephone"></i> ${escapeHtml(rowInfo.phone)}</span>`;
+        if (fragments.length) {
+          fragments.push('<br>');
+        }
+        fragments.push(phoneMarkup);
+      }
+      if (!fragments.length) {
+        fragments.push('<span class="text-muted" data-lead-contact-empty>No contact details</span>');
+      }
+      contactContainer.innerHTML = fragments.join('');
+    }
+
+    const stageBadge = row.querySelector('[data-lead-stage-pill]');
+    if (stageBadge) {
+      stageBadge.textContent = rowInfo.stage || 'New';
+      stageBadge.className = 'stage-badge';
+      if (rowInfo.stageClass) {
+        stageBadge.classList.add(rowInfo.stageClass);
+      }
+    }
+
+    const sourceCell = row.querySelector('[data-lead-source]');
+    if (sourceCell) {
+      sourceCell.textContent = rowInfo.source || '—';
+    }
+
+    const assignedSelect = row.querySelector('[data-lead-assigned-select]');
+    if (assignedSelect) {
+      const desiredValue = rowInfo.assigned_to || '';
+      let hasMatch = false;
+      Array.from(assignedSelect.options).forEach((option) => {
+        const isMatch = option.value === desiredValue;
+        option.selected = isMatch;
+        if (isMatch) {
+          hasMatch = true;
+        }
+      });
+      if (!hasMatch) {
+        assignedSelect.value = '';
+      }
+    }
+
+    return row;
   };
 
   const buildWhatsappLink = (phoneNumber) => {
@@ -592,6 +881,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const hasValue = value && String(value).trim() !== "";
     button.classList.toggle("is-disabled", !hasValue);
+    button.setAttribute("aria-disabled", hasValue ? "false" : "true");
 
     if (!hasValue) {
       button.setAttribute("href", "#");
@@ -616,61 +906,85 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   const populateSidebar = (payload) => {
-    const leadData = payload || {};
+    const leadData = payload ? { ...payload } : {};
+    currentLeadData = {
+      ...leadData,
+      tags: Array.isArray(leadData.tags) ? [...leadData.tags] : leadData.tags,
+    };
 
-    setTextContent(sidebarFields.name, leadData.name || "Unnamed Lead", "Unnamed Lead");
+    if (sidebarFields.avatar) {
+      const avatarValue = currentLeadData.avatarInitial || currentLeadData.name || '';
+      sidebarFields.avatar.textContent = avatarValue ? avatarValue.charAt(0).toUpperCase() : '';
+    }
+
+    setTextContent(sidebarFields.name, currentLeadData.name || "Unnamed Lead", "Unnamed Lead");
 
     if (sidebarFields.stage) {
-      sidebarFields.stage.textContent = leadData.stage || "New";
+      sidebarFields.stage.textContent = currentLeadData.stage || "New";
       sidebarFields.stage.className = "lead-stage-pill stage-badge";
-      if (leadData.stageClass) {
-        sidebarFields.stage.classList.add(leadData.stageClass);
+      if (currentLeadData.stageClass) {
+        sidebarFields.stage.classList.add(currentLeadData.stageClass);
       }
     }
 
-    const numericRating = ratingValueFromString(leadData.rating);
+    const numericRating = ratingValueFromString(currentLeadData.rating);
     updateRatingStars(numericRating);
     if (sidebarFields.ratingLabel) {
       sidebarFields.ratingLabel.textContent = formatRatingLabel(
-        leadData.rating,
+        currentLeadData.rating,
         numericRating,
         false
       );
-      sidebarFields.ratingLabel.dataset.rawRating = String(leadData.rating || "");
+      sidebarFields.ratingLabel.dataset.rawRating = String(currentLeadData.rating || "");
     }
 
     setLinkField(
       sidebarFields.email,
-      leadData.email,
+      currentLeadData.email,
       (value) => `mailto:${value}`,
       sidebarFields.email?.dataset.emptyText || "No email provided"
     );
 
     setLinkField(
       sidebarFields.phone,
-      leadData.phone,
+      currentLeadData.phone,
       formatPhoneLink,
       sidebarFields.phone?.dataset.emptyText || "No phone number"
     );
 
-    setTextContent(sidebarFields.nationality, leadData.nationality);
-    setTextContent(sidebarFields.location, leadData.locationPreferences || leadData.propertiesInterestedIn);
-    setTextContent(sidebarFields.propertyType, leadData.propertyType);
-    renderChips(sidebarFields.interestedIn, leadData.interestedIn, "No property interests added.");
-    setTextContent(sidebarFields.budget, leadData.budgetRange);
-    setTextContent(sidebarFields.moveIn, leadData.moveInTimeline);
-    setTextContent(sidebarFields.source, leadData.source);
-    setTextContent(sidebarFields.assignedTo, leadData.assignedTo);
-    setTextContent(sidebarFields.createdAt, leadData.createdAtDisplay || leadData.createdAt);
-    renderChips(sidebarFields.tags, leadData.tags, "No tags yet.");
+    setTextContent(sidebarFields.nationality, currentLeadData.nationality);
+    setTextContent(
+      sidebarFields.location,
+      currentLeadData.locationPreferences || currentLeadData.propertiesInterestedIn
+    );
+    setTextContent(sidebarFields.propertyType, currentLeadData.propertyType);
+    renderChips(
+      sidebarFields.interestedIn,
+      currentLeadData.interestedIn,
+      "No property interests added."
+    );
+    setTextContent(sidebarFields.budget, currentLeadData.budgetRange);
+    setTextContent(sidebarFields.moveIn, currentLeadData.moveInTimeline);
+    setTextContent(sidebarFields.source, currentLeadData.source);
+    setTextContent(sidebarFields.assignedTo, currentLeadData.assignedTo);
+    setTextContent(
+      sidebarFields.createdAt,
+      currentLeadData.createdAtDisplay || currentLeadData.createdAt
+    );
+    setTextContent(sidebarFields.purpose, currentLeadData.purpose);
+    setTextContent(sidebarFields.sizeRequired, currentLeadData.sizeRequired);
+    renderChips(sidebarFields.tags, currentLeadData.tags, "No tags yet.");
 
-    renderRemarks(leadData.remarks, leadData.createdAtDisplay, leadData.assignedTo);
-    renderFiles(leadData.files);
-    renderHistory(leadData.history);
+    renderRemarks(currentLeadData.remarks, currentLeadData.createdAtDisplay, currentLeadData.assignedTo);
+    renderFiles(currentLeadData.files);
+    renderHistory(currentLeadData.history);
 
-    setQuickAction("call", leadData.phone || leadData.alternatePhone);
-    setQuickAction("email", leadData.email || leadData.alternateEmail);
-    setQuickAction("whatsapp", leadData.phone || leadData.alternatePhone);
+    setQuickAction("call", currentLeadData.phone || currentLeadData.alternatePhone);
+    setQuickAction("email", currentLeadData.email || currentLeadData.alternateEmail);
+    setQuickAction("whatsapp", currentLeadData.phone || currentLeadData.alternatePhone);
+
+    applyFormValues(currentLeadData);
+    setEditing(false);
   };
 
   tabs.forEach((tab) => {
@@ -712,6 +1026,92 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  if (editButton) {
+    editButton.addEventListener('click', () => {
+      if (!currentLeadData) {
+        return;
+      }
+      setEditing(true);
+    });
+  }
+
+  if (cancelEditButton) {
+    cancelEditButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      setEditing(false);
+      clearFeedback();
+    });
+  }
+
+  if (saveButton) {
+    saveButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (sidebarForm) {
+        sidebarForm.requestSubmit();
+      }
+    });
+  }
+
+  if (sidebarForm) {
+    sidebarForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!isEditing) {
+        return;
+      }
+
+      const payload = gatherFormPayload();
+      if (!payload || !payload.id) {
+        showFeedback('Lead information is incomplete.', 'error');
+        return;
+      }
+
+      setSavingState(true);
+
+      fetch('all-leads.php?action=update-lead', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(async (response) => {
+          const data = await response
+            .json()
+            .catch(() => ({ success: false, message: 'Unable to update the lead.' }));
+
+          if (!response.ok || !data.success) {
+            const errorMessage = data?.message || 'Unable to update the lead.';
+            throw new Error(errorMessage);
+          }
+
+          return data;
+        })
+        .then((data) => {
+          if (data.lead?.row) {
+            const updatedRow = updateTableRowDom(data.lead.row, data.lead?.json);
+            if (updatedRow) {
+              currentLeadRow = updatedRow;
+            }
+          }
+
+          if (data.lead?.payload) {
+            populateSidebar(data.lead.payload);
+          } else {
+            setEditing(false);
+          }
+
+          showFeedback(data.message || 'Lead updated successfully.', 'success');
+        })
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : 'Unable to update the lead.';
+          showFeedback(message, 'error');
+        })
+        .finally(() => {
+          setSavingState(false);
+        });
+    });
+  }
+
   const interactiveSelectors = "a, button, select, input, textarea, label, [data-prevent-lead-open], .dropdown-menu";
 
   const closeDropdownMenu = (element) => {
@@ -751,6 +1151,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       const parsed = JSON.parse(payload);
+      currentLeadRow = row;
+      clearFeedback();
       populateSidebar(parsed);
       activeTrigger = trigger || row;
       openSidebar();

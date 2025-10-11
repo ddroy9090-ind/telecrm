@@ -136,6 +136,246 @@ function lead_avatar_initial(string $name): string
 
     return strtoupper(substr($name, 0, 1));
 }
+
+function build_lead_payload(array $lead): array
+{
+    $leadName = trim($lead['name'] ?? '') !== '' ? $lead['name'] : 'Unnamed Lead';
+    $stageLabel = format_lead_stage($lead['stage'] ?? '');
+    $stageClass = stage_badge_class($stageLabel);
+    $leadEmail = trim((string) ($lead['email'] ?? ''));
+    $leadPhone = trim((string) ($lead['phone'] ?? ''));
+    $assignedTo = trim((string) ($lead['assigned_to'] ?? ''));
+    $createdAtRaw = $lead['created_at'] ?? null;
+    $createdAtDisplay = '—';
+    if ($createdAtRaw) {
+        $createdTimestamp = strtotime((string) $createdAtRaw);
+        if ($createdTimestamp !== false) {
+            $createdAtDisplay = date('M d, Y g:i A', $createdTimestamp);
+        }
+    }
+
+    $leadTags = array_values(array_filter(array_map('trim', [
+        $lead['purpose'] ?? '',
+        $lead['urgency'] ?? '',
+        $lead['size_required'] ?? '',
+    ]), static function ($tag) {
+        return $tag !== '';
+    }));
+
+    $historyEntries = [];
+    if ($stageLabel !== '') {
+        $historyEntries[] = [
+            'description' => 'Stage set to ' . $stageLabel,
+            'timestamp' => $createdAtDisplay,
+        ];
+    }
+    if ($assignedTo !== '') {
+        $historyEntries[] = [
+            'description' => 'Assigned to ' . $assignedTo,
+            'timestamp' => $createdAtDisplay,
+        ];
+    }
+    $historyEntries[] = [
+        'description' => 'Lead created',
+        'timestamp' => $createdAtDisplay,
+    ];
+
+    return [
+        'id' => isset($lead['id']) ? (int) $lead['id'] : null,
+        'name' => $leadName,
+        'stage' => $stageLabel,
+        'stageClass' => $stageClass,
+        'rating' => trim((string) ($lead['rating'] ?? '')),
+        'phone' => $leadPhone,
+        'alternatePhone' => trim((string) ($lead['alternate_phone'] ?? '')),
+        'email' => $leadEmail,
+        'alternateEmail' => trim((string) ($lead['alternate_email'] ?? '')),
+        'nationality' => trim((string) ($lead['nationality'] ?? '')),
+        'locationPreferences' => trim((string) ($lead['location_preferences'] ?? '')),
+        'propertyType' => trim((string) ($lead['property_type'] ?? '')),
+        'interestedIn' => trim((string) ($lead['interested_in'] ?? '')),
+        'budgetRange' => trim((string) ($lead['budget_range'] ?? '')),
+        'moveInTimeline' => trim((string) ($lead['urgency'] ?? '')),
+        'propertiesInterestedIn' => trim((string) ($lead['location_preferences'] ?? '')),
+        'purpose' => trim((string) ($lead['purpose'] ?? '')),
+        'sizeRequired' => trim((string) ($lead['size_required'] ?? '')),
+        'source' => trim((string) ($lead['source'] ?? '')) !== '' ? trim((string) ($lead['source'] ?? '')) : '—',
+        'assignedTo' => $assignedTo,
+        'createdAt' => $createdAtRaw,
+        'createdAtDisplay' => $createdAtDisplay,
+        'tags' => $leadTags,
+        'remarks' => [],
+        'files' => [],
+        'history' => $historyEntries,
+        'avatarInitial' => lead_avatar_initial($leadName),
+    ];
+}
+
+$stageOptions = [
+    'New',
+    'Contacted',
+    'Follow Up - In Progress',
+    'Interested',
+    'Negotiation',
+    'Closed',
+    'Lost',
+];
+
+$ratingOptions = [
+    'New',
+    'Cold',
+    'Warm',
+    'Hot',
+    'Nurture',
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['action'] === 'update-lead')) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $rawInput = file_get_contents('php://input');
+    $payload = json_decode($rawInput ?: '[]', true);
+
+    if (!is_array($payload)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid request payload.']);
+        exit;
+    }
+
+    $leadId = isset($payload['id']) ? (int) $payload['id'] : 0;
+    if ($leadId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+        exit;
+    }
+
+    $fieldsMap = [
+        'name' => 'name',
+        'stage' => 'stage',
+        'rating' => 'rating',
+        'assigned_to' => 'assigned_to',
+        'source' => 'source',
+        'phone' => 'phone',
+        'alternate_phone' => 'alternate_phone',
+        'email' => 'email',
+        'alternate_email' => 'alternate_email',
+        'nationality' => 'nationality',
+        'location_preferences' => 'location_preferences',
+        'property_type' => 'property_type',
+        'interested_in' => 'interested_in',
+        'budget_range' => 'budget_range',
+        'urgency' => 'urgency',
+        'purpose' => 'purpose',
+        'size_required' => 'size_required',
+    ];
+
+    $updates = [];
+    $types = '';
+    $params = [];
+
+    foreach ($fieldsMap as $payloadKey => $columnName) {
+        if (array_key_exists($payloadKey, $payload)) {
+            $value = $payload[$payloadKey];
+            if (is_string($value)) {
+                $value = trim($value);
+            } elseif ($value === null) {
+                $value = null;
+            } else {
+                $value = trim((string) $value);
+            }
+
+            $updates[] = "`{$columnName}` = ?";
+            $params[] = $value === '' ? null : $value;
+            $types .= 's';
+        }
+    }
+
+    if (empty($updates)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'No changes were provided.']);
+        exit;
+    }
+
+    $params[] = $leadId;
+    $types .= 'i';
+
+    $updateStatement = $mysqli->prepare('UPDATE all_leads SET ' . implode(', ', $updates) . ' WHERE id = ?');
+    if (!$updateStatement instanceof mysqli_stmt) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to prepare the update statement.']);
+        exit;
+    }
+
+    $bindParams = [];
+    $bindParams[] = &$types;
+    foreach ($params as $index => $paramValue) {
+        $bindParams[] = &$params[$index];
+    }
+
+    $bindResult = call_user_func_array([$updateStatement, 'bind_param'], $bindParams);
+    if (!$bindResult || !$updateStatement->execute()) {
+        $updateStatement->close();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to update the lead.']);
+        exit;
+    }
+
+    $updateStatement->close();
+
+    $selectStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+    if (!$selectStatement instanceof mysqli_stmt) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to prepare the fetch statement.']);
+        exit;
+    }
+
+    $selectStatement->bind_param('i', $leadId);
+    if (!$selectStatement->execute()) {
+        $selectStatement->close();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to retrieve the updated lead.']);
+        exit;
+    }
+
+    $result = $selectStatement->get_result();
+    $updatedLeadRow = $result ? $result->fetch_assoc() : null;
+    $selectStatement->close();
+
+    if (!$updatedLeadRow) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+        exit;
+    }
+
+    $updatedPayload = build_lead_payload($updatedLeadRow);
+    $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
+    if ($encodedPayload === false) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to encode the updated lead payload.']);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Lead updated successfully.',
+        'lead' => [
+            'row' => [
+                'id' => (int) $updatedLeadRow['id'],
+                'name' => $updatedPayload['name'],
+                'email' => $updatedPayload['email'],
+                'phone' => $updatedPayload['phone'],
+                'stage' => $updatedPayload['stage'],
+                'stageClass' => $updatedPayload['stageClass'],
+                'source' => $updatedPayload['source'],
+                'assigned_to' => $updatedPayload['assignedTo'],
+                'avatarInitial' => $updatedPayload['avatarInitial'],
+            ],
+            'payload' => $updatedPayload,
+            'json' => $encodedPayload,
+        ],
+    ]);
+    exit;
+}
 ?>
 
 <div id="adminPanel">
@@ -322,121 +562,64 @@ function lead_avatar_initial(string $name): string
                             <?php else: ?>
                                 <?php foreach ($leads as $lead): ?>
                                     <?php
-                                    $leadName = trim($lead['name'] ?? '') !== '' ? $lead['name'] : 'Unnamed Lead';
-                                    $leadEmail = trim($lead['email'] ?? '');
-                                    $leadPhone = trim($lead['phone'] ?? '');
-                                    $stageLabel = format_lead_stage($lead['stage'] ?? '');
-                                    $stageClass = stage_badge_class($stageLabel);
-                                    $sourceLabel = trim($lead['source'] ?? '') !== '' ? $lead['source'] : '—';
-                                    $avatarInitial = lead_avatar_initial($leadName);
-                                    $createdAtRaw = $lead['created_at'] ?? null;
-                                    $createdAtDisplay = '—';
-                                    if ($createdAtRaw) {
-                                        $createdTimestamp = strtotime((string) $createdAtRaw);
-                                        if ($createdTimestamp !== false) {
-                                            $createdAtDisplay = date('M d, Y g:i A', $createdTimestamp);
-                                        }
-                                    }
-
-                                    $leadTags = array_values(array_filter(array_map('trim', [
-                                        $lead['purpose'] ?? '',
-                                        $lead['urgency'] ?? '',
-                                        $lead['size_required'] ?? '',
-                                    ]), static function ($tag) {
-                                        return $tag !== '';
-                                    }));
-
-                                    $historyEntries = [];
-                                    if ($stageLabel !== '') {
-                                        $historyEntries[] = [
-                                            'description' => 'Stage set to ' . $stageLabel,
-                                            'timestamp' => $createdAtDisplay,
-                                        ];
-                                    }
-                                    if (!empty($lead['assigned_to'])) {
-                                        $historyEntries[] = [
-                                            'description' => 'Assigned to ' . trim((string) $lead['assigned_to']),
-                                            'timestamp' => $createdAtDisplay,
-                                        ];
-                                    }
-                                    $historyEntries[] = [
-                                        'description' => 'Lead created',
-                                        'timestamp' => $createdAtDisplay,
-                                    ];
-
-                                    $leadPayload = [
-                                        'id' => isset($lead['id']) ? (int) $lead['id'] : null,
-                                        'name' => $leadName,
-                                        'stage' => $stageLabel,
-                                        'stageClass' => $stageClass,
-                                        'rating' => trim((string) ($lead['rating'] ?? '')),
-                                        'phone' => $leadPhone,
-                                        'alternatePhone' => trim((string) ($lead['alternate_phone'] ?? '')),
-                                        'email' => $leadEmail,
-                                        'alternateEmail' => trim((string) ($lead['alternate_email'] ?? '')),
-                                        'nationality' => trim((string) ($lead['nationality'] ?? '')),
-                                        'locationPreferences' => trim((string) ($lead['location_preferences'] ?? '')),
-                                        'propertyType' => trim((string) ($lead['property_type'] ?? '')),
-                                        'interestedIn' => trim((string) ($lead['interested_in'] ?? '')),
-                                        'budgetRange' => trim((string) ($lead['budget_range'] ?? '')),
-                                        'moveInTimeline' => trim((string) ($lead['urgency'] ?? '')),
-                                        'propertiesInterestedIn' => trim((string) ($lead['location_preferences'] ?? '')),
-                                        'purpose' => trim((string) ($lead['purpose'] ?? '')),
-                                        'source' => $sourceLabel,
-                                        'assignedTo' => trim((string) ($lead['assigned_to'] ?? '')),
-                                        'createdAt' => $createdAtRaw,
-                                        'createdAtDisplay' => $createdAtDisplay,
-                                        'tags' => $leadTags,
-                                        'remarks' => [],
-                                        'files' => [],
-                                        'history' => $historyEntries,
-                                    ];
-
+                                    $leadPayload = build_lead_payload($lead);
                                     $leadJson = htmlspecialchars(json_encode($leadPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+                                    $leadName = $leadPayload['name'];
+                                    $leadEmail = $leadPayload['email'];
+                                    $leadPhone = $leadPayload['phone'];
+                                    $stageLabel = $leadPayload['stage'];
+                                    $stageClass = $leadPayload['stageClass'];
+                                    $sourceLabel = $leadPayload['source'];
+                                    $avatarInitial = $leadPayload['avatarInitial'];
+                                    $assignedLabel = $leadPayload['assignedTo'];
                                     ?>
-                                    <tr class="lead-table-row" data-lead-json="<?php echo $leadJson; ?>" data-lead-id="<?php echo isset($lead['id']) ? (int) $lead['id'] : 0; ?>" data-lead-name="<?php echo htmlspecialchars($leadName); ?>" tabindex="0" role="button" aria-label="View details for <?php echo htmlspecialchars($leadName); ?>">
+                                    <tr class="lead-table-row" data-lead-json="<?php echo $leadJson; ?>" data-lead-id="<?php echo isset($leadPayload['id']) ? (int) $leadPayload['id'] : 0; ?>" data-lead-name="<?php echo htmlspecialchars($leadName); ?>" tabindex="0" role="button" aria-label="View details for <?php echo htmlspecialchars($leadName); ?>">
                                         <td>
                                             <div class="lead-info">
-                                                <div class="avatar"><?php echo htmlspecialchars($avatarInitial); ?></div>
-                                                <div><strong><?php echo htmlspecialchars($leadName); ?></strong></div>
+                                                <div class="avatar" data-lead-avatar><?php echo htmlspecialchars($avatarInitial); ?></div>
+                                                <div><strong data-lead-name><?php echo htmlspecialchars($leadName); ?></strong></div>
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="contact-info">
+                                            <div class="contact-info" data-lead-contact>
                                                 <?php if ($leadEmail !== ''): ?>
-                                                    <span><i class="bi bi-envelope"></i> <?php echo htmlspecialchars($leadEmail); ?></span><br>
+                                                    <span data-lead-contact-email><i class="bi bi-envelope"></i> <?php echo htmlspecialchars($leadEmail); ?></span>
+                                                    <?php if ($leadPhone !== ''): ?><br><?php endif; ?>
                                                 <?php endif; ?>
                                                 <?php if ($leadPhone !== ''): ?>
-                                                    <span><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($leadPhone); ?></span>
+                                                    <span data-lead-contact-phone><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($leadPhone); ?></span>
                                                 <?php endif; ?>
                                                 <?php if ($leadEmail === '' && $leadPhone === ''): ?>
-                                                    <span class="text-muted">No contact details</span>
+                                                    <span class="text-muted" data-lead-contact-empty>No contact details</span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td>
-                                            <div class="stage-badge <?php echo htmlspecialchars($stageClass); ?>"><?php echo htmlspecialchars($stageLabel); ?></div>
+                                        <td data-lead-stage>
+                                            <div class="stage-badge <?php echo htmlspecialchars($stageClass); ?>" data-lead-stage-pill><?php echo htmlspecialchars($stageLabel); ?></div>
                                         </td>
                                         <td>
                                             <div class="assigned-dropdown" data-prevent-lead-open>
-                                                <select class="form-select assigned-select">
+                                                <select class="form-select assigned-select" data-lead-assigned-select>
+                                                    <option value="">Unassigned</option>
                                                     <?php foreach ($users as $userId => $userName): ?>
                                                         <?php
                                                         $isSelected = false;
-                                                        if ($loggedInUserId !== null) {
-                                                            $isSelected = $loggedInUserId === (int) $userId;
+                                                        if ($assignedLabel !== '') {
+                                                            $isSelected = strcasecmp($assignedLabel, $userName) === 0;
                                                         } elseif ($loggedInUserName !== '') {
                                                             $isSelected = strcasecmp($loggedInUserName, $userName) === 0;
+                                                        } elseif ($loggedInUserId !== null) {
+                                                            $isSelected = $loggedInUserId === (int) $userId;
                                                         }
                                                         ?>
-                                                        <option value="<?php echo htmlspecialchars((string) $userId); ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
+                                                        <option value="<?php echo htmlspecialchars($userName); ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
                                                             <?php echo htmlspecialchars($userName); ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
                                         </td>
-                                        <td><?php echo htmlspecialchars($sourceLabel); ?></td>
+                                        <td data-lead-source><?php echo htmlspecialchars($sourceLabel); ?></td>
                                         <td>
                                             <div class="dropdown" data-prevent-lead-open>
                                                 <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -445,7 +628,7 @@ function lead_avatar_initial(string $name): string
                                                 <ul class="dropdown-menu">
                                                     <li><button class="dropdown-item" type="button" data-lead-action="view">View</button></li>
                                                     <li><button class="dropdown-item" type="button">Edit</button></li>
-                                                    <li><button class="dropdown-item text-danger" type="button" data-lead-action="delete" data-lead-id="<?php echo isset($lead['id']) ? (int) $lead['id'] : 0; ?>" data-lead-name="<?php echo htmlspecialchars($leadName); ?>">Delete</button></li>
+                                                    <li><button class="dropdown-item text-danger" type="button" data-lead-action="delete" data-lead-id="<?php echo isset($leadPayload['id']) ? (int) $leadPayload['id'] : 0; ?>" data-lead-name="<?php echo htmlspecialchars($leadName); ?>">Delete</button></li>
                                                 </ul>
                                             </div>
                                         </td>
@@ -462,179 +645,256 @@ function lead_avatar_initial(string $name): string
         <div class="lead-sidebar-overlay" id="leadSidebarOverlay" hidden></div>
         <aside class="lead-sidebar" id="leadSidebar" aria-hidden="true">
             <div class="lead-sidebar__inner">
-                <div class="lead-sidebar__header">
-                    <div class="lead-sidebar__headline">
-                        <h2 class="lead-sidebar__name" data-lead-field="name">Lead Name</h2>
-                        <div class="lead-sidebar__stage">
-                            <span class="lead-stage-pill" data-lead-field="stage">Stage</span>
-                        </div>
-                    </div>
+                <header class="lead-sidebar__header">
+                    <div class="lead-sidebar__header-background"></div>
                     <button type="button" class="lead-sidebar__close" data-action="close" aria-label="Close lead details">
                         <i class="bi bi-x-lg"></i>
                     </button>
-                </div>
-                <div class="lead-sidebar__meta">
-                    <div class="lead-rating" data-lead-rating>
-                        <div class="lead-rating__stars" role="radiogroup" aria-label="Lead rating">
-                            <?php for ($star = 1; $star <= 5; $star++): ?>
-                                <button type="button" class="lead-rating__star" data-rating-star="<?php echo $star; ?>" aria-label="Rate <?php echo $star; ?> star<?php echo $star === 1 ? '' : 's'; ?>" aria-pressed="false">
-                                    <i class="bi bi-star"></i>
-                                </button>
-                            <?php endfor; ?>
+                    <div class="lead-sidebar__header-content">
+                        <div class="lead-sidebar__header-text">
+                            <p class="lead-sidebar__header-title">Lead Details</p>
+                            <p class="lead-sidebar__header-subtitle">Complete information and activity history</p>
                         </div>
-                        <span class="lead-rating__value" data-lead-field="ratingLabel">Not rated</span>
-                    </div>
-                    <div class="lead-quick-actions">
-                        <a href="#" class="lead-quick-actions__btn" data-action="call"><i class="bi bi-telephone"></i> Call</a>
-                        <a href="#" class="lead-quick-actions__btn" data-action="email"><i class="bi bi-envelope"></i> Email</a>
-                        <a href="#" class="lead-quick-actions__btn" data-action="whatsapp"><i class="bi bi-whatsapp"></i> WhatsApp</a>
-                    </div>
-                </div>
-
-                <section class="lead-sidebar__section">
-                    <h3 class="lead-sidebar__section-title">Contact Information</h3>
-                    <div class="lead-sidebar__details">
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-envelope"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Email</span>
-                                <a href="#" class="lead-sidebar__item-value" data-lead-field="email" data-empty-text="No email provided">No email provided</a>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-telephone"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Phone Number</span>
-                                <a href="#" class="lead-sidebar__item-value" data-lead-field="phone" data-empty-text="No phone number">No phone number</a>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-flag"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Nationality</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="nationality">—</span>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-geo-alt"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Location</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="location">—</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="lead-sidebar__section">
-                    <h3 class="lead-sidebar__section-title">Property Preferences</h3>
-                    <div class="lead-sidebar__details">
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-building"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Property Type</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="propertyType">—</span>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-collection"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Properties Interested In</span>
-                                <div class="lead-sidebar__chips" data-lead-field="interestedIn"></div>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-cash-coin"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Budget Range</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="budget">—</span>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-calendar-event"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Timeline / Expected Move-in</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="moveIn">—</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="lead-sidebar__section">
-                    <h3 class="lead-sidebar__section-title">Lead Information</h3>
-                    <div class="lead-sidebar__details">
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-megaphone"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Source</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="source">—</span>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-person-check"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Assigned To</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="assignedTo">—</span>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-clock-history"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Created At</span>
-                                <span class="lead-sidebar__item-value" data-lead-field="createdAt">—</span>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar__item">
-                            <span class="lead-sidebar__item-icon"><i class="bi bi-tags"></i></span>
-                            <div class="lead-sidebar__item-content">
-                                <span class="lead-sidebar__item-label">Tags</span>
-                                <div class="lead-sidebar__chips" data-lead-field="tags"></div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="lead-sidebar__section lead-sidebar__section--tabs">
-                    <div class="lead-sidebar-tabs" role="tablist">
-                        <button type="button" class="lead-sidebar-tab is-active" data-tab-target="remarks" role="tab" aria-selected="true">Remarks</button>
-                        <button type="button" class="lead-sidebar-tab" data-tab-target="files" role="tab" aria-selected="false">Files</button>
-                        <button type="button" class="lead-sidebar-tab" data-tab-target="history" role="tab" aria-selected="false">History</button>
-                    </div>
-                    <div class="lead-sidebar-tabpanels">
-                        <div class="lead-sidebar-panel is-active" data-tab-panel="remarks" role="tabpanel">
-                            <div class="lead-remarks" data-lead-remarks></div>
-                            <form class="lead-remark-form" action="#" method="post" onsubmit="return false;">
-                                <label for="leadRemarkInput" class="form-label">Add Remark</label>
-                                <textarea id="leadRemarkInput" class="form-control" rows="3" placeholder="Add a note about this lead..."></textarea>
-                                <div class="lead-remark-form__actions">
-                                    <label class="lead-file-upload">
-                                        <input type="file" class="lead-file-upload__input" multiple>
-                                        <span class="lead-file-upload__btn"><i class="bi bi-paperclip"></i> Attach Files</span>
-                                    </label>
-                                    <button type="submit" class="btn btn-primary">Save</button>
+                        <div class="lead-sidebar__profile">
+                            <div class="lead-sidebar__avatar" data-lead-field="avatarInitial">J</div>
+                            <div class="lead-sidebar__profile-info">
+                                <div class="lead-sidebar__title-row" data-edit-field="name">
+                                    <h2 class="lead-sidebar__name" data-lead-field="name" data-role="display">Lead Name</h2>
+                                    <input type="text" class="form-control lead-sidebar__input lead-sidebar__name-input" data-role="input" name="name" placeholder="Enter lead name">
+                                    <button type="button" class="lead-sidebar__edit" data-action="edit" aria-label="Edit lead details">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
                                 </div>
-                            </form>
-                        </div>
-                        <div class="lead-sidebar-panel" data-tab-panel="files" role="tabpanel" aria-hidden="true">
-                            <div class="lead-files" data-lead-files>
-                                <p class="lead-empty-state">No files uploaded yet.</p>
+                                <div class="lead-sidebar__status-group">
+                                    <div class="lead-sidebar__stage" data-edit-field="stage">
+                                        <span class="lead-stage-pill stage-badge" data-lead-field="stage" data-role="display">New</span>
+                                        <select class="form-select lead-sidebar__input" data-role="input" name="stage">
+                                            <?php foreach ($stageOptions as $stageOption): ?>
+                                                <option value="<?php echo htmlspecialchars($stageOption); ?>"><?php echo htmlspecialchars($stageOption); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="lead-sidebar__rating" data-edit-field="rating">
+                                        <span class="lead-sidebar__rating-label" data-lead-field="ratingLabel" data-role="display">Not rated</span>
+                                        <select class="form-select lead-sidebar__input" data-role="input" name="rating">
+                                            <option value="">Not rated</option>
+                                            <?php foreach ($ratingOptions as $ratingOption): ?>
+                                                <option value="<?php echo htmlspecialchars($ratingOption); ?>"><?php echo htmlspecialchars($ratingOption); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="lead-files__actions">
-                                <label class="lead-file-upload">
-                                    <input type="file" class="lead-file-upload__input" multiple>
-                                    <span class="lead-file-upload__btn"><i class="bi bi-upload"></i> Upload files</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="lead-sidebar-panel" data-tab-panel="history" role="tabpanel" aria-hidden="true">
-                            <div class="lead-history" data-lead-history></div>
                         </div>
                     </div>
-                </section>
-
+                </header>
+                <div class="lead-sidebar__body">
+                    <div class="lead-sidebar__quick-actions">
+                        <a href="#" class="lead-quick-actions__btn" data-action="call">
+                            <div class="lead-quick-actions__icon"><i class="bi bi-telephone"></i></div>
+                            <span>Call</span>
+                        </a>
+                        <a href="#" class="lead-quick-actions__btn" data-action="email">
+                            <div class="lead-quick-actions__icon"><i class="bi bi-envelope"></i></div>
+                            <span>Email</span>
+                        </a>
+                        <a href="#" class="lead-quick-actions__btn" data-action="whatsapp">
+                            <div class="lead-quick-actions__icon"><i class="bi bi-whatsapp"></i></div>
+                            <span>WhatsApp</span>
+                        </a>
+                    </div>
+                    <div class="lead-sidebar__feedback" data-lead-feedback hidden></div>
+                    <form class="lead-sidebar__form" data-lead-form id="leadSidebarForm" novalidate>
+                        <input type="hidden" name="id" data-edit-id>
+                        <section class="lead-sidebar__section">
+                            <h3 class="lead-sidebar__section-title">Contact Information</h3>
+                            <div class="lead-sidebar__details">
+                                <div class="lead-sidebar__item" data-edit-field="email">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-envelope"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Email</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <a href="#" class="lead-sidebar__item-value" data-lead-field="email" data-role="display" data-empty-text="No email provided">No email provided</a>
+                                            <input type="email" class="form-control lead-sidebar__input" data-role="input" name="email" placeholder="Enter email">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="phone">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-telephone"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Phone Number</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <a href="#" class="lead-sidebar__item-value" data-lead-field="phone" data-role="display" data-empty-text="No phone number">No phone number</a>
+                                            <input type="tel" class="form-control lead-sidebar__input" data-role="input" name="phone" placeholder="Enter phone number">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="nationality">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-flag"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Nationality</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="nationality" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="nationality" placeholder="Enter nationality">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="location_preferences">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-geo-alt"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Location</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="location" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="location_preferences" placeholder="Enter preferred locations">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="lead-sidebar__section">
+                            <h3 class="lead-sidebar__section-title">Property Preferences</h3>
+                            <div class="lead-sidebar__details">
+                                <div class="lead-sidebar__item" data-edit-field="property_type">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-building"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Property Type</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="propertyType" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="property_type" placeholder="Enter property type">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="interested_in">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-collection"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Properties Interested In</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <div class="lead-sidebar__chips" data-lead-field="interestedIn" data-role="display"></div>
+                                            <textarea class="form-control lead-sidebar__input" data-role="input" name="interested_in" rows="2" placeholder="Add interests separated by commas"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="budget_range">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-cash-coin"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Budget Range</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="budget" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="budget_range" placeholder="Enter budget range">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="urgency">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-calendar-event"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Timeline / Expected Move-in</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="moveIn" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="urgency" placeholder="Enter move-in timeline">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="size_required">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-aspect-ratio"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Size Required</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="sizeRequired" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="size_required" placeholder="Enter size requirement">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="lead-sidebar__section">
+                            <h3 class="lead-sidebar__section-title">Lead Information</h3>
+                            <div class="lead-sidebar__details">
+                                <div class="lead-sidebar__item" data-edit-field="source">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-megaphone"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Source</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="source" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="source" placeholder="Enter source">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="assigned_to">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-person-check"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Assigned To</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="assignedTo" data-role="display">—</span>
+                                            <select class="form-select lead-sidebar__input" data-role="input" name="assigned_to">
+                                                <option value="">Unassigned</option>
+                                                <?php foreach ($users as $userName): ?>
+                                                    <option value="<?php echo htmlspecialchars($userName); ?>"><?php echo htmlspecialchars($userName); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item" data-edit-field="purpose">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-tags"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Purpose</span>
+                                        <div class="lead-sidebar__item-value-wrapper">
+                                            <span class="lead-sidebar__item-value" data-lead-field="purpose" data-role="display">—</span>
+                                            <input type="text" class="form-control lead-sidebar__input" data-role="input" name="purpose" placeholder="Enter purpose">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <span class="lead-sidebar__item-icon"><i class="bi bi-clock-history"></i></span>
+                                    <div class="lead-sidebar__item-content">
+                                        <span class="lead-sidebar__item-label">Created At</span>
+                                        <span class="lead-sidebar__item-value" data-lead-field="createdAt">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="lead-sidebar__section lead-sidebar__section--tabs">
+                            <div class="lead-sidebar-tabs" role="tablist">
+                                <button type="button" class="lead-sidebar-tab is-active" data-tab-target="remarks" role="tab" aria-selected="true">Remarks</button>
+                                <button type="button" class="lead-sidebar-tab" data-tab-target="files" role="tab" aria-selected="false">Files</button>
+                                <button type="button" class="lead-sidebar-tab" data-tab-target="history" role="tab" aria-selected="false">History</button>
+                            </div>
+                            <div class="lead-sidebar-tabpanels">
+                                <div class="lead-sidebar-panel is-active" data-tab-panel="remarks" role="tabpanel">
+                                    <div class="lead-remarks" data-lead-remarks></div>
+                                    <form class="lead-remark-form" action="#" method="post" onsubmit="return false;">
+                                        <label for="leadRemarkInput" class="form-label">Add Remark</label>
+                                        <textarea id="leadRemarkInput" class="form-control" rows="3" placeholder="Add a note about this lead..."></textarea>
+                                        <div class="lead-remark-form__actions">
+                                            <label class="lead-file-upload">
+                                                <input type="file" class="lead-file-upload__input" multiple>
+                                                <span class="lead-file-upload__btn"><i class="bi bi-paperclip"></i> Attach Files</span>
+                                            </label>
+                                            <button type="submit" class="btn btn-primary">Save</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="lead-sidebar-panel" data-tab-panel="files" role="tabpanel" aria-hidden="true">
+                                    <div class="lead-files" data-lead-files>
+                                        <p class="lead-empty-state">No files uploaded yet.</p>
+                                    </div>
+                                    <div class="lead-files__actions">
+                                        <label class="lead-file-upload">
+                                            <input type="file" class="lead-file-upload__input" multiple>
+                                            <span class="lead-file-upload__btn"><i class="bi bi-upload"></i> Upload files</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar-panel" data-tab-panel="history" role="tabpanel" aria-hidden="true">
+                                    <div class="lead-history" data-lead-history></div>
+                                </div>
+                            </div>
+                        </section>
+                    </form>
+                </div>
                 <footer class="lead-sidebar__footer">
-                    <button type="button" class="btn btn-outline-primary">Save Changes</button>
-                    <button type="button" class="btn btn-light">Update Stage</button>
-                    <button type="button" class="btn btn-primary">Create Task</button>
+                    <button type="button" class="btn btn-light lead-sidebar__footer-btn" data-action="cancel-edit">Cancel</button>
+                    <button type="submit" class="btn btn-primary lead-sidebar__footer-btn" data-action="save-lead" form="leadSidebarForm">Save Changes</button>
                 </footer>
             </div>
         </aside>

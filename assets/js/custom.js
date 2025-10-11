@@ -1349,6 +1349,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (typeof window !== 'undefined' && typeof window.alert === 'function') {
             window.alert(successMessage);
           }
+          closeSidebar();
         })
         .catch((error) => {
           const message = error instanceof Error ? error.message : 'Unable to update the lead.';

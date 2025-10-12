@@ -1,3 +1,6 @@
+.content{
+    margin-top: 20px;
+}
 .card-header.bg-primary.text-white {
     background-color: #004a44 !important;
     border-bottom: 1px #004a44 solid;

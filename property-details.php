@@ -98,8 +98,8 @@ $extractParagraphs = static function ($value): array {
     ), static fn($paragraph): bool => $paragraph !== ''));
 };
 
-$uploadsBasePath = 'admin/assets/uploads/properties/';
-$legacyUploadsPrefix = 'assets/uploads/properties/';
+$uploadsBasePath = 'assets/uploads/properties/';
+$legacyUploadsPrefix = 'admin/assets/uploads/properties/';
 $normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $legacyUploadsPrefix): ?string {
     if (!is_string($path)) {
         return null;

@@ -19,6 +19,7 @@
     <!-- Custom CSS -->
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="assets/css/custom.css" rel="stylesheet">
+    <link href="assets/css/properties.css" rel="stylesheet">
 
     <!-- Choices.js CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">

@@ -344,11 +344,23 @@
             return;
         }
         list.innerHTML = '';
-        const searchTerm = (state.searchInput.value || '').toLowerCase();
+
+        const rawSearch = state.searchInput ? state.searchInput.value : '';
+        const searchTerm = rawSearch ? rawSearch.trim().toLowerCase() : '';
+        const users = Array.isArray(state.sidebarData.users) ? state.sidebarData.users : [];
+
+        if (users.length === 0) {
+            list.innerHTML = '<div class="chat-placeholder">No teammates available right now.</div>';
+            return;
+        }
+
         let visibleCount = 0;
-        state.sidebarData.users.forEach((user) => {
+        users.forEach((user) => {
             const name = user.name || user.email || 'Unknown';
-            if (searchTerm && !name.toLowerCase().includes(searchTerm)) {
+            const lowerName = name.toLowerCase();
+            const lowerEmail = (user.email || '').toLowerCase();
+            const matchesSearch = !searchTerm || lowerName.includes(searchTerm) || lowerEmail.includes(searchTerm);
+            if (!matchesSearch) {
                 return;
             }
             visibleCount += 1;
@@ -398,7 +410,9 @@
         });
 
         if (visibleCount === 0) {
-            list.innerHTML = '<div class="chat-placeholder">No teammates match your search.</div>';
+            list.innerHTML = searchTerm
+                ? '<div class="chat-placeholder">No teammates match your search.</div>'
+                : '<div class="chat-placeholder">No teammates available right now.</div>';
         }
     }
 

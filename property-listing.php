@@ -430,9 +430,8 @@ $pageEnd = $propertyCount > 0 ? min($offset + count($offplanProperties), $proper
 $propertyLabel = $propertyCount === 1 ? 'property' : 'properties';
 $updatedLabel = date('F j, Y');
 
-$uploadsBasePath = 'admin/assets/uploads/properties/';
-$legacyUploadsPrefix = 'assets/uploads/properties/';
-$normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $legacyUploadsPrefix): ?string {
+$uploadsBasePath = 'assets/uploads/';
+$normalizeImagePath = static function (?string $path) use ($uploadsBasePath): ?string {
     if (!is_string($path)) {
         return null;
     }
@@ -448,12 +447,19 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $le
 
     $path = ltrim($path, '/');
 
-    if (str_starts_with($path, $uploadsBasePath)) {
-        return $path;
+    $path = preg_replace('#^(?:admin/)?assets/uploads/(?:properties/)?#', '', $path);
+    if ($path === null) {
+        return null;
     }
 
-    if (str_starts_with($path, $legacyUploadsPrefix)) {
-        return $uploadsBasePath . substr($path, strlen($legacyUploadsPrefix));
+    $path = preg_replace('#^properties/#', '', $path);
+    if ($path === null) {
+        return null;
+    }
+
+    $path = ltrim($path, '/');
+    if ($path === '') {
+        return null;
     }
 
     return $uploadsBasePath . $path;

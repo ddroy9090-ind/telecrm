@@ -96,10 +96,37 @@ if (!in_array($deleteFlashType, $validAlertTypes, true)) {
 }
 
 $users = [];
-$usersQuery = $mysqli->query('SELECT id, full_name FROM users ORDER BY full_name ASC');
+$userLookupByNormalized = [];
+$usersQuery = $mysqli->query('SELECT id, full_name, email FROM users ORDER BY full_name ASC');
 if ($usersQuery instanceof mysqli_result) {
     while ($userRow = $usersQuery->fetch_assoc()) {
-        $users[(int) $userRow['id']] = $userRow['full_name'];
+        $userId = isset($userRow['id']) ? (int) $userRow['id'] : 0;
+        if ($userId <= 0) {
+            continue;
+        }
+
+        $fullName = trim((string) ($userRow['full_name'] ?? ''));
+        $emailAddress = trim((string) ($userRow['email'] ?? ''));
+        $displayName = $fullName !== '' ? $fullName : ($emailAddress !== '' ? $emailAddress : 'User #' . $userId);
+
+        $users[$userId] = $displayName;
+
+        $lookupCandidates = [
+            $displayName,
+            $fullName,
+            $emailAddress,
+            (string) $userId,
+            'User #' . $userId,
+        ];
+
+        foreach ($lookupCandidates as $candidate) {
+            $normalized = normalize_assignee_label($candidate);
+            if ($normalized === '') {
+                continue;
+            }
+
+            $userLookupByNormalized[$normalized] = $userId;
+        }
     }
     $usersQuery->free();
 }
@@ -174,6 +201,90 @@ function normalize_stage_label(string $label): string
     $singleSpaced = preg_replace('/\s+/u', ' ', $lowered ?? '');
 
     return trim((string) $singleSpaced);
+}
+
+function normalize_assignee_label(?string $value): string
+{
+    $trimmed = trim((string) $value);
+    if ($trimmed === '') {
+        return '';
+    }
+
+    return function_exists('mb_strtolower') ? mb_strtolower($trimmed, 'UTF-8') : strtolower($trimmed);
+}
+
+function resolve_assigned_user_details(?string $rawValue): array
+{
+    global $users, $userLookupByNormalized;
+
+    $trimmed = trim((string) $rawValue);
+    if ($trimmed === '') {
+        return [null, '', ''];
+    }
+
+    if (ctype_digit($trimmed)) {
+        $candidateId = (int) $trimmed;
+        if ($candidateId > 0 && isset($users[$candidateId])) {
+            return [$candidateId, $users[$candidateId], $trimmed];
+        }
+    }
+
+    $normalized = normalize_assignee_label($trimmed);
+    if ($normalized !== '' && isset($userLookupByNormalized[$normalized])) {
+        $candidateId = (int) $userLookupByNormalized[$normalized];
+        if ($candidateId > 0 && isset($users[$candidateId])) {
+            return [$candidateId, $users[$candidateId], $trimmed];
+        }
+    }
+
+    return [null, $trimmed, $trimmed];
+}
+
+function normalize_assigned_storage_value($value): ?string
+{
+    global $userLookupByNormalized, $users;
+
+    if ($value === null) {
+        return null;
+    }
+
+    $trimmed = trim((string) $value);
+    if ($trimmed === '') {
+        return null;
+    }
+
+    if (ctype_digit($trimmed)) {
+        $candidateId = (int) $trimmed;
+        if ($candidateId > 0 && isset($users[$candidateId])) {
+            return (string) $candidateId;
+        }
+    }
+
+    $normalized = normalize_assignee_label($trimmed);
+    if ($normalized !== '' && isset($userLookupByNormalized[$normalized])) {
+        $candidateId = (int) $userLookupByNormalized[$normalized];
+        if ($candidateId > 0 && isset($users[$candidateId])) {
+            return (string) $candidateId;
+        }
+    }
+
+    return $trimmed;
+}
+
+function format_assigned_user_display($value): string
+{
+    if ($value === null || $value === '') {
+        return '—';
+    }
+
+    [$resolvedId, $resolvedLabel, $rawValue] = resolve_assigned_user_details($value);
+    if ($resolvedId !== null && $resolvedLabel !== '') {
+        return $resolvedLabel;
+    }
+
+    $rawTrimmed = trim((string) $rawValue);
+
+    return $rawTrimmed !== '' ? $rawTrimmed : '—';
 }
 
 function format_activity_timestamp(?string $rawTimestamp): string
@@ -326,6 +437,7 @@ function format_field_display_value(string $fieldKey, $value): string
         case 'stage':
             return format_lead_stage((string) $value);
         case 'assigned_to':
+            return format_assigned_user_display($value);
         case 'name':
         case 'source':
         case 'purpose':
@@ -609,12 +721,22 @@ function lead_avatar_initial(string $name): string
 
 function build_lead_payload(array $lead, array $relatedActivities = []): array
 {
+    global $users;
+
     $leadName = trim($lead['name'] ?? '') !== '' ? $lead['name'] : 'Unnamed Lead';
     $stageLabel = format_lead_stage($lead['stage'] ?? '');
     $stageClass = stage_badge_class($stageLabel);
     $leadEmail = trim((string) ($lead['email'] ?? ''));
     $leadPhone = trim((string) ($lead['phone'] ?? ''));
-    $assignedTo = trim((string) ($lead['assigned_to'] ?? ''));
+    $rawAssigned = trim((string) ($lead['assigned_to'] ?? ''));
+    [$assignedUserId, $assignedDisplayName, $assignedRawValue] = resolve_assigned_user_details($rawAssigned);
+    $assignedTo = $assignedDisplayName;
+    if ($assignedTo === '' && $assignedUserId !== null && isset($users[$assignedUserId])) {
+        $assignedTo = $users[$assignedUserId];
+    }
+    if ($assignedTo === '' && $assignedRawValue !== '') {
+        $assignedTo = $assignedRawValue;
+    }
     $createdAtRaw = $lead['created_at'] ?? null;
     $createdAtDisplay = '—';
     if ($createdAtRaw) {
@@ -700,6 +822,8 @@ function build_lead_payload(array $lead, array $relatedActivities = []): array
         'sizeRequired' => trim((string) ($lead['size_required'] ?? '')),
         'source' => trim((string) ($lead['source'] ?? '')) !== '' ? trim((string) ($lead['source'] ?? '')) : '—',
         'assignedTo' => $assignedTo,
+        'assignedToId' => $assignedUserId,
+        'assignedToRaw' => $assignedRawValue,
         'createdAt' => $createdAtRaw,
         'createdAtDisplay' => $createdAtDisplay,
         'tags' => $leadTags,
@@ -822,23 +946,54 @@ if ($distinctStageQuery instanceof mysqli_result) {
 }
 $stageFilterOptions = array_values(array_unique(array_merge($stageFilterOptions, $dynamicStageLabels)));
 
-$assignedFilterOptions = array_values(array_filter(array_map('trim', $users), static function ($value) {
-    return $value !== '';
-}));
+$assignedFilterOptions = [];
+$addAssignedFilterOption = static function (string $value, string $label) use (&$assignedFilterOptions): void {
+    foreach ($assignedFilterOptions as $option) {
+        if ($option['value'] === $value) {
+            return;
+        }
+    }
+
+    $assignedFilterOptions[] = [
+        'value' => $value,
+        'label' => $label,
+    ];
+};
+
+foreach ($users as $userId => $userName) {
+    if ($userId <= 0) {
+        continue;
+    }
+
+    $displayName = $userName !== '' ? $userName : 'User #' . $userId;
+    $addAssignedFilterOption((string) $userId, $displayName);
+}
+
 $assignedQuery = null;
 if ($creatorIdListForSql !== '') {
     $assignedQuery = $mysqli->query('SELECT DISTINCT assigned_to FROM all_leads WHERE assigned_to IS NOT NULL AND assigned_to <> "" AND created_by IN (' . $creatorIdListForSql . ') ORDER BY assigned_to ASC');
 }
 if ($assignedQuery instanceof mysqli_result) {
     while ($assignedRow = $assignedQuery->fetch_assoc()) {
-        $assignedName = trim((string) ($assignedRow['assigned_to'] ?? ''));
-        if ($assignedName !== '' && !in_array($assignedName, $assignedFilterOptions, true)) {
-            $assignedFilterOptions[] = $assignedName;
+        $assignedRaw = trim((string) ($assignedRow['assigned_to'] ?? ''));
+        if ($assignedRaw === '') {
+            continue;
         }
+
+        [$resolvedId, $resolvedLabel] = resolve_assigned_user_details($assignedRaw);
+        if ($resolvedId !== null && $resolvedId > 0 && isset($users[$resolvedId])) {
+            $addAssignedFilterOption((string) $resolvedId, $users[$resolvedId]);
+            continue;
+        }
+
+        $addAssignedFilterOption($assignedRaw, $resolvedLabel !== '' ? $resolvedLabel : $assignedRaw);
     }
     $assignedQuery->free();
 }
-sort($assignedFilterOptions, SORT_NATURAL | SORT_FLAG_CASE);
+
+usort($assignedFilterOptions, static function ($a, $b) {
+    return strcasecmp($a['label'], $b['label']);
+});
 
 $sourceFilterOptions = [];
 $sourceQuery = null;
@@ -1079,7 +1234,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                 $value = trim((string) $value);
             }
 
-            $normalizedValue = $value === '' ? null : $value;
+            if ($payloadKey === 'assigned_to') {
+                $normalizedValue = normalize_assigned_storage_value($value);
+            } else {
+                $normalizedValue = $value === '' ? null : $value;
+            }
             $previousValue = $existingLeadRow[$columnName] ?? null;
 
             if (!lead_field_has_changed($payloadKey, $previousValue, $normalizedValue)) {
@@ -1241,6 +1400,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                 'stageClass' => $updatedPayload['stageClass'],
                 'source' => $updatedPayload['source'],
                 'assigned_to' => $updatedPayload['assignedTo'],
+                'assigned_to_id' => $updatedPayload['assignedToId'],
+                'assigned_to_raw' => $updatedPayload['assignedToRaw'],
+                'assigned_to_label' => $updatedPayload['assignedTo'],
                 'avatarInitial' => $updatedPayload['avatarInitial'],
             ],
             'payload' => $updatedPayload,
@@ -1525,8 +1687,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                     <option value="">All</option>
                                     <option value="__unassigned__" <?php echo $filterAssignedTo === '__unassigned__' ? 'selected' : ''; ?>>Unassigned</option>
                                     <?php foreach ($assignedFilterOptions as $assignedOption): ?>
-                                        <option value="<?php echo htmlspecialchars($assignedOption); ?>" <?php echo strcasecmp($filterAssignedTo, $assignedOption) === 0 ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($assignedOption); ?>
+                                        <?php $optionValue = (string) ($assignedOption['value'] ?? ''); ?>
+                                        <option value="<?php echo htmlspecialchars($optionValue); ?>" <?php echo $filterAssignedTo !== '' && $filterAssignedTo === $optionValue ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($assignedOption['label'] ?? $optionValue); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -1633,21 +1796,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                             <div class="assigned-dropdown" data-prevent-lead-open>
                                                 <select class="form-select assigned-select" data-lead-assigned-select>
                                                     <option value="">Unassigned</option>
+                                                    <?php
+                                                    $assignedId = $leadPayload['assignedToId'];
+                                                    $assignedRawValue = $leadPayload['assignedToRaw'];
+                                                    $matchedAssignee = false;
+                                                    ?>
                                                     <?php foreach ($users as $userId => $userName): ?>
                                                         <?php
+                                                        $optionValue = (string) $userId;
                                                         $isSelected = false;
-                                                        if ($assignedLabel !== '') {
+                                                        if ($assignedId !== null) {
+                                                            $isSelected = (int) $assignedId === (int) $userId;
+                                                        } elseif ($assignedLabel !== '') {
                                                             $isSelected = strcasecmp($assignedLabel, $userName) === 0;
-                                                        } elseif ($loggedInUserName !== '') {
-                                                            $isSelected = strcasecmp($loggedInUserName, $userName) === 0;
-                                                        } elseif ($loggedInUserId !== null) {
-                                                            $isSelected = $loggedInUserId === (int) $userId;
+                                                        } elseif ($assignedRawValue !== '') {
+                                                            $isSelected = strcasecmp($assignedRawValue, $userName) === 0;
+                                                        }
+
+                                                        if ($isSelected) {
+                                                            $matchedAssignee = true;
                                                         }
                                                         ?>
-                                                        <option value="<?php echo htmlspecialchars($userName); ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
+                                                        <option value="<?php echo htmlspecialchars($optionValue); ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
                                                             <?php echo htmlspecialchars($userName); ?>
                                                         </option>
                                                     <?php endforeach; ?>
+                                                    <?php if (!$matchedAssignee && $assignedLabel !== ''): ?>
+                                                        <?php $legacyValue = $assignedId !== null ? (string) $assignedId : ($assignedRawValue !== '' ? $assignedRawValue : $assignedLabel); ?>
+                                                        <option value="<?php echo htmlspecialchars($legacyValue); ?>" selected><?php echo htmlspecialchars($assignedLabel); ?></option>
+                                                    <?php endif; ?>
                                                 </select>
                                             </div>
                                         </td>
@@ -1865,8 +2042,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                             <span class="lead-sidebar__item-value" data-lead-field="assignedTo" data-role="display">—</span>
                                             <select class="form-select lead-sidebar__input" data-role="input" name="assigned_to">
                                                 <option value="">Unassigned</option>
-                                                <?php foreach ($users as $userName): ?>
-                                                    <option value="<?php echo htmlspecialchars($userName); ?>"><?php echo htmlspecialchars($userName); ?></option>
+                                                <?php foreach ($users as $userId => $userName): ?>
+                                                    <option value="<?php echo htmlspecialchars((string) $userId); ?>"><?php echo htmlspecialchars($userName); ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>

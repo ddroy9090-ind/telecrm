@@ -651,7 +651,7 @@ document.addEventListener("DOMContentLoaded", function () {
     urgency: 'moveInTimeline',
     size_required: 'sizeRequired',
     source: 'source',
-    assigned_to: 'assignedTo',
+    assigned_to: 'assignedToId',
     purpose: 'purpose',
   };
 
@@ -667,6 +667,39 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const rawValue = leadData && payloadKey in leadData ? leadData[payloadKey] : '';
+
+      if (fieldKey === 'assigned_to' && field.input.tagName === 'SELECT') {
+        const assignedId = rawValue;
+        const assignedLabel = leadData && Object.prototype.hasOwnProperty.call(leadData, 'assignedTo')
+          ? leadData.assignedTo
+          : '';
+
+        const value =
+          assignedId !== null && typeof assignedId !== 'undefined' && String(assignedId).trim() !== ''
+            ? String(assignedId).trim()
+            : '';
+
+        let matched = false;
+        Array.from(field.input.options).forEach((option) => {
+          const isMatch = option.value === value;
+          option.selected = isMatch;
+          if (isMatch) {
+            matched = true;
+          }
+        });
+
+        if (!matched) {
+          if (value === '') {
+            field.input.value = '';
+          } else {
+            const option = new Option(assignedLabel || value, value, true, true);
+            field.input.add(option);
+          }
+        }
+
+        continue;
+      }
+
       const value = Array.isArray(rawValue) ? rawValue.join(', ') : String(rawValue ?? '');
 
       if (field.input.tagName === 'SELECT') {
@@ -879,7 +912,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const assignedSelect = row.querySelector('[data-lead-assigned-select]');
     if (assignedSelect) {
-      const desiredValue = rowInfo.assigned_to || '';
+      const desiredValue =
+        typeof rowInfo.assigned_to_id !== 'undefined' && rowInfo.assigned_to_id !== null
+          ? String(rowInfo.assigned_to_id)
+          : typeof rowInfo.assigned_to_raw !== 'undefined' && rowInfo.assigned_to_raw !== null
+          ? String(rowInfo.assigned_to_raw)
+          : typeof rowInfo.assigned_to !== 'undefined' && rowInfo.assigned_to !== null
+          ? String(rowInfo.assigned_to)
+          : '';
+
+      const desiredLabel =
+        (typeof rowInfo.assigned_to_label === 'string' && rowInfo.assigned_to_label.trim() !== '')
+          ? rowInfo.assigned_to_label
+          : typeof rowInfo.assigned_to === 'string'
+          ? rowInfo.assigned_to
+          : desiredValue;
+
       let hasMatch = false;
       Array.from(assignedSelect.options).forEach((option) => {
         const isMatch = option.value === desiredValue;
@@ -888,8 +936,14 @@ document.addEventListener("DOMContentLoaded", function () {
           hasMatch = true;
         }
       });
+
       if (!hasMatch) {
-        assignedSelect.value = '';
+        if (!desiredValue) {
+          assignedSelect.value = '';
+        } else {
+          const fallbackOption = new Option(desiredLabel || desiredValue, desiredValue, true, true);
+          assignedSelect.add(fallbackOption);
+        }
       }
     }
 
@@ -1647,15 +1701,26 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((data) => {
           applyLeadResponse(data.lead);
 
-          const updatedAssigned =
-            (data?.lead?.row && data.lead.row.assigned_to) ||
-            (data?.lead?.payload && data.lead.payload.assignedTo) ||
-            nextValue;
+          const updatedAssignedId =
+            (data?.lead?.row && data.lead.row.assigned_to_id != null && data.lead.row.assigned_to_id !== '')
+              ? String(data.lead.row.assigned_to_id)
+              : data?.lead?.payload && data.lead.payload.assignedToId != null && data.lead.payload.assignedToId !== ''
+              ? String(data.lead.payload.assignedToId)
+              : nextValue !== ''
+              ? nextValue
+              : '';
+
+          const updatedAssignedToken =
+            updatedAssignedId !== ''
+              ? updatedAssignedId
+              : (data?.lead?.row && data.lead.row.assigned_to_raw) ||
+                (data?.lead?.payload && data.lead.payload.assignedToRaw) ||
+                nextValue;
 
           select.dataset.previousValue = nextValue;
 
           if (pageContext === "my") {
-            const normalizedAssigned = normalizeAssigneeValue(updatedAssigned);
+            const normalizedAssigned = normalizeAssigneeValue(updatedAssignedToken);
             const rowElement = row;
 
             if (!isAssigneeCurrentUser(normalizedAssigned) && rowElement) {

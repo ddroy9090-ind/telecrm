@@ -198,25 +198,37 @@ unset($_SESSION['flash']);
             <div class="col-md-3">
                 <div class="stat-card total-leads">
                     <h6>Total Users</h6>
-                    <h2>3</h2>
+                    <h2><?php echo (int) $userStats['total']; ?></h2>
+                    <p class="mb-0 text-muted small">
+                        <?php echo $userStats['total'] === 1 ? '1 user in total' : $userStats['total'] . ' users in total'; ?>
+                    </p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card active-leads">
                     <h6>Total Admin</h6>
-                    <h2>19,680</h2>
+                    <h2><?php echo (int) ($userStats['roles']['admin'] ?? 0); ?></h2>
+                    <p class="mb-0 text-muted small">
+                        <?php echo format_user_percentage((int) ($userStats['roles']['admin'] ?? 0), $userStats['total']); ?> of users
+                    </p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card closed-leads">
                     <h6>Total Agents</h6>
-                    <h2>237</h2>
+                    <h2><?php echo (int) ($userStats['roles']['agent'] ?? 0); ?></h2>
+                    <p class="mb-0 text-muted small">
+                        <?php echo format_user_percentage((int) ($userStats['roles']['agent'] ?? 0), $userStats['total']); ?> of users
+                    </p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card lost-leads">
                     <h6>Total Manager</h6>
-                    <h2>0</h2>
+                    <h2><?php echo (int) ($userStats['roles']['manager'] ?? 0); ?></h2>
+                    <p class="mb-0 text-muted small">
+                        <?php echo format_user_percentage((int) ($userStats['roles']['manager'] ?? 0), $userStats['total']); ?> of users
+                    </p>
                 </div>
             </div>
         </div>

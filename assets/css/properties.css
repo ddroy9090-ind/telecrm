@@ -459,8 +459,21 @@ p {
     transition: transform .25s ease-in-out;
 }
 
-.hh-properties-01-body img {
-    filter: invert(22%) sepia(2%) saturate(5%) hue-rotate(174deg) brightness(95%) contrast(90%);
+.hh-properties-01-body .spec-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: #004526;
+    flex-shrink: 0;
+}
+
+.hh-properties-01-body .spec-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
 }
 
 

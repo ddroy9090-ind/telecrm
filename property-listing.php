@@ -461,6 +461,45 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $le
 
 $title = 'Dubai Off-Plan Properties for Sale | High ROI Deals';
 
+$iconSvgMap = [
+    'map-pin' => <<<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+    SVG,
+    'bed' => <<<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 20v-8a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8"></path>
+            <path d="M3 16h18"></path>
+            <path d="M7 12V9a3 3 0 0 1 6 0v3"></path>
+            <path d="M21 20v-4"></path>
+            <path d="M3 20v-4"></path>
+        </svg>
+    SVG,
+    'bath' => <<<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h18"></path>
+            <path d="M6 12v4a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4v-4"></path>
+            <path d="M8 12V6a3 3 0 0 1 6 0v6"></path>
+            <path d="M9 5a2 2 0 0 1 4 0"></path>
+        </svg>
+    SVG,
+    'area' => <<<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M9 4v4"></path>
+            <path d="M4 9h4"></path>
+            <path d="M11 20v-4"></path>
+            <path d="M20 15h-4"></path>
+        </svg>
+    SVG,
+];
+
+$renderIcon = static function (string $name) use ($iconSvgMap): string {
+    return $iconSvgMap[$name] ?? '';
+};
+
 $minPriceOptions = [
     '' => 'Select Min',
     '300000' => 'AED 300,000',
@@ -530,7 +569,7 @@ $meta_tags = '
         <h1 class="main-heading">Property Listing</h1>
         <p class="subheading">Review and manage all properties in your portfolio.</p>
         <!-- parent: .hh-hero-01 -->
-        <div class="hh-hero-01" style="background-image: url(assets/images/banner/offplan-banner.webp);">
+        <div class="hh-hero-01">
             <div class="container">
                 <!-- Hero copy -->
                 <div class="row">
@@ -546,7 +585,7 @@ $meta_tags = '
                 <!-- Property Details Filter Sections -->
                 <div class="row">
                     <div class="col-12">
-                        <form id="offplan-filter-form" method="get" action="offplan-properties.php">
+                        <form id="offplan-filter-form" method="get" action="property-listing.php">
                             <input type="hidden" name="page" value="1">
                             <div class="container">
                                 <div class="row align-items-center mb-4">
@@ -741,7 +780,7 @@ $meta_tags = '
                                                 type="button"
                                                 class="btn btn-danger"
                                                 style="background-color: #d01f28; border: none; height: 48px; padding: 0 24px;"
-                                                onclick="window.location.href='offplan-properties.php';">
+                                                onclick="window.location.href='property-listing.php';">
                                                 Reset
                                             </button>
                                         </div>
@@ -838,7 +877,7 @@ $meta_tags = '
                                 }
                             }
 
-                            $primaryImage = $heroBanner !== '' ? $heroBanner : ($galleryImages[0] ?? 'assets/images/offplan/breez-by-danube.webp');
+                            $primaryImage = $heroBanner !== '' ? $heroBanner : ($galleryImages[0] ?? 'assets/images/placeholder-property.svg');
                             $projectName = trim((string)($property['project_name'] ?? ''));
                             if ($projectName === '') {
                                 $projectName = trim((string)($property['property_title'] ?? ''));
@@ -854,13 +893,13 @@ $meta_tags = '
                                 } else {
                                     $bedroomLabel = $bedroomValue . ' Beds';
                                 }
-                                $specs[] = ['icon' => 'assets/icons/bed.png', 'text' => $bedroomLabel];
+                                $specs[] = ['icon' => 'bed', 'text' => $bedroomLabel];
                             }
                             if (!empty($property['bathroom'])) {
-                                $specs[] = ['icon' => 'assets/icons/bathroom.png', 'text' => trim((string)$property['bathroom']) . ' Baths'];
+                                $specs[] = ['icon' => 'bath', 'text' => trim((string)$property['bathroom']) . ' Baths'];
                             }
                             if (!empty($property['total_area'])) {
-                                $specs[] = ['icon' => 'assets/icons/area.png', 'text' => trim((string)$property['total_area'])];
+                                $specs[] = ['icon' => 'area', 'text' => trim((string)$property['total_area'])];
                             }
 
                             $priceCurrency = '';
@@ -894,12 +933,18 @@ $meta_tags = '
                                         <div class="hh-properties-01-body">
                                             <h3><?= htmlspecialchars($projectName !== '' ? $projectName : 'Untitled Project', ENT_QUOTES, 'UTF-8') ?></h3>
                                             <?php if (!empty($property['property_location'])): ?>
-                                                <p><img src="assets/icons/location.png" width="16" alt=""> <?= htmlspecialchars($property['property_location'], ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p>
+                                                    <span class="spec-icon" aria-hidden="true"><?= $renderIcon('map-pin') ?></span>
+                                                    <?= htmlspecialchars($property['property_location'], ENT_QUOTES, 'UTF-8') ?>
+                                                </p>
                                             <?php endif; ?>
                                             <?php if ($specs): ?>
                                                 <ul>
                                                     <?php foreach ($specs as $spec): ?>
-                                                        <li><img src="<?= htmlspecialchars($spec['icon'], ENT_QUOTES, 'UTF-8') ?>" width="16" alt=""> <?= htmlspecialchars($spec['text'], ENT_QUOTES, 'UTF-8') ?></li>
+                                                        <li>
+                                                            <span class="spec-icon" aria-hidden="true"><?= $renderIcon($spec['icon']) ?></span>
+                                                            <?= htmlspecialchars($spec['text'], ENT_QUOTES, 'UTF-8') ?>
+                                                        </li>
                                                     <?php endforeach; ?>
                                                 </ul>
                                             <?php endif; ?>

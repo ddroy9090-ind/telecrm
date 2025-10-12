@@ -140,6 +140,36 @@ if ($result) {
     $result->free();
 }
 
+$userStats = [
+    'total' => count($users),
+    'roles' => [
+        'admin' => 0,
+        'manager' => 0,
+        'agent' => 0,
+    ],
+];
+
+foreach ($users as $user) {
+    $roleKey = $user['role'] ?? '';
+    if (isset($userStats['roles'][$roleKey])) {
+        $userStats['roles'][$roleKey]++;
+    }
+}
+
+if (!function_exists('format_user_percentage')) {
+    function format_user_percentage(int $count, int $total): string
+    {
+        if ($total <= 0) {
+            return '0%';
+        }
+
+        $percentage = ($count / $total) * 100;
+        $formatted = number_format($percentage, 1);
+
+        return rtrim(rtrim($formatted, '0'), '.') . '%';
+    }
+}
+
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 ?>

@@ -237,6 +237,85 @@ document.addEventListener("DOMContentLoaded", function () {
   let overlayHideTimer = null;
   let activeTrigger = null;
 
+  const pageContext = leadTable.dataset.pageType || "all";
+
+  const normalizeAssigneeValue = (value) => {
+    if (value === null || typeof value === "undefined") {
+      return "";
+    }
+
+    return String(value).trim().toLowerCase().replace(/\s+/g, " ");
+  };
+
+  const currentAssigneeTokens = (() => {
+    if (pageContext !== "my") {
+      return [];
+    }
+
+    const rawTokens = leadTable.dataset.currentAssigneeTokens || "";
+    if (!rawTokens) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(rawTokens);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed
+        .map((token) => normalizeAssigneeValue(token))
+        .filter((token) => token !== "");
+    } catch (error) {
+      console.error("Failed to parse assignee token list", error);
+      return [];
+    }
+  })();
+
+  const isAssigneeCurrentUser = (normalizedValue) => {
+    if (!normalizedValue) {
+      return false;
+    }
+
+    return currentAssigneeTokens.some((token) => {
+      if (!token) {
+        return false;
+      }
+
+      return (
+        normalizedValue === token ||
+        normalizedValue.includes(token) ||
+        token.includes(normalizedValue)
+      );
+    });
+  };
+
+  const ensureMyLeadsPlaceholder = () => {
+    if (pageContext !== "my") {
+      return;
+    }
+
+    const tbody = leadTable.querySelector("tbody");
+    if (!tbody) {
+      return;
+    }
+
+    const dataRows = tbody.querySelectorAll("tr[data-lead-id]");
+    const placeholderRow = tbody.querySelector("[data-empty-row]");
+
+    if (dataRows.length === 0) {
+      if (!placeholderRow) {
+        const emptyRow = document.createElement("tr");
+        emptyRow.setAttribute("data-empty-row", "true");
+        emptyRow.innerHTML =
+          '<td colspan="6" class="text-center py-4">No leads assigned to you yet.</td>';
+        tbody.appendChild(emptyRow);
+      }
+    } else if (placeholderRow) {
+      placeholderRow.remove();
+    }
+  };
+
   const sidebarFields = {
     avatar: leadSidebar.querySelector('[data-lead-field="avatarInitial"]'),
     name: leadSidebar.querySelector('[data-lead-field="name"]'),
@@ -1507,6 +1586,109 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Failed to parse lead data", error);
     }
   };
+
+  const assignedSelects = leadTable.querySelectorAll('[data-lead-assigned-select]');
+  assignedSelects.forEach((select) => {
+    const rememberValue = () => {
+      select.dataset.previousValue = select.value || "";
+    };
+
+    rememberValue();
+
+    select.addEventListener("focus", rememberValue);
+    select.addEventListener("pointerdown", rememberValue);
+    select.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        rememberValue();
+      }
+    });
+
+    select.addEventListener("change", (event) => {
+      event.stopPropagation();
+
+      const row = select.closest("tr[data-lead-id]");
+      const leadId = row
+        ? Number(row.dataset.leadId || row.getAttribute("data-lead-id") || 0)
+        : 0;
+
+      if (!leadId) {
+        showFeedback("Unable to determine which lead to update.", "error");
+        select.value = select.dataset.previousValue || "";
+        return;
+      }
+
+      const nextValue = select.value || "";
+      const previousValue = select.dataset.previousValue || "";
+
+      if (nextValue === previousValue) {
+        return;
+      }
+
+      const requestPayload = {
+        id: leadId,
+        assigned_to: nextValue,
+      };
+
+      select.disabled = true;
+      select.classList.add("is-updating");
+      select.setAttribute("aria-busy", "true");
+
+      fetch("all-leads.php?action=update-lead", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(requestPayload),
+      })
+        .then((response) =>
+          parseJsonResponse(response, "Unable to update the lead assignment.")
+        )
+        .then((data) => {
+          applyLeadResponse(data.lead);
+
+          const updatedAssigned =
+            (data?.lead?.row && data.lead.row.assigned_to) ||
+            (data?.lead?.payload && data.lead.payload.assignedTo) ||
+            nextValue;
+
+          select.dataset.previousValue = nextValue;
+
+          if (pageContext === "my") {
+            const normalizedAssigned = normalizeAssigneeValue(updatedAssigned);
+            const rowElement = row;
+
+            if (!isAssigneeCurrentUser(normalizedAssigned) && rowElement) {
+              if (currentLeadRow === rowElement) {
+                closeSidebar();
+              }
+
+              rowElement.remove();
+              ensureMyLeadsPlaceholder();
+            } else {
+              ensureMyLeadsPlaceholder();
+            }
+          }
+
+          const successMessage = data?.message || "Lead updated successfully.";
+          showFeedback(successMessage, "success");
+        })
+        .catch((error) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Unable to update the lead assignment.";
+          showFeedback(message, "error");
+          select.value = previousValue;
+          select.dataset.previousValue = previousValue;
+        })
+        .finally(() => {
+          select.disabled = false;
+          select.classList.remove("is-updating");
+          select.removeAttribute("aria-busy");
+        });
+    });
+  });
 
   leadTable.querySelectorAll("tbody tr[data-lead-json]").forEach((row) => {
     row.addEventListener("click", (event) => {

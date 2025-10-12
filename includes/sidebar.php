@@ -1,6 +1,6 @@
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <a href="index.php"> <img src="assets/images/logo/green-logo.svg" alt=""></a>
+        <a href="index.php"> <img src="<?= htmlspecialchars(hh_asset('assets/images/logo/green-logo.svg'), ENT_QUOTES, 'UTF-8') ?>" alt=""></a>
     </div>
     <nav class="sidebar-nav">
         <ul class="sidebar-menu">

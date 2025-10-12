@@ -47,6 +47,75 @@ if (!function_exists('hh_db')) {
     }
 }
 
+if (!function_exists('hh_base_path')) {
+    /**
+     * Determine the URL path (without host) where the current script is served.
+     */
+    function hh_base_path(): string
+    {
+        static $basePath = null;
+
+        if ($basePath !== null) {
+            return $basePath;
+        }
+
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        if ($scriptName === '') {
+            $basePath = '';
+            return $basePath;
+        }
+
+        $directory = str_replace('\\', '/', dirname($scriptName));
+
+        if ($directory === '/' || $directory === '.') {
+            $directory = '';
+        }
+
+        $basePath = rtrim($directory, '/');
+
+        return $basePath;
+    }
+}
+
+if (!function_exists('hh_base_href')) {
+    /**
+     * Return the base href (with trailing slash) used for resolving relative URLs.
+     */
+    function hh_base_href(): string
+    {
+        $basePath = hh_base_path();
+
+        return $basePath === '' ? '/' : $basePath . '/';
+    }
+}
+
+if (!function_exists('hh_asset')) {
+    /**
+     * Build an absolute path (relative to the current installation) for assets.
+     */
+    function hh_asset(string $path): string
+    {
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+        $basePath = hh_base_path();
+        $prefix = $basePath !== '' ? $basePath . '/' : '/';
+
+        return $prefix . $normalizedPath;
+    }
+}
+
+if (!function_exists('hh_url')) {
+    /**
+     * Build an absolute URL path for internal links.
+     */
+    function hh_url(string $path): string
+    {
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+        $baseHref = rtrim(hh_base_href(), '/');
+
+        return $baseHref === '' ? '/' . $normalizedPath : $baseHref . '/' . $normalizedPath;
+    }
+}
+
 // Ensure the required tables exist
 $createUsersTable = <<<SQL
 CREATE TABLE IF NOT EXISTS users (

@@ -4,6 +4,7 @@ $metaDescription = $metaDescription ?? '';
 $metaKeywords = $metaKeywords ?? '';
 $htmlLang = $htmlLang ?? 'hi';
 $additionalStyles = $additionalStyles ?? [];
+$baseHref = hh_base_href();
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">
@@ -11,6 +12,7 @@ $additionalStyles = $additionalStyles ?? [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+    <base href="<?= htmlspecialchars($baseHref, ENT_QUOTES, 'UTF-8') ?>">
     <?php if ($metaDescription !== ''): ?>
         <meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
@@ -18,7 +20,7 @@ $additionalStyles = $additionalStyles ?? [];
         <meta name="keywords" content="<?= htmlspecialchars($metaKeywords, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
 
-    <link rel="icon" href="assets/images/logo/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="<?= htmlspecialchars(hh_asset('assets/images/logo/favicon.svg'), ENT_QUOTES, 'UTF-8') ?>" type="image/svg+xml">
     <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <!-- Component Libraries -->
@@ -32,9 +34,9 @@ $additionalStyles = $additionalStyles ?? [];
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link href="assets/css/style.css" rel="stylesheet">
-    <link href="assets/css/custom.css" rel="stylesheet">
-    <link href="assets/css/properties.css" rel="stylesheet">
+    <link href="<?= htmlspecialchars(hh_asset('assets/css/style.css'), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="<?= htmlspecialchars(hh_asset('assets/css/custom.css'), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
+    <link href="<?= htmlspecialchars(hh_asset('assets/css/properties.css'), ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet">
 
     <?php foreach ($additionalStyles as $styleHref): ?>
         <?php if (is_string($styleHref) && $styleHref !== ''): ?>

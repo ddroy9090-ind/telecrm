@@ -447,17 +447,12 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath): ?s
 
     $path = ltrim($path, '/');
 
-    $path = preg_replace('#^(?:admin/)?assets/uploads/(?:properties/)?#', '', $path);
+    $path = preg_replace('#^(?:admin/)?assets/uploads/#', '', $path);
     if ($path === null) {
         return null;
     }
 
-    $path = preg_replace('#^uploads/(?:properties/)?#', '', $path);
-    if ($path === null) {
-        return null;
-    }
-
-    $path = preg_replace('#^properties/#', '', $path);
+    $path = preg_replace('#^uploads/#', '', $path);
     if ($path === null) {
         return null;
     }
@@ -467,7 +462,18 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath): ?s
         return null;
     }
 
-    return $uploadsBasePath . $path;
+    $decodedPath = rawurldecode($path);
+    $segments = array_values(array_filter(explode('/', $decodedPath), static fn($segment) => $segment !== ''));
+    if ($segments === []) {
+        return null;
+    }
+
+    $normalizedSegments = array_map(
+        static fn(string $segment): string => str_replace('%2F', '/', rawurlencode($segment)),
+        $segments
+    );
+
+    return $uploadsBasePath . implode('/', $normalizedSegments);
 };
 
 $title = 'Dubai Off-Plan Properties for Sale | High ROI Deals';

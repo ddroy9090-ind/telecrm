@@ -16,6 +16,37 @@ if ($mysqli->connect_error) {
     die('Database connection failed: ' . $mysqli->connect_error);
 }
 
+if (!function_exists('hh_db')) {
+    /**
+     * Provide a shared PDO connection that reuses the TeleCRM credentials.
+     */
+    function hh_db(): PDO
+    {
+        static $pdo = null;
+
+        if ($pdo instanceof PDO) {
+            return $pdo;
+        }
+
+        global $host, $username, $password, $database;
+
+        $dsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $host, $database);
+
+        $pdo = new PDO(
+            $dsn,
+            $username,
+            $password,
+            [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]
+        );
+
+        return $pdo;
+    }
+}
+
 // Ensure the required tables exist
 $createUsersTable = <<<SQL
 CREATE TABLE IF NOT EXISTS users (

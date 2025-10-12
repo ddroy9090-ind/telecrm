@@ -43,6 +43,27 @@
                     </li>
                 </ul>
             </li>
+            <li class="sidebar-dropdown">
+                <button type="button" class="sidebar-link sidebar-dropdown-toggle">
+                    <span class="sidebar-icon"><i class="bx bx-buildings"></i></span>
+                    <span class="sidebar-text">Properties</span>
+                    <i class="bx bx-chevron-down sidebar-dropdown-arrow"></i>
+                </button>
+                <ul class="sidebar-submenu">
+                    <li>
+                        <a href="add-property.php" class="sidebar-link">
+                            <span class="sidebar-icon"><i class="bx bx-plus-circle"></i></span>
+                            <span class="sidebar-text">Add Property</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="property-listing.php" class="sidebar-link">
+                            <span class="sidebar-icon"><i class="bx bx-spreadsheet"></i></span>
+                            <span class="sidebar-text">Property Listing</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
             <li class="sidebar-logout mt-auto">
                 <a href="logout.php" class="sidebar-link" onclick="return confirm('Are you sure you want to logout?')">
                     <span class="sidebar-icon"><i class="bx bx-log-out"></i></span>

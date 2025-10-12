@@ -561,6 +561,13 @@ if (!empty($roleLikePatterns)) {
     }
 }
 
+$assigneeTokens = array_values(array_unique(array_filter(array_merge(
+    $primaryIdentifiers,
+    array_map(static function ($pattern) {
+        return normalize_assignee_label(str_replace('%', '', (string) $pattern));
+    }, $roleLikePatterns)
+))));
+
 $leads = array_values($leadsById);
 
 $leadIds = array_filter(array_map(static function ($lead) {
@@ -699,7 +706,7 @@ include __DIR__ . '/includes/common-header.php';
         <div class="card lead-table-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 lead-table">
+                    <table class="table table-hover align-middle mb-0 lead-table" data-page-type="my" data-current-assignee-tokens="<?php echo htmlspecialchars(json_encode($assigneeTokens, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'); ?>">
                         <thead>
                             <tr>
                                 <th scope="col">Name</th>

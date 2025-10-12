@@ -1573,7 +1573,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
         <div class="card lead-table-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 lead-table">
+                    <table class="table table-hover align-middle mb-0 lead-table" data-page-type="all">
                         <thead>
                             <tr>
                                 <th scope="col">Name</th>

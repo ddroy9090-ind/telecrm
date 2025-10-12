@@ -379,46 +379,29 @@ $developerStats = array_values(array_filter([
     ['label' => 'On-Time Delivery', 'value' => $property['on_time_delivery'] ?? null],
 ], static fn($stat) => isset($stat['value']) && trim((string) $stat['value']) !== ''));
 ?>
-<!DOCTYPE html>
-<html lang="en">
+$pageTitle = $metaTitle;
+$htmlLang = 'en';
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="assets/images/logo/favicon.svg" type="image/x-icon">
-    <title><?= htmlspecialchars($metaTitle, ENT_QUOTES, 'UTF-8') ?></title>
-    <?php if ($metaDescription !== ''): ?>
-        <meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
-    <?php endif; ?>
-    <?php if ($metaKeywords !== ''): ?>
-        <meta name="keywords" content="<?= htmlspecialchars($metaKeywords, ENT_QUOTES, 'UTF-8') ?>">
-    <?php endif; ?>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/country-select-js@2.0.1/build/css/countrySelect.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/css/intlTelInput.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/properties.css">
-</head>
+include 'includes/common-header.php';
+?>
 
-<body>
+<div id="adminPanel">
+    <?php include 'includes/sidebar.php'; ?>
+    <?php include 'includes/topbar.php'; ?>
 
-    <?php if ($leadFormError): ?>
-        <div class="container position-relative" style="z-index: 1050;">
-            <div class="alert alert-warning alert-dismissible fade show mt-3" role="alert">
-                <?= htmlspecialchars($leadFormError, ENT_QUOTES, 'UTF-8') ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <main class="main-content p-0">
+        <?php if ($leadFormError): ?>
+            <div class="container position-relative" style="z-index: 1050;">
+                <div class="alert alert-warning alert-dismissible fade show mt-3" role="alert">
+                    <?= htmlspecialchars($leadFormError, ENT_QUOTES, 'UTF-8') ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             </div>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
 
 
-    <!-- parent: .hh-property-hero -->
-    <div class="hh-property-hero " data-animation-in="animate__fadeIn" data-animation-out="animate__fadeOut"
+        <!-- parent: .hh-property-hero -->
+        <div class="hh-property-hero " data-animation-in="animate__fadeIn" data-animation-out="animate__fadeOut"
         style="background-image: url('<?= htmlspecialchars($primaryImage, ENT_QUOTES, 'UTF-8') ?>');">
         <!-- Top bar fixed at top of hero -->
         <div class="hh-property-hero-top">
@@ -1556,466 +1539,540 @@ $developerStats = array_values(array_filter([
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="/assets/js/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/country-select-js@2.0.1/build/js/countrySelect.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-    <!-- reCAPTCHA script -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    </main>
+</div>
 
-    
+<?php
+$pageScriptFiles[] = [
+    'src' => 'https://www.google.com/recaptcha/api.js',
+    'attributes' => [
+        'async' => true,
+        'defer' => true,
+    ],
+];
 
-    <script>
-        /* ---- Swiper thumbs + main ---- */
-        (function() {
-            // thumbs
-            const thumbs = new Swiper('.hh-gallery-01 .hh-gallery-01-thumbs', {
-                slidesPerView: 4.5,
-                spaceBetween: 12,
-                watchSlidesProgress: true,
-                breakpoints: {
-                    576: {
-                        slidesPerView: 5,
-                        spaceBetween: 12
-                    },
-                    992: {
-                        slidesPerView: 5,
-                        spaceBetween: 14
-                    }
-                }
-            });
+$pageInlineScripts[] = <<<'HTML'
+<script>
+    (function() {
+        if (typeof Swiper === 'undefined') {
+            return;
+        }
 
-            // main
-            const main = new Swiper('.hh-gallery-01 .hh-gallery-01-main', {
-                slidesPerView: 1,
-                speed: 500,
-                effect: 'slide',
-                thumbs: {
-                    swiper: thumbs
+        const galleryRoot = document.querySelector('.hh-gallery-01');
+        if (!galleryRoot) {
+            return;
+        }
+
+        const thumbs = new Swiper('.hh-gallery-01 .hh-gallery-01-thumbs', {
+            slidesPerView: 4.5,
+            spaceBetween: 12,
+            watchSlidesProgress: true,
+            breakpoints: {
+                576: {
+                    slidesPerView: 5,
+                    spaceBetween: 12
                 },
-                on: {
-                    slideChange: function() {
-                        // update fraction + progress
-                        const cur = this.realIndex + 1;
-                        const total = this.slides.length;
-                        const root = this.el.closest('.hh-gallery-01');
-                        root.querySelector('.fraction span:first-child').textContent = cur;
-                        root.querySelector('.fraction span:last-child').textContent = total;
-                        root.querySelector('.progress i').style.width = (cur / total * 100) + '%';
-                    }
-                }
-            });
-
-            // init fraction at load
-            main.emit('slideChange');
-
-            // custom nav
-            const prevBtn = document.querySelector('.hh-gallery-01 .nav.prev');
-            if (prevBtn) {
-                prevBtn.addEventListener('click', () => main.slidePrev());
-            }
-            const nextBtn = document.querySelector('.hh-gallery-01 .nav.next');
-            if (nextBtn) {
-                nextBtn.addEventListener('click', () => main.slideNext());
-            }
-
-            // Lightbox
-            const lb = document.querySelector('.hh-gallery-01 .hh-gallery-01-lightbox');
-            const lbImg = lb.querySelector('img');
-            let lbIndex = 0;
-
-            function openLB(i) {
-                lbIndex = i;
-                lbImg.src = main.slides[lbIndex].querySelector('img').src;
-                lb.classList.add('open');
-                lb.setAttribute('aria-hidden', 'false');
-            }
-
-            function closeLB() {
-                lb.classList.remove('open');
-                lb.setAttribute('aria-hidden', 'true');
-            }
-
-            function prevLB() {
-                lbIndex = (lbIndex - 1 + main.slides.length) % main.slides.length;
-                lbImg.src = main.slides[lbIndex].querySelector('img').src;
-                main.slideTo(lbIndex);
-            }
-
-            function nextLB() {
-                lbIndex = (lbIndex + 1) % main.slides.length;
-                lbImg.src = main.slides[lbIndex].querySelector('img').src;
-                main.slideTo(lbIndex);
-            }
-
-            // click on main image or "View All"
-            document.querySelectorAll('.hh-gallery-01 .hh-gallery-01-main .swiper-slide img').forEach((img, i) => {
-                img.style.cursor = 'zoom-in';
-                img.addEventListener('click', () => openLB(i));
-            });
-            const viewAllBtn = document.querySelector('.hh-gallery-01 [data-action="view-all"]');
-            if (viewAllBtn) {
-                viewAllBtn.addEventListener('click', () => openLB(main.realIndex));
-            }
-            const fullscreenBtn = document.querySelector('.hh-gallery-01 .fullscreen');
-            if (fullscreenBtn) {
-                fullscreenBtn.addEventListener('click', () => openLB(main.realIndex));
-            }
-            const videoBtn = document.querySelector('.hh-gallery-01 [data-action="video"]');
-            if (videoBtn && videoBtn.dataset.video) {
-                videoBtn.addEventListener('click', () => {
-                    window.open(videoBtn.dataset.video, '_blank');
-                });
-            }
-
-            // lb controls
-            lb.querySelector('.lb-close').addEventListener('click', closeLB);
-            lb.querySelector('.lb-prev').addEventListener('click', prevLB);
-            lb.querySelector('.lb-next').addEventListener('click', nextLB);
-            lb.addEventListener('click', (e) => {
-                if (e.target === lb) closeLB();
-            });
-
-            // keyboard nav
-            window.addEventListener('keydown', (e) => {
-                if (!lb.classList.contains('open')) return;
-                if (e.key === 'Escape') closeLB();
-                if (e.key === 'ArrowLeft') prevLB();
-                if (e.key === 'ArrowRight') nextLB();
-            });
-        })();
-    </script>
-
-    <script>
-        (function() {
-            const section = document.querySelector('.hh-floorplans-01');
-            if (!section) return;
-            const canvas = section.querySelector('.fp-canvas');
-            const buttons = Array.from(section.querySelectorAll('.fp-aside [data-bs-toggle="tab"]'));
-            if (!canvas || buttons.length === 0) {
-                return;
-            }
-
-            function showPane(targetSel) {
-                canvas.querySelectorAll('.fp-pane').forEach(p => p.classList.remove('active'));
-                const pane = canvas.querySelector(targetSel);
-                if (pane) pane.classList.add('active');
-            }
-
-            function activateButton(index) {
-                buttons.forEach(b => {
-                    b.classList.remove('active');
-                    b.setAttribute('aria-selected', 'false');
-                });
-                const btn = buttons[index];
-                if (!btn) {
-                    return;
-                }
-                btn.classList.add('active');
-                btn.setAttribute('aria-selected', 'true');
-                const targetSel = btn.getAttribute('data-bs-target');
-                if (targetSel) {
-                    showPane(targetSel);
+                992: {
+                    slidesPerView: 5,
+                    spaceBetween: 14
                 }
             }
+        });
 
-            activateButton(0);
-
-            buttons.forEach((btn, index) => {
-                btn.addEventListener('click', function() {
-                    activateButton(index);
-                });
-            });
-
-            const lightbox = section.querySelector('.fp-lightbox');
-            const lbImg = lightbox ? lightbox.querySelector('img') : null;
-            const viewButtons = Array.from(section.querySelectorAll('.fp-view'));
-            const planImages = Array.from(section.querySelectorAll('.fp-pane img[data-fp-index]'))
-                .map(img => {
-                    const planIndex = Number(img.getAttribute('data-fp-index'));
-                    if (Number.isNaN(planIndex)) {
-                        return null;
-                    }
-                    return {
-                        index: planIndex,
-                        el: img
-                    };
-                })
-                .filter(Boolean)
-                .sort((a, b) => a.index - b.index);
-            let lbIndex = 0;
-
-            function syncActive(index) {
-                activateButton(index);
-            }
-
-            function setLightboxImage(position) {
-                const item = planImages[position];
-                if (!lbImg || !item) {
-                    return;
-                }
-                const img = item.el;
-                lbImg.src = img.src;
-                lbImg.alt = img.alt || 'Floor plan preview';
-                lbIndex = position;
-                syncActive(item.index);
-            }
-
-            function openLightbox(index) {
-                if (!lightbox || !lbImg) {
-                    return;
-                }
-                const position = planImages.findIndex(item => item.index === index);
-                if (position === -1) {
-                    return;
-                }
-                lightbox.classList.add('open');
-                lightbox.setAttribute('aria-hidden', 'false');
-                setLightboxImage(position);
-            }
-
-            function closeLightbox() {
-                if (!lightbox) {
-                    return;
-                }
-                lightbox.classList.remove('open');
-                lightbox.setAttribute('aria-hidden', 'true');
-            }
-
-            function prevLightbox() {
-                if (!planImages.length) return;
-                const position = (lbIndex - 1 + planImages.length) % planImages.length;
-                setLightboxImage(position);
-            }
-
-            function nextLightbox() {
-                if (!planImages.length) return;
-                const position = (lbIndex + 1) % planImages.length;
-                setLightboxImage(position);
-            }
-
-            if (lightbox && planImages.length <= 1) {
-                lightbox.classList.add('single');
-            }
-
-            viewButtons.forEach(btn => {
-                btn.addEventListener('click', (event) => {
-                    const index = Number(btn.getAttribute('data-fp-index'));
-                    if (!Number.isNaN(index)) {
-                        event.stopPropagation();
-                        openLightbox(index);
-                    }
-                });
-            });
-
-            planImages.forEach(item => {
-                const img = item.el;
-                img.style.cursor = 'zoom-in';
-                img.addEventListener('click', () => {
-                    openLightbox(item.index);
-                });
-            });
-
-            if (lightbox) {
-                const closeBtn = lightbox.querySelector('.fp-lightbox-close');
-                const prevBtn = lightbox.querySelector('.fp-lightbox-nav.prev');
-                const nextBtn = lightbox.querySelector('.fp-lightbox-nav.next');
-
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', closeLightbox);
-                }
-                if (prevBtn) {
-                    prevBtn.addEventListener('click', prevLightbox);
-                }
-                if (nextBtn) {
-                    nextBtn.addEventListener('click', nextLightbox);
-                }
-
-                lightbox.addEventListener('click', (event) => {
-                    if (event.target === lightbox) {
-                        closeLightbox();
-                    }
-                });
-
-                window.addEventListener('keydown', (event) => {
-                    if (!lightbox.classList.contains('open')) {
+        const main = new Swiper('.hh-gallery-01 .hh-gallery-01-main', {
+            slidesPerView: 1,
+            speed: 500,
+            effect: 'slide',
+            thumbs: {
+                swiper: thumbs
+            },
+            on: {
+                slideChange: function() {
+                    const cur = this.realIndex + 1;
+                    const total = this.slides.length;
+                    const root = this.el.closest('.hh-gallery-01');
+                    if (!root) {
                         return;
                     }
-                    if (event.key === 'Escape') {
-                        closeLightbox();
-                    } else if (event.key === 'ArrowLeft') {
-                        prevLightbox();
-                    } else if (event.key === 'ArrowRight') {
-                        nextLightbox();
+                    const currentSpan = root.querySelector('.fraction span:first-child');
+                    const totalSpan = root.querySelector('.fraction span:last-child');
+                    const progressBar = root.querySelector('.progress i');
+                    if (currentSpan) {
+                        currentSpan.textContent = cur;
                     }
-                });
-            }
-        })();
-    </script>
-
-    <script>
-        (function() {
-            const root = document.querySelector('.hh-invest-01');
-            if (!root) return;
-
-            const priceEl = root.querySelector('#mc-price');
-            const rateEl = root.querySelector('#mc-rate');
-            const dpEl = root.querySelector('#mc-dp');
-            const termEl = root.querySelector('#mc-term');
-
-            const dpLbl = root.querySelector('#mc-dp-lbl');
-            const dpAmt = root.querySelector('#mc-dp-amt');
-            const termLbl = root.querySelector('#mc-term-lbl');
-
-            const outLoan = root.querySelector('#mc-loan');
-            const outMon = root.querySelector('#mc-monthly');
-            const outInt = root.querySelector('#mc-interest');
-            const outTot = root.querySelector('#mc-total');
-            const outPI = root.querySelector('#mc-pi');
-
-            function toNum(str) {
-                return Number(String(str).replace(/[^\d.]/g, ''));
-            }
-
-            function fmt(n) {
-                const parts = Math.round(n).toString().split('');
-                for (let i = parts.length - 3; i > 0; i -= 3) {
-                    parts.splice(i, 0, ',');
+                    if (totalSpan) {
+                        totalSpan.textContent = total;
+                    }
+                    if (progressBar) {
+                        progressBar.style.width = (cur / Math.max(total, 1) * 100) + '%';
+                    }
                 }
-                return 'AED ' + parts.join('');
+            }
+        });
+
+        main.emit('slideChange');
+
+        const prevBtn = galleryRoot.querySelector('.nav.prev');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => main.slidePrev());
+        }
+        const nextBtn = galleryRoot.querySelector('.nav.next');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => main.slideNext());
+        }
+
+        const lb = galleryRoot.querySelector('.hh-gallery-01-lightbox');
+        const lbImg = lb ? lb.querySelector('img') : null;
+        if (!lb || !lbImg) {
+            return;
+        }
+        let lbIndex = 0;
+
+        function openLB(i) {
+            lbIndex = i;
+            const slide = main.slides[lbIndex];
+            const img = slide ? slide.querySelector('img') : null;
+            if (!img) {
+                return;
+            }
+            lbImg.src = img.src;
+            lb.classList.add('open');
+            lb.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeLB() {
+            lb.classList.remove('open');
+            lb.setAttribute('aria-hidden', 'true');
+        }
+
+        function prevLB() {
+            if (!main.slides.length) {
+                return;
+            }
+            lbIndex = (lbIndex - 1 + main.slides.length) % main.slides.length;
+            const slide = main.slides[lbIndex];
+            const img = slide ? slide.querySelector('img') : null;
+            if (img) {
+                lbImg.src = img.src;
+                main.slideTo(lbIndex);
+            }
+        }
+
+        function nextLB() {
+            if (!main.slides.length) {
+                return;
+            }
+            lbIndex = (lbIndex + 1) % main.slides.length;
+            const slide = main.slides[lbIndex];
+            const img = slide ? slide.querySelector('img') : null;
+            if (img) {
+                lbImg.src = img.src;
+                main.slideTo(lbIndex);
+            }
+        }
+
+        galleryRoot.querySelectorAll('.hh-gallery-01 .hh-gallery-01-main .swiper-slide img').forEach((img, i) => {
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', () => openLB(i));
+        });
+
+        const viewAllBtn = galleryRoot.querySelector('[data-action="view-all"]');
+        if (viewAllBtn) {
+            viewAllBtn.addEventListener('click', () => openLB(main.realIndex));
+        }
+
+        const fullscreenBtn = galleryRoot.querySelector('.fullscreen');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => openLB(main.realIndex));
+        }
+
+        const videoBtn = galleryRoot.querySelector('[data-action="video"]');
+        if (videoBtn && videoBtn.dataset.video) {
+            videoBtn.addEventListener('click', () => {
+                window.open(videoBtn.dataset.video, '_blank');
+            });
+        }
+
+        const closeBtn = lb.querySelector('.lb-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeLB);
+        }
+        const lbPrev = lb.querySelector('.lb-prev');
+        if (lbPrev) {
+            lbPrev.addEventListener('click', prevLB);
+        }
+        const lbNext = lb.querySelector('.lb-next');
+        if (lbNext) {
+            lbNext.addEventListener('click', nextLB);
+        }
+        lb.addEventListener('click', (event) => {
+            if (event.target === lb) {
+                closeLB();
+            }
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (!lb.classList.contains('open')) {
+                return;
+            }
+            if (event.key === 'Escape') {
+                closeLB();
+            } else if (event.key === 'ArrowLeft') {
+                prevLB();
+            } else if (event.key === 'ArrowRight') {
+                nextLB();
+            }
+        });
+    })();
+
+    (function() {
+        const section = document.querySelector('.hh-floorplans-01');
+        if (!section) {
+            return;
+        }
+
+        const canvas = section.querySelector('.fp-canvas');
+        const buttons = Array.from(section.querySelectorAll('.fp-aside [data-bs-toggle="tab"]'));
+        if (!canvas || buttons.length === 0) {
+            return;
+        }
+
+        function showPane(targetSel) {
+            canvas.querySelectorAll('.fp-pane').forEach((pane) => pane.classList.remove('active'));
+            const pane = canvas.querySelector(targetSel);
+            if (pane) {
+                pane.classList.add('active');
+            }
+        }
+
+        function activateButton(index) {
+            buttons.forEach((btn) => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            const btn = buttons[index];
+            if (!btn) {
+                return;
+            }
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
+            const targetSel = btn.getAttribute('data-bs-target');
+            if (targetSel) {
+                showPane(targetSel);
+            }
+        }
+
+        activateButton(0);
+
+        buttons.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                activateButton(index);
+            });
+        });
+
+        const lightbox = section.querySelector('.fp-lightbox');
+        const lbImg = lightbox ? lightbox.querySelector('img') : null;
+        const viewButtons = Array.from(section.querySelectorAll('.fp-view'));
+        const planImages = Array.from(section.querySelectorAll('.fp-pane img[data-fp-index]'))
+            .map((img) => {
+                const planIndex = Number(img.getAttribute('data-fp-index'));
+                if (Number.isNaN(planIndex)) {
+                    return null;
+                }
+                return { index: planIndex, el: img };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.index - b.index);
+        let lbIndex = 0;
+
+        function syncActive(index) {
+            activateButton(index);
+        }
+
+        function setLightboxImage(position) {
+            const item = planImages[position];
+            if (!lbImg || !item) {
+                return;
+            }
+            const img = item.el;
+            lbImg.src = img.src;
+            lbImg.alt = img.alt || 'Floor plan preview';
+            lbIndex = position;
+            syncActive(item.index);
+        }
+
+        function openLightbox(index) {
+            if (!lightbox || !lbImg) {
+                return;
+            }
+            const position = planImages.findIndex((item) => item.index === index);
+            if (position === -1) {
+                return;
+            }
+            lightbox.classList.add('open');
+            lightbox.setAttribute('aria-hidden', 'false');
+            setLightboxImage(position);
+        }
+
+        function closeLightbox() {
+            if (!lightbox) {
+                return;
+            }
+            lightbox.classList.remove('open');
+            lightbox.setAttribute('aria-hidden', 'true');
+        }
+
+        function prevLightbox() {
+            if (!planImages.length) {
+                return;
+            }
+            const position = (lbIndex - 1 + planImages.length) % planImages.length;
+            setLightboxImage(position);
+        }
+
+        function nextLightbox() {
+            if (!planImages.length) {
+                return;
+            }
+            const position = (lbIndex + 1) % planImages.length;
+            setLightboxImage(position);
+        }
+
+        if (lightbox && planImages.length <= 1) {
+            lightbox.classList.add('single');
+        }
+
+        viewButtons.forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                const index = Number(btn.getAttribute('data-fp-index'));
+                if (!Number.isNaN(index)) {
+                    event.stopPropagation();
+                    openLightbox(index);
+                }
+            });
+        });
+
+        planImages.forEach((item) => {
+            const img = item.el;
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', () => {
+                openLightbox(item.index);
+            });
+        });
+
+        if (lightbox) {
+            const closeBtn = lightbox.querySelector('.fp-lightbox-close');
+            const prevBtn = lightbox.querySelector('.fp-lightbox-nav.prev');
+            const nextBtn = lightbox.querySelector('.fp-lightbox-nav.next');
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeLightbox);
+            }
+            if (prevBtn) {
+                prevBtn.addEventListener('click', prevLightbox);
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', nextLightbox);
             }
 
-            function compute() {
-                const P = toNum(priceEl.value || 0);
-                const rA = Number(rateEl.value || 0); // annual %
-                const dp = Number(dpEl.value || 0); // %
-                const yrs = Number(termEl.value || 0);
+            lightbox.addEventListener('click', (event) => {
+                if (event.target === lightbox) {
+                    closeLightbox();
+                }
+            });
 
-                const down = P * dp / 100;
-                const L = Math.max(P - down, 0);
-                const i = (rA / 100) / 12;
-                const n = yrs * 12;
+            window.addEventListener('keydown', (event) => {
+                if (!lightbox.classList.contains('open')) {
+                    return;
+                }
+                if (event.key === 'Escape') {
+                    closeLightbox();
+                } else if (event.key === 'ArrowLeft') {
+                    prevLightbox();
+                } else if (event.key === 'ArrowRight') {
+                    nextLightbox();
+                }
+            });
+        }
+    })();
 
-                const M = (i > 0) ? (L * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1) : (n > 0 ? L / n : 0);
-                const totalPay = M * n;
-                const totalInt = totalPay - L;
+    (function() {
+        const root = document.querySelector('.hh-invest-01');
+        if (!root) {
+            return;
+        }
 
+        const priceEl = root.querySelector('#mc-price');
+        const rateEl = root.querySelector('#mc-rate');
+        const dpEl = root.querySelector('#mc-dp');
+        const termEl = root.querySelector('#mc-term');
+
+        const dpLbl = root.querySelector('#mc-dp-lbl');
+        const dpAmt = root.querySelector('#mc-dp-amt');
+        const termLbl = root.querySelector('#mc-term-lbl');
+
+        const outLoan = root.querySelector('#mc-loan');
+        const outMon = root.querySelector('#mc-monthly');
+        const outInt = root.querySelector('#mc-interest');
+        const outTot = root.querySelector('#mc-total');
+        const outPI = root.querySelector('#mc-pi');
+
+        function toNum(str) {
+            return Number(String(str).replace(/[^\d.]/g, ''));
+        }
+
+        function fmt(n) {
+            const parts = Math.round(n).toString().split('');
+            for (let i = parts.length - 3; i > 0; i -= 3) {
+                parts.splice(i, 0, ',');
+            }
+            return 'AED ' + parts.join('');
+        }
+
+        function compute() {
+            const P = toNum(priceEl.value || 0);
+            const rA = Number(rateEl.value || 0);
+            const dp = Number(dpEl.value || 0);
+            const yrs = Number(termEl.value || 0);
+
+            const down = P * dp / 100;
+            const L = Math.max(P - down, 0);
+            const i = (rA / 100) / 12;
+            const n = yrs * 12;
+
+            const M = (i > 0)
+                ? (L * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1)
+                : (n > 0 ? L / n : 0);
+            const totalPay = M * n;
+            const totalInt = totalPay - L;
+
+            if (dpLbl) {
                 dpLbl.textContent = dp + '%';
+            }
+            if (dpAmt) {
                 dpAmt.textContent = fmt(down);
+            }
+            if (termLbl) {
                 termLbl.textContent = yrs + ' years';
-
+            }
+            if (outLoan) {
                 outLoan.textContent = fmt(L);
+            }
+            if (outMon) {
                 outMon.textContent = fmt(M);
+            }
+            if (outPI) {
                 outPI.textContent = fmt(M);
+            }
+            if (outTot) {
                 outTot.textContent = fmt(totalPay);
+            }
+            if (outInt) {
                 outInt.textContent = fmt(totalInt);
             }
+        }
 
-            // formatting on blur for price
-            priceEl.addEventListener('blur', () => {
-                priceEl.value = (toNum(priceEl.value) || 0).toLocaleString();
-                compute();
-            });
-            [priceEl, rateEl].forEach(el => el.addEventListener('input', compute));
-            [dpEl, termEl].forEach(el => el.addEventListener('input', compute));
-
-            // init
+        priceEl.addEventListener('blur', () => {
             priceEl.value = (toNum(priceEl.value) || 0).toLocaleString();
             compute();
-        })();
-    </script>
+        });
+        [priceEl, rateEl].forEach((el) => el.addEventListener('input', compute));
+        [dpEl, termEl].forEach((el) => el.addEventListener('input', compute));
 
-    <script>
-        function openPopup() {
-            document.getElementById("propertyEnquirey").classList.add("show");
-            document.body.classList.add("no-scroll");
+        priceEl.value = (toNum(priceEl.value) || 0).toLocaleString();
+        compute();
+    })();
+
+    (function() {
+        const body = document.body;
+        const overlays = document.querySelectorAll('.popup-overlay');
+
+        function toggleScroll() {
+            const anyOpen = Array.from(overlays).some((overlay) => overlay.classList.contains('show'));
+            if (anyOpen) {
+                body.classList.add('no-scroll');
+            } else {
+                body.classList.remove('no-scroll');
+            }
         }
 
-        function closePopup() {
-            document.getElementById("propertyEnquirey").classList.remove("show");
-            document.body.classList.remove("no-scroll");
+        const enquiry = document.getElementById('propertyEnquirey');
+        const brochure = document.getElementById('downloadBrochure');
+
+        window.openPopup = function() {
+            if (enquiry) {
+                enquiry.classList.add('show');
+                toggleScroll();
+            }
+        };
+
+        window.closePopup = function() {
+            if (enquiry) {
+                enquiry.classList.remove('show');
+                toggleScroll();
+            }
+        };
+
+        window.Brochurepopup = function() {
+            if (brochure) {
+                brochure.classList.add('show');
+                toggleScroll();
+            }
+        };
+
+        window.closeBrochurepopup = function() {
+            if (brochure) {
+                brochure.classList.remove('show');
+                toggleScroll();
+            }
+        };
+    })();
+
+    (function() {
+        if (typeof window.jQuery === 'undefined') {
+            return;
         }
 
-        function Brochurepopup() {
-            document.getElementById("downloadBrochure").classList.add("show");
-            document.body.classList.add("no-scroll");
-        }
-
-        function closeBrochurepopup() {
-            document.getElementById("downloadBrochure").classList.remove("show");
-            document.body.classList.remove("no-scroll");
-        }
-
-        // Optional: Auto open after delay
-        // window.addEventListener("load", function () {
-        //   setTimeout(function () {
-        //     openPopup();
-        //   }, 3000);
-        // });
-    </script>
-
-    <script>
-        $(document).ready(function() {
+        window.jQuery(function($) {
             const countrySelectOptions = {
-                defaultCountry: "ae",
-                preferredCountries: ['ae', 'in', 'gb'] // gb = United Kingdom
+                defaultCountry: 'ae',
+                preferredCountries: ['ae', 'in', 'gb']
             };
 
-            $(".js-country-select").each(function() {
+            $('.js-country-select').each(function() {
                 const $input = $(this);
-                if (typeof $input.countrySelect === "function") {
+                if (typeof $input.countrySelect === 'function') {
                     $input.countrySelect(countrySelectOptions);
                 }
             });
         });
-    </script>
+    })();
 
-    <script>
-        // Initialize multiple inputs with intlTelInput
-        function initIntlTelInput(target) {
-            const input = typeof target === "string" ? document.querySelector(target) : target;
-            if (!(input instanceof HTMLInputElement)) return null;
+    (function() {
+        if (typeof window.intlTelInput !== 'function') {
+            return;
+        }
 
-            if (typeof window.intlTelInput !== "function") {
-                return null;
+        document.querySelectorAll('.js-intl-phone').forEach(function(input) {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
             }
 
             const iti = window.intlTelInput(input, {
-                initialCountry: "ae", // Default UAE
+                initialCountry: 'ae',
                 separateDialCode: true,
-                preferredCountries: ["ae", "in", "us", "gb", "sa"], // Common options
+                preferredCountries: ['ae', 'in', 'us', 'gb', 'sa']
             });
 
             const form = input.form;
             if (form) {
-                form.addEventListener("submit", function() {
+                form.addEventListener('submit', function() {
                     input.value = iti.getNumber();
                 });
             }
-
-            return iti;
-        }
-
-        document.querySelectorAll('.js-intl-phone').forEach((input) => {
-            initIntlTelInput(input);
         });
-    </script>
+    })();
+</script>
+HTML;
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.select-dropDownClass').forEach(el => {
-                new Choices(el, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false
-                });
-            });
-        });
-    </script>
-
-</body>
-
-</html>
+include 'includes/common-footer.php';

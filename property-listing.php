@@ -567,18 +567,7 @@ $buildPageUrl = static function (int $page) use ($filterQueryParams): string {
         <p class="subheading">Review and manage all properties in your portfolio.</p>
         <!-- parent: .hh-hero-01 -->
         <div class="hh-hero-01">
-            <div class="container">
-                <!-- Hero copy -->
-                <div class="row">
-                    <div class="col-12">
-                        <header>
-                            <h1>Exclusive Off-Plan Properties</h1>
-                            <p>Discover handpicked off-plan projects across Dubai's most prestigious locations.
-                                Exclusive prices, flexible payment plans, and prime investment opportunities.</p>
-                        </header>
-                    </div>
-                </div>
-
+            <div class="container p-0">
                 <!-- Property Details Filter Sections -->
                 <div class="row">
                     <div class="col-12">
@@ -764,19 +753,18 @@ $buildPageUrl = static function (int $page) use ($filterQueryParams): string {
                                     </div>
 
                                     <!-- Actions -->
-                                    <div class="col-lg-1">
+                                    <div class="col-lg-1 ">
                                         <div class="mt-4">
-                                            <button type="submit">Search</button>
+                                            <button type="submit" class="btn btn-primary w-100">Search</button>
                                         </div>
                                     </div>
 
                                     <!-- Reset Button -->
-                                    <div class="col-lg-1">
+                                    <div class="col-lg-1 p-0">
                                         <div class="mt-4">
                                             <button
                                                 type="button"
-                                                class="btn btn-danger"
-                                                style="background-color: #d01f28; border: none; height: 48px; padding: 0 24px;"
+                                                class="btn btn-danger w-100"
                                                 onclick="window.location.href='property-listing.php';">
                                                 Reset
                                             </button>

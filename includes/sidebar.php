@@ -11,6 +11,12 @@
                 </a>
             </li>
             <li>
+                <a href="chat.php" class="sidebar-link">
+                    <span class="sidebar-icon"><i class="bx bx-chat"></i></span>
+                    <span class="sidebar-text">Chat</span>
+                </a>
+            </li>
+            <li>
                 <a href="users.php" class="sidebar-link">
                     <span class="sidebar-icon"><i class="bx bx-user"></i></span>
                     <span class="sidebar-text">Users</span>

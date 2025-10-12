@@ -156,6 +156,158 @@ ALTER TABLE `lead_activity_log`
   ADD CONSTRAINT `lead_activity_log_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE;
 COMMIT;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_conversations`
+--
+
+CREATE TABLE `chat_conversations` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `is_group` tinyint(1) NOT NULL DEFAULT 0,
+  `direct_key` char(64) DEFAULT NULL,
+  `created_by` int(10) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_participants`
+--
+
+CREATE TABLE `chat_participants` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `conversation_id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `last_read_message_id` int(10) UNSIGNED DEFAULT NULL,
+  `typing_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_messages`
+--
+
+CREATE TABLE `chat_messages` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `conversation_id` int(10) UNSIGNED NOT NULL,
+  `sender_id` int(10) UNSIGNED NOT NULL,
+  `body` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_message_reads`
+--
+
+CREATE TABLE `chat_message_reads` (
+  `message_id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `read_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_presence`
+--
+
+CREATE TABLE `user_presence` (
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `last_seen` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Indexes for table `chat_conversations`
+--
+
+ALTER TABLE `chat_conversations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `chat_conversations_direct_key` (`direct_key`);
+
+--
+-- Indexes for table `chat_participants`
+--
+
+ALTER TABLE `chat_participants`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `chat_participants_unique` (`conversation_id`,`user_id`),
+  ADD KEY `chat_participants_user_fk` (`user_id`);
+
+--
+-- Indexes for table `chat_messages`
+--
+
+ALTER TABLE `chat_messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `chat_messages_conversation_fk` (`conversation_id`),
+  ADD KEY `chat_messages_sender_fk` (`sender_id`);
+
+--
+-- Indexes for table `chat_message_reads`
+--
+
+ALTER TABLE `chat_message_reads`
+  ADD PRIMARY KEY (`message_id`,`user_id`),
+  ADD KEY `chat_message_reads_user_fk` (`user_id`);
+
+--
+-- Indexes for table `user_presence`
+--
+
+ALTER TABLE `user_presence`
+  ADD PRIMARY KEY (`user_id`);
+
+--
+-- AUTO_INCREMENT for dumped tables (chat)
+--
+
+ALTER TABLE `chat_conversations`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `chat_participants`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `chat_messages`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for table `chat_participants`
+--
+
+ALTER TABLE `chat_participants`
+  ADD CONSTRAINT `chat_participants_conversation_fk` FOREIGN KEY (`conversation_id`) REFERENCES `chat_conversations` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chat_participants_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `chat_messages`
+--
+
+ALTER TABLE `chat_messages`
+  ADD CONSTRAINT `chat_messages_conversation_fk` FOREIGN KEY (`conversation_id`) REFERENCES `chat_conversations` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chat_messages_sender_fk` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `chat_message_reads`
+--
+
+ALTER TABLE `chat_message_reads`
+  ADD CONSTRAINT `chat_reads_message_fk` FOREIGN KEY (`message_id`) REFERENCES `chat_messages` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chat_reads_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `user_presence`
+--
+
+ALTER TABLE `user_presence`
+  ADD CONSTRAINT `user_presence_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

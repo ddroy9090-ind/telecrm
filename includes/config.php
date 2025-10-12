@@ -236,3 +236,82 @@ if ($existingUsers) {
     }
     $existingUsers->free();
 }
+
+// --- Realtime chat tables -------------------------------------------------
+
+$createChatConversationsTable = <<<SQL
+CREATE TABLE IF NOT EXISTS chat_conversations (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) DEFAULT NULL,
+    is_group TINYINT(1) NOT NULL DEFAULT 0,
+    direct_key CHAR(64) DEFAULT NULL,
+    created_by INT UNSIGNED DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chat_conversations_direct_key UNIQUE KEY (direct_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createChatConversationsTable)) {
+    die('Failed to ensure chat_conversations table exists: ' . $mysqli->error);
+}
+
+$createChatParticipantsTable = <<<SQL
+CREATE TABLE IF NOT EXISTS chat_participants (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_read_message_id INT UNSIGNED DEFAULT NULL,
+    typing_at TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY chat_participants_unique (conversation_id, user_id),
+    CONSTRAINT chat_participants_conversation_fk FOREIGN KEY (conversation_id) REFERENCES chat_conversations (id) ON DELETE CASCADE,
+    CONSTRAINT chat_participants_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createChatParticipantsTable)) {
+    die('Failed to ensure chat_participants table exists: ' . $mysqli->error);
+}
+
+$createChatMessagesTable = <<<SQL
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT UNSIGNED NOT NULL,
+    sender_id INT UNSIGNED NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chat_messages_conversation_fk FOREIGN KEY (conversation_id) REFERENCES chat_conversations (id) ON DELETE CASCADE,
+    CONSTRAINT chat_messages_sender_fk FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createChatMessagesTable)) {
+    die('Failed to ensure chat_messages table exists: ' . $mysqli->error);
+}
+
+$createChatMessageReadsTable = <<<SQL
+CREATE TABLE IF NOT EXISTS chat_message_reads (
+    message_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (message_id, user_id),
+    CONSTRAINT chat_reads_message_fk FOREIGN KEY (message_id) REFERENCES chat_messages (id) ON DELETE CASCADE,
+    CONSTRAINT chat_reads_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createChatMessageReadsTable)) {
+    die('Failed to ensure chat_message_reads table exists: ' . $mysqli->error);
+}
+
+$createUserPresenceTable = <<<SQL
+CREATE TABLE IF NOT EXISTS user_presence (
+    user_id INT UNSIGNED NOT NULL PRIMARY KEY,
+    last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT user_presence_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createUserPresenceTable)) {
+    die('Failed to ensure user_presence table exists: ' . $mysqli->error);
+}

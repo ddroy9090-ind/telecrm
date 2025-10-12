@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/config.php';
 
-hh_session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 $propertyId = isset($_GET['id']) ? (int) ($_GET['id'] ?? 0) : 0;
 
@@ -419,7 +421,7 @@ $developerStats = array_values(array_filter([
         style="background-image: url('<?= htmlspecialchars($primaryImage, ENT_QUOTES, 'UTF-8') ?>');">
         <!-- Top bar fixed at top of hero -->
         <div class="hh-property-hero-top">
-            <a href="offplan-properties.php" class="hh-property-hero-back">← Back to Listings</a>
+            <a href="property-listing.php" class="hh-property-hero-back">← Back to Listings</a>
             <div class="hh-property-hero-top-actions">
                 <button type="button" class="hh-primarypill" onclick="openPopup()"><img width="14"
                         src="assets/flaticons/phone.png" alt=""> Contact Us</button>
@@ -895,19 +897,19 @@ $developerStats = array_values(array_filter([
                                     value="<?= htmlspecialchars($titleText, ENT_QUOTES, 'UTF-8') ?>">
                                 <input type="hidden" name="form_type" value="popup">
                                 <label>
-                                    <input type="text" name="name" id="full_name" placeholder="Enter your full name" required>
+                                    <input type="text" name="name" id="contact_full_name" placeholder="Enter your full name" required>
                                 </label>
 
                                 <label>
-                                    <input type="email" name="email" id="email_address" placeholder="your.email@example.com" required>
+                                    <input type="email" name="email" id="contact_email_address" placeholder="your.email@example.com" required>
                                 </label>
 
                                 <label>
-                                    <input type="text" name="country" id="country" placeholder="Enter your country" required>
+                                    <input type="text" name="country" id="contact_country" class="js-country-select" placeholder="Enter your country" required>
                                 </label>
 
                                 <label>
-                                    <input type="tel" name="phone" id="mobile_number" placeholder="+971 50 123 4567" class="mt-3" required>
+                                    <input type="tel" name="phone" id="contact_phone_number" class="mt-3 js-intl-phone" placeholder="+971 50 123 4567" required>
                                 </label>
 
                                 <div class="g-recaptcha" data-sitekey="6LfsT9IrAAAAALx6HawW63nF2e1c9nLRJwXNDxTM"></div>
@@ -1285,7 +1287,7 @@ $developerStats = array_values(array_filter([
 
                             <div class="col-12 col-lg-4">
                                 <!-- <label for="ri-mobile">Mobile*</label> -->
-                                <input id="ri-mobile" name="mobile" type="tel" placeholder="50 123 4567">
+                                <input id="ri-mobile" name="mobile" type="tel" placeholder="50 123 4567" class="js-intl-phone">
                             </div>
 
                             <div class="col-12 col-lg-4">
@@ -1300,7 +1302,7 @@ $developerStats = array_values(array_filter([
 
                             <div class="col-12 col-lg-4">
                                 <!-- <label for="ri-budget">Select Country*</label> -->
-                                <input id="ri-budget" name="budget_range" type="text" placeholder="Budget Range*">
+                                <input id="ri-budget" name="budget_range" type="text" placeholder="Budget Range*" class="js-country-select">
                             </div>
 
                             <div class="col-12 col-lg-4">
@@ -1467,23 +1469,23 @@ $developerStats = array_values(array_filter([
                         value="<?= htmlspecialchars($titleText, ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="form_type" value="popup">
                     <div class="form-group">
-                        <label for="full_name">Enter Name</label>
-                        <input type="text" name="name" id="full_name" class="form-control" required>
+                        <label for="popup_full_name">Enter Name</label>
+                        <input type="text" name="name" id="popup_full_name" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="email_address">Enter Email</label>
-                        <input type="email" name="email" id="email_address" class="form-control" required>
+                        <label for="popup_email_address">Enter Email</label>
+                        <input type="email" name="email" id="popup_email_address" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="country">Select Country</label>
-                        <input type="text" name="country" id="country" class="form-control" required>
+                        <label for="popup_country">Select Country</label>
+                        <input type="text" name="country" id="popup_country" class="form-control js-country-select" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="mobile_number">Phone Number</label>
-                        <input type="tel" name="phone" id="mobile_number" class="form-control" required>
+                        <label for="popup_phone_number">Phone Number</label>
+                        <input type="tel" name="phone" id="popup_phone_number" class="form-control js-intl-phone" required>
                     </div>
 
                     <div class="form-group">
@@ -1531,12 +1533,12 @@ $developerStats = array_values(array_filter([
 
                     <div class="form-group">
                         <label for="brochure_country">Country</label>
-                        <input type="text" name="brochure_country" id="brochure_country" class="form-control" required>
+                        <input type="text" name="brochure_country" id="brochure_country" class="form-control js-country-select" required>
                     </div>
 
                     <div class="form-group">
                         <label for="brochure_phone">Phone Number</label>
-                        <input type="tel" name="brochure_phone" id="brochure_phone" class="form-control" required>
+                        <input type="tel" name="brochure_phone" id="brochure_phone" class="form-control js-intl-phone" required>
                     </div>
 
                     <div class="form-group">
@@ -1564,7 +1566,7 @@ $developerStats = array_values(array_filter([
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const animatedElements = Array.from(document.querySelectorAll('.[data-animation-in]'));
+            const animatedElements = Array.from(document.querySelectorAll('[data-animation-in]'));
 
             if (!animatedElements.length) {
                 return;
@@ -2044,28 +2046,29 @@ $developerStats = array_values(array_filter([
 
     <script>
         $(document).ready(function() {
-            $("#country").countrySelect({
+            const countrySelectOptions = {
                 defaultCountry: "ae",
                 preferredCountries: ['ae', 'in', 'gb'] // gb = United Kingdom
-            });
+            };
 
-            $("#brochure_country").countrySelect({
-                defaultCountry: "ae",
-                preferredCountries: ['ae', 'in', 'gb']
-            });
-
-            $("#ri-budget").countrySelect({
-                defaultCountry: "ae",
-                preferredCountries: ['ae', 'in', 'gb']
+            $(".js-country-select").each(function() {
+                const $input = $(this);
+                if (typeof $input.countrySelect === "function") {
+                    $input.countrySelect(countrySelectOptions);
+                }
             });
         });
     </script>
 
     <script>
         // Initialize multiple inputs with intlTelInput
-        function initIntlTelInput(id) {
-            const input = document.querySelector(id);
-            if (!input) return null;
+        function initIntlTelInput(target) {
+            const input = typeof target === "string" ? document.querySelector(target) : target;
+            if (!(input instanceof HTMLInputElement)) return null;
+
+            if (typeof window.intlTelInput !== "function") {
+                return null;
+            }
 
             const iti = window.intlTelInput(input, {
                 initialCountry: "ae", // Default UAE
@@ -2073,17 +2076,19 @@ $developerStats = array_values(array_filter([
                 preferredCountries: ["ae", "in", "us", "gb", "sa"], // Common options
             });
 
-            // Get full number on form submit
-            input.form.addEventListener("submit", function() {
-                input.value = iti.getNumber();
-            });
+            const form = input.form;
+            if (form) {
+                form.addEventListener("submit", function() {
+                    input.value = iti.getNumber();
+                });
+            }
 
             return iti;
         }
 
-        // Apply on both IDs
-        const itiPhone = initIntlTelInput("#phone");
-        const itiRiMobile = initIntlTelInput("#ri-mobile");
+        document.querySelectorAll('.js-intl-phone').forEach((input) => {
+            initIntlTelInput(input);
+        });
     </script>
 
     <script>

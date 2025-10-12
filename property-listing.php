@@ -1,12 +1,520 @@
 <?php
-session_start();
 
-// Redirect to login if user is not authenticated
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header('Location: login.php');
-    exit;
+declare(strict_types=1);
+
+require_once __DIR__ . '/includes/config.php';
+
+$itemsPerPage = 6;
+$currentPage = (int)filter_input(
+    INPUT_GET,
+    'page',
+    FILTER_VALIDATE_INT,
+    [
+        'options' => [
+            'default' => 1,
+            'min_range' => 1,
+        ],
+    ]
+);
+
+$sanitizeNumericString = static function ($value): string {
+    if (!is_string($value)) {
+        return '';
+    }
+
+    $value = trim($value);
+
+    return $value !== '' && ctype_digit($value) ? $value : '';
+};
+
+$allowedSortOptions = [
+    'price_desc',
+    'price_asc',
+    'name_asc',
+    'newest',
+    'oldest',
+    'completion_date',
+];
+
+$filters = [
+    'q' => trim((string)(filter_input(INPUT_GET, 'q', FILTER_UNSAFE_RAW) ?? '')),
+    'project_name' => trim((string)(filter_input(INPUT_GET, 'project_name', FILTER_UNSAFE_RAW) ?? '')),
+    'location' => trim((string)(filter_input(INPUT_GET, 'location', FILTER_UNSAFE_RAW) ?? '')),
+    'property_type' => trim((string)(filter_input(INPUT_GET, 'property_type', FILTER_UNSAFE_RAW) ?? '')),
+    'bedrooms' => trim((string)(filter_input(INPUT_GET, 'bedrooms', FILTER_UNSAFE_RAW) ?? '')),
+    'location_query' => trim((string)(filter_input(INPUT_GET, 'location_query', FILTER_UNSAFE_RAW) ?? '')),
+    'completion_year' => filter_input(INPUT_GET, 'completion_year', FILTER_VALIDATE_INT) ?: '',
+    'min_price' => $sanitizeNumericString(filter_input(INPUT_GET, 'min_price', FILTER_UNSAFE_RAW)),
+    'max_price' => $sanitizeNumericString(filter_input(INPUT_GET, 'max_price', FILTER_UNSAFE_RAW)),
+    'sort' => trim((string)(filter_input(INPUT_GET, 'sort', FILTER_UNSAFE_RAW) ?? '')),
+];
+
+if ($filters['sort'] !== '' && !in_array($filters['sort'], $allowedSortOptions, true)) {
+    $filters['sort'] = '';
 }
 
+$minPriceValue = $filters['min_price'] !== '' ? (float)$filters['min_price'] : null;
+$maxPriceValue = $filters['max_price'] !== '' ? (float)$filters['max_price'] : null;
+$effectiveMinPrice = $minPriceValue;
+$effectiveMaxPrice = $maxPriceValue;
+if ($effectiveMinPrice !== null && $effectiveMaxPrice !== null && $effectiveMinPrice > $effectiveMaxPrice) {
+    $temp = $effectiveMinPrice;
+    $effectiveMinPrice = $effectiveMaxPrice;
+    $effectiveMaxPrice = $temp;
+}
+
+$parsePriceToNumber = static function ($price) {
+    if (!is_string($price)) {
+        return null;
+    }
+
+    $normalized = strtoupper($price);
+    $normalized = str_replace(['AED', 'DHS'], '', $normalized);
+    $normalized = str_replace([',', ' '], '', $normalized);
+    $normalized = preg_replace('/[^0-9MK\.]/', '', $normalized);
+
+    if (!is_string($normalized)) {
+        return null;
+    }
+
+    if ($normalized === '') {
+        return null;
+    }
+
+    $multiplier = 1;
+    if (str_ends_with($normalized, 'M')) {
+        $multiplier = 1000000;
+        $normalized = substr($normalized, 0, -1);
+    } elseif (str_ends_with($normalized, 'K')) {
+        $multiplier = 1000;
+        $normalized = substr($normalized, 0, -1);
+    }
+
+    if ($normalized === '' || !is_numeric($normalized)) {
+        return null;
+    }
+
+    return (float)$normalized * $multiplier;
+};
+
+$filterOptions = [
+    'locations' => [],
+    'property_types' => [],
+    'bedrooms' => [],
+    'completion_years' => [],
+];
+
+$bedroomOptionMap = [];
+$offplanProperties = [];
+$propertyCount = 0;
+$totalPages = 1;
+$offset = 0;
+
+try {
+    $pdo = hh_db();
+
+    $filterOptions['locations'] = array_values(array_filter(array_map(
+        static fn($value) => is_string($value) ? trim($value) : '',
+        $pdo->query('SELECT DISTINCT property_location FROM properties_list WHERE property_location IS NOT NULL AND TRIM(property_location) <> "" ORDER BY property_location ASC')->fetchAll(\PDO::FETCH_COLUMN)
+    )));
+
+    $filterOptions['property_types'] = array_values(array_filter(array_map(
+        static fn($value) => is_string($value) ? trim($value) : '',
+        $pdo->query('SELECT DISTINCT property_type FROM properties_list WHERE property_type IS NOT NULL AND TRIM(property_type) <> "" ORDER BY property_type ASC')->fetchAll(\PDO::FETCH_COLUMN)
+    )));
+
+    $rawBedrooms = $pdo->query('SELECT DISTINCT bedroom FROM properties_list WHERE bedroom IS NOT NULL AND TRIM(bedroom) <> ""')->fetchAll(\PDO::FETCH_COLUMN);
+    if ($rawBedrooms) {
+        foreach ($rawBedrooms as $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $value = trim($value);
+            if ($value === '') {
+                continue;
+            }
+
+            $label = $value;
+            $lower = strtolower($value);
+            if ($lower === 'studio') {
+                $label = 'Studio';
+            } elseif (is_numeric($value)) {
+                $label = (int)$value === 1 ? '1 Bed' : $value . ' Beds';
+            }
+
+            $bedroomOptionMap[$value] = $label;
+        }
+
+        ksort($bedroomOptionMap, SORT_NATURAL);
+        $filterOptions['bedrooms'] = $bedroomOptionMap;
+    }
+
+    $filterOptions['completion_years'] = array_values(array_filter(array_map(
+        static fn($value) => $value !== null ? (int)$value : null,
+        $pdo->query('SELECT DISTINCT YEAR(completion_date) AS completion_year FROM properties_list WHERE completion_date IS NOT NULL AND completion_date <> "0000-00-00" ORDER BY completion_year ASC')->fetchAll(\PDO::FETCH_COLUMN)
+    ), static fn($value) => $value !== null && $value > 0));
+
+    $filterClauses = [];
+    $queryParams = [];
+
+    if ($filters['q'] !== '') {
+        $filterClauses[] = '(project_name LIKE :search OR property_title LIKE :search)';
+        $queryParams[':search'] = '%' . $filters['q'] . '%';
+    }
+
+    if ($filters['project_name'] !== '') {
+        $filterClauses[] = 'project_name LIKE :project_name_filter';
+        $queryParams[':project_name_filter'] = '%' . $filters['project_name'] . '%';
+    }
+
+    if ($filters['location'] !== '') {
+        $filterClauses[] = 'property_location = :location';
+        $queryParams[':location'] = $filters['location'];
+    }
+
+    if ($filters['property_type'] !== '') {
+        $filterClauses[] = 'property_type = :property_type';
+        $queryParams[':property_type'] = $filters['property_type'];
+    }
+
+    if ($filters['bedrooms'] !== '') {
+        $filterClauses[] = 'bedroom = :bedrooms';
+        $queryParams[':bedrooms'] = $filters['bedrooms'];
+    }
+
+    if ($filters['location_query'] !== '') {
+        $filterClauses[] = 'property_location LIKE :location_query';
+        $queryParams[':location_query'] = '%' . $filters['location_query'] . '%';
+    }
+
+    if ($filters['completion_year'] !== '') {
+        $filterClauses[] = 'completion_date IS NOT NULL AND completion_date <> "0000-00-00" AND YEAR(completion_date) = :completion_year';
+        $queryParams[':completion_year'] = (int)$filters['completion_year'];
+    }
+
+    $whereClause = $filterClauses ? ' WHERE ' . implode(' AND ', $filterClauses) : '';
+
+    $stmt = $pdo->prepare(
+        'SELECT id, hero_banner, gallery_images, project_status, property_type, project_name, property_title, property_location, starting_price, bedroom, bathroom, total_area, completion_date, created_at
+            FROM properties_list'
+        . $whereClause .
+        ' ORDER BY created_at DESC'
+    );
+
+    foreach ($queryParams as $param => $value) {
+        $stmt->bindValue($param, $value);
+    }
+
+    $stmt->execute();
+    $allProperties = $stmt->fetchAll();
+
+    $filteredProperties = [];
+    foreach ($allProperties as $property) {
+        $priceNumeric = $parsePriceToNumber($property['starting_price'] ?? null);
+
+        if ($effectiveMinPrice !== null && ($priceNumeric === null || $priceNumeric < $effectiveMinPrice)) {
+            continue;
+        }
+
+        if ($effectiveMaxPrice !== null && ($priceNumeric === null || $priceNumeric > $effectiveMaxPrice)) {
+            continue;
+        }
+
+        $filteredProperties[] = $property;
+    }
+
+    $filteredProperties = array_values($filteredProperties);
+
+    $sortOption = $filters['sort'] ?: 'newest';
+
+    $getComparableName = static function (array $property): string {
+        $name = '';
+        if (isset($property['project_name']) && is_string($property['project_name'])) {
+            $name = trim($property['project_name']);
+        }
+
+        if ($name === '' && isset($property['property_title']) && is_string($property['property_title'])) {
+            $name = trim($property['property_title']);
+        }
+
+        if ($name === '') {
+            return '';
+        }
+
+        if (function_exists('mb_strtolower')) {
+            return mb_strtolower($name, 'UTF-8');
+        }
+
+        return strtolower($name);
+    };
+
+    $getCompletionDateTimestamp = static function (array $property): ?int {
+        if (empty($property['completion_date']) || !is_string($property['completion_date'])) {
+            return null;
+        }
+
+        $timestamp = strtotime($property['completion_date']);
+
+        return $timestamp !== false ? $timestamp : null;
+    };
+
+    $getCreatedAtTimestamp = static function (array $property): ?int {
+        if (empty($property['created_at']) || !is_string($property['created_at'])) {
+            return null;
+        }
+
+        $timestamp = strtotime($property['created_at']);
+
+        return $timestamp !== false ? $timestamp : null;
+    };
+
+    $getPriceValue = static function (array $property) use ($parsePriceToNumber): ?float {
+        return $parsePriceToNumber($property['starting_price'] ?? null);
+    };
+
+    switch ($sortOption) {
+        case 'price_desc':
+            usort($filteredProperties, static function (array $a, array $b) use ($getPriceValue): int {
+                $priceA = $getPriceValue($a);
+                $priceB = $getPriceValue($b);
+
+                if ($priceA === $priceB) {
+                    return 0;
+                }
+
+                if ($priceA === null) {
+                    return 1;
+                }
+
+                if ($priceB === null) {
+                    return -1;
+                }
+
+                return $priceB <=> $priceA;
+            });
+            break;
+
+        case 'price_asc':
+            usort($filteredProperties, static function (array $a, array $b) use ($getPriceValue): int {
+                $priceA = $getPriceValue($a);
+                $priceB = $getPriceValue($b);
+
+                if ($priceA === $priceB) {
+                    return 0;
+                }
+
+                if ($priceA === null) {
+                    return 1;
+                }
+
+                if ($priceB === null) {
+                    return -1;
+                }
+
+                return $priceA <=> $priceB;
+            });
+            break;
+
+        case 'name_asc':
+            usort($filteredProperties, static function (array $a, array $b) use ($getComparableName): int {
+                $nameA = $getComparableName($a);
+                $nameB = $getComparableName($b);
+
+                if ($nameA === $nameB) {
+                    return 0;
+                }
+
+                if ($nameA === '') {
+                    return 1;
+                }
+
+                if ($nameB === '') {
+                    return -1;
+                }
+
+                return strcmp($nameA, $nameB);
+            });
+            break;
+
+        case 'oldest':
+            usort($filteredProperties, static function (array $a, array $b) use ($getCreatedAtTimestamp): int {
+                $createdA = $getCreatedAtTimestamp($a);
+                $createdB = $getCreatedAtTimestamp($b);
+
+                if ($createdA === $createdB) {
+                    return 0;
+                }
+
+                if ($createdA === null) {
+                    return 1;
+                }
+
+                if ($createdB === null) {
+                    return -1;
+                }
+
+                return $createdA <=> $createdB;
+            });
+            break;
+
+        case 'completion_date':
+            usort($filteredProperties, static function (array $a, array $b) use ($getCompletionDateTimestamp): int {
+                $completionA = $getCompletionDateTimestamp($a);
+                $completionB = $getCompletionDateTimestamp($b);
+
+                if ($completionA === $completionB) {
+                    return 0;
+                }
+
+                if ($completionA === null) {
+                    return 1;
+                }
+
+                if ($completionB === null) {
+                    return -1;
+                }
+
+                return $completionA <=> $completionB;
+            });
+            break;
+
+        case 'newest':
+        default:
+            usort($filteredProperties, static function (array $a, array $b) use ($getCreatedAtTimestamp): int {
+                $createdA = $getCreatedAtTimestamp($a);
+                $createdB = $getCreatedAtTimestamp($b);
+
+                if ($createdA === $createdB) {
+                    return 0;
+                }
+
+                if ($createdA === null) {
+                    return 1;
+                }
+
+                if ($createdB === null) {
+                    return -1;
+                }
+
+                return $createdB <=> $createdA;
+            });
+            break;
+    }
+    $propertyCount = count($filteredProperties);
+
+    if ($propertyCount === 0) {
+        $currentPage = 1;
+        $totalPages = 1;
+        $offset = 0;
+        $offplanProperties = [];
+    } else {
+        $totalPages = (int)ceil($propertyCount / $itemsPerPage);
+        if ($currentPage > $totalPages) {
+            $currentPage = $totalPages;
+        }
+
+        $offset = ($currentPage - 1) * $itemsPerPage;
+        $offplanProperties = array_slice($filteredProperties, $offset, $itemsPerPage);
+    }
+} catch (Throwable $e) {
+    $offplanProperties = [];
+    $propertyCount = 0;
+    $totalPages = 1;
+    $currentPage = 1;
+    $offset = 0;
+}
+
+$pageStart = $propertyCount > 0 ? $offset + 1 : 0;
+$pageEnd = $propertyCount > 0 ? min($offset + count($offplanProperties), $propertyCount) : 0;
+$propertyLabel = $propertyCount === 1 ? 'property' : 'properties';
+$updatedLabel = date('F j, Y');
+
+$uploadsBasePath = 'admin/assets/uploads/properties/';
+$legacyUploadsPrefix = 'assets/uploads/properties/';
+$normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $legacyUploadsPrefix): ?string {
+    if (!is_string($path)) {
+        return null;
+    }
+
+    $path = trim(str_replace('\\', '/', $path));
+    if ($path === '') {
+        return null;
+    }
+
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '//')) {
+        return $path;
+    }
+
+    $path = ltrim($path, '/');
+
+    if (str_starts_with($path, $uploadsBasePath)) {
+        return $path;
+    }
+
+    if (str_starts_with($path, $legacyUploadsPrefix)) {
+        return $uploadsBasePath . substr($path, strlen($legacyUploadsPrefix));
+    }
+
+    return $uploadsBasePath . $path;
+};
+
+$title = 'Dubai Off-Plan Properties for Sale | High ROI Deals';
+
+$minPriceOptions = [
+    '' => 'Select Min',
+    '300000' => 'AED 300,000',
+    '500000' => 'AED 500,000',
+    '1000000' => 'AED 1,000,000',
+    '5000000' => 'AED 5,000,000',
+    '10000000' => 'AED 10,000,000',
+    '20000000' => 'AED 20,000,000',
+];
+
+$maxPriceOptions = [
+    '' => 'Select Max',
+    '1000000' => 'AED 1,000,000',
+    '5000000' => 'AED 5,000,000',
+    '10000000' => 'AED 10,000,000',
+    '20000000' => 'AED 20,000,000',
+    '30000000' => 'AED 30,000,000',
+    '50000000' => 'AED 50,000,000+',
+];
+
+$filterQueryParams = [];
+foreach (['q', 'project_name', 'location', 'property_type', 'bedrooms', 'location_query', 'completion_year', 'min_price', 'max_price', 'sort'] as $key) {
+    $value = $filters[$key] ?? '';
+    if ($value !== '' && $value !== null) {
+        $filterQueryParams[$key] = (string)$value;
+    }
+}
+
+$buildPageUrl = static function (int $page) use ($filterQueryParams): string {
+    $params = $filterQueryParams;
+    $params['page'] = $page;
+
+    return '?' . http_build_query($params);
+};
+
+$meta_tags = '
+    <!-- Basic Meta -->
+    
+    <meta name="description" content="Explore top off-plan projects in Dubai with houzzhunt. Access early-stage deals, flexible payment plans & high-ROI investments in prime locations.">
+    <meta name="keywords" content="off plan properties in dubai, dubai off plan projects, buy off plan property dubai, invest in off plan real estate dubai, new off plan launches dubai, off plan apartments in dubai, off plan villas in dubai, affordable off plan properties dubai, dubai off plan investment guide, off plan projects payment plan dubai, best off plan areas dubai, off plan homes near metro dubai, off plan developments under 1m dubai, luxury off plan projects in dubai, cheap off plan units dubai, dubai off plan townhouses, dubai off plan projects 2025, off plan resale in dubai, off plan deals direct from developer dubai, off plan master communities dubai, dubai offshore plan properties, off plan real estate returns dubai, off plan houses dubai, dubai off plan portfolio opportunities, off plan studio apartments dubai, off plan with amenities dubai, off plan waterfront properties dubai, paid off plan returns dubai, off plan to ready move dubai, off plan for expats dubai, DAMAC Riverside off plan dubai, Cubix Residences JVC off plan, Six Senses Residences Dubai Marina off plan, Franck Muller Aeternitas off plan, Mercedes Benz Places off plan Downtown dubai, Address Residences Zabeel off plan, Utopia by DAMAC off plan Al Barsha South, Atlantis The Royal Residences off plan Palm Jumeirah, Heart of Europe World Islands off plan, Dubai Hills Vista by Emaar off plan, Binghatti Skyhall Business Bay off plan, Creek Crescent Dubai Creek Harbour off plan, Safa Two by DAMAC off plan, Malta at DAMAC Lagoons off plan, Expo Golf Villas 6 off plan Emaar South, Peninsula Three Business Bay off plan, Verve by Meraas off plan, Siniya Island by Sobha off plan, DAMAC Islands off plan Dubailand, The Wilds Dubailand off plan, The Acres Phase 3 off plan Dubailand, Jumeirah Peninsula Bay off plan, Waada by BT off plan Dubai South, Palace Villas Ostra Emaar off plan, Canal One by Prestige One off plan, Bugatti Residences Business Bay off plan, Ritz‑Carlton Residences Business Bay off plan, Velora 2 The Valley off plan, Binghatti Jacob & Co Residences off plan, Lime Gardens Dubai Hills Estate off plan, Karl Lagerfeld Villas Meydan off plan, Casa Canal Al Wasl off plan, S Tower Sobha Internet City off plan, Armani Beach Residences Palm Jumeirah off plan, Sobha Seahaven off plan Ras Al Khor, Emaar The Oasis off plan Dubai Hills, Casa Canal by AHS off plan Al Wasl, Verve by Meraas JVT off plan, MJL Madinat Jumeirah Living off plan, Tilal Al Ghaf off plan Majid Al Futtaim, Bay Grove Phase 3 Nakheel off plan, Azizi Venice Dubai South off plan, Peninsula Three Select Group off plan, Sobha One Ras Al Khor off plan, Uptown Dubai Tower 1 off plan JLT, Bayz 102 by Danube off plan, Diamondz JLT off plan Danube, Gemz Danube Properties off plan, Mudan Al Ranim 7 Dubailand off plan, Arabella 3 Mudon off plan, La Violeta Villanova off plan, off plan 1 bhk apartment dubai, off plan 2 bhk apartment dubai, off plan 3 bhk apartment dubai, off plan 4 bhk apartment dubai, off plan studio dubai, off plan 1 bhk townhouse dubai, off plan 2 bhk townhouse dubai, off plan 3 bhk townhouse dubai, off plan 4 bhk townhouse dubai, off plan villa 3 bhk dubai, off plan villa 4 bhk dubai, off plan villa 5 bhk dubai, off plan penthouse dubai, off plan duplex dubai, off plan branded residence dubai, off plan retail units dubai, off plan office spaces dubai, off plan with sea view dubai, off plan with park view dubai, off plan family units dubai, houzzhunt off plan, off plan dubai houzzhunt, houzzhunt dubai property, houzzhunt new projects, dubai off plan listings, off plan homes houzzhunt, houzzhunt apartments sale, houzzhunt villas dubai, off plan real estate hh, houzzhunt property deals, hh off plan properties, houzzhunt payment plan, dubai launch houzzhunt, off plan by houzzhunt, houzzhunt, houzzhunt real estate, houzzhunt dubai">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="houzzhunt | Explore Properties, Real Estate Listings & Investment Opportunities">
+    <meta property="og:description" content="Discover top residential and commercial properties, rent or buy your next dream home, and explore investment opportunities with houzzhunt – your reliable real estate portal.">
+    <meta property="og:url" content="https://www.houzzhunt.com' . $_SERVER['REQUEST_URI'] . '">
+    <meta property="og:image" content="https://www.houzzhunt.com/assets/images/meta-banner.jpg">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="houzzhunt | Explore Properties, Real Estate Listings & Investment Opportunities">
+    <meta name="twitter:description" content="Discover top residential and commercial properties, rent or buy your next dream home, and explore investment opportunities with houzzhunt – your reliable real estate portal.">
+    <meta name="twitter:image" content="https://www.houzzhunt.com/assets/images/meta-banner.jpg">
+';
 ?>
 <?php include 'includes/common-header.php'; ?>
 

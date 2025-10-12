@@ -1884,63 +1884,63 @@ button:focus:not(:focus-visible) {
 /* New */
 
 .stage-badge.new {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Contacted */
 .stage-badge.contacted {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Follow Up – In Progress */
-.stage-badge.followup {
-  background-color:#008000;
+.stage-badge.follow-up-in-progress {
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Qualified */
 .stage-badge.qualified {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Meeting Scheduled */
 .stage-badge.meeting-scheduled {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Meeting Done */
 .stage-badge.meeting-done {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Offer Made */
 .stage-badge.offer-made {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Negotiation */
 .stage-badge.negotiation {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
 
 /* Site Visit */
 .stage-badge.site-visit {
-  background-color:#008000;
+  background-color:#008000 !important;
   border-color: #008000;
   color: #fff;
 }
@@ -1958,9 +1958,9 @@ button:focus:not(:focus-visible) {
 
 /* Lost */
 .stage-badge.lost {
-  background: linear-gradient(135deg, #ffe2e2 0%, #fff0f0 100%);
-  border-color: #f5bebe;
-  color: #991b1b;
+   background: #d01f28 !important;
+  color: #fff;
+  border-color: #d01f28;
 }
 
 /* ================================
@@ -1972,9 +1972,9 @@ button:focus:not(:focus-visible) {
 .stage-badge.incorrect-number,
 .stage-badge.lost-to-competitor,
 .stage-badge.unknown-reason {
-  background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
-  border-color: #fbcaca;
-  color: #991b1b;
+  background: #d01f28 !important;
+  color: #fff;
+  border-color: #d01f28;
 }
 
 

@@ -382,7 +382,7 @@ $developerStats = array_values(array_filter([
     ['label' => 'International Awards', 'value' => $property['international_awards'] ?? null],
     ['label' => 'On-Time Delivery', 'value' => $property['on_time_delivery'] ?? null],
 ], static fn($stat) => isset($stat['value']) && trim((string) $stat['value']) !== ''));
-?>
+
 $pageTitle = $metaTitle;
 $htmlLang = 'en';
 

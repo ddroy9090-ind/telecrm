@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#0e3c2f" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#grad)" />
+  <g fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4">
+    <rect x="160" y="180" width="480" height="280" rx="32" />
+    <path d="M200 320h400" />
+    <path d="M240 320v-60a40 40 0 0 1 40-40h240a40 40 0 0 1 40 40v60" />
+    <path d="M200 460v-60" />
+    <path d="M600 460v-60" />
+  </g>
+  <text x="50%" y="540" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-family="'Open Sans', Arial, sans-serif" font-size="32">Image coming soon</text>
+</svg>

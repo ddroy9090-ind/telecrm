@@ -128,7 +128,11 @@ try {
     if (count($groupIds) > 0) {
         $inPlaceholders = implode(',', array_fill(0, count($groupIds), '?'));
         $participantQuery = $pdo->prepare(
-            'SELECT cp.conversation_id, u.id, u.full_name, u.email FROM chat_participants cp JOIN users u ON u.id = cp.user_id WHERE cp.conversation_id IN (' . $inPlaceholders . ') ORDER BY u.full_name'
+            'SELECT cp.conversation_id, u.id, u.full_name, u.email
+             FROM chat_participants cp
+             JOIN users u ON u.id = cp.user_id
+             WHERE cp.conversation_id IN (' . $inPlaceholders . ')
+             ORDER BY u.full_name'
         );
         $participantQuery->execute($groupIds);
 

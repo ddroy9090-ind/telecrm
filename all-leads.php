@@ -23,19 +23,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_lead_id'])) {
     ]);
 
     if ($leadId) {
-        $deleteStatement = $mysqli->prepare('DELETE FROM all_leads WHERE id = ?');
-        if ($deleteStatement instanceof mysqli_stmt) {
-            $deleteStatement->bind_param('i', $leadId);
-            if ($deleteStatement->execute()) {
-                if ($deleteStatement->affected_rows > 0) {
-                    $deleteMessage = 'Lead deleted successfully.';
-                    $deleteType = 'success';
-                } else {
-                    $deleteMessage = 'Lead not found or already deleted.';
-                    $deleteType = 'warning';
+        $creatorId = 0;
+        $leadLookup = $mysqli->prepare('SELECT created_by FROM all_leads WHERE id = ?');
+        if ($leadLookup instanceof mysqli_stmt) {
+            $leadLookup->bind_param('i', $leadId);
+            if ($leadLookup->execute()) {
+                $result = $leadLookup->get_result();
+                $leadRow = $result ? $result->fetch_assoc() : null;
+                if ($leadRow) {
+                    $creatorId = isset($leadRow['created_by']) ? (int) $leadRow['created_by'] : 0;
                 }
             }
-            $deleteStatement->close();
+            $leadLookup->close();
+        }
+
+        if ($creatorId <= 0) {
+            $deleteMessage = 'Lead not found or not associated with a registered user.';
+            $deleteType = 'warning';
+        } else {
+            $userCheck = $mysqli->prepare('SELECT id FROM users WHERE id = ?');
+            $userExists = false;
+            if ($userCheck instanceof mysqli_stmt) {
+                $userCheck->bind_param('i', $creatorId);
+                if ($userCheck->execute()) {
+                    $userResult = $userCheck->get_result();
+                    $userExists = $userResult ? (bool) $userResult->fetch_assoc() : false;
+                }
+                $userCheck->close();
+            }
+
+            if (!$userExists) {
+                $deleteMessage = 'Lead cannot be deleted because the owning user no longer exists.';
+                $deleteType = 'warning';
+            } else {
+                $deleteStatement = $mysqli->prepare('DELETE FROM all_leads WHERE id = ? AND created_by = ?');
+                if ($deleteStatement instanceof mysqli_stmt) {
+                    $deleteStatement->bind_param('ii', $leadId, $creatorId);
+                    if ($deleteStatement->execute()) {
+                        if ($deleteStatement->affected_rows > 0) {
+                            $deleteMessage = 'Lead deleted successfully.';
+                            $deleteType = 'success';
+                        } else {
+                            $deleteMessage = 'Lead not found or already deleted.';
+                            $deleteType = 'warning';
+                        }
+                    }
+                    $deleteStatement->close();
+                }
+            }
         }
     } else {
         $deleteMessage = 'Invalid lead selected for deletion.';
@@ -67,6 +102,14 @@ if ($usersQuery instanceof mysqli_result) {
         $users[(int) $userRow['id']] = $userRow['full_name'];
     }
     $usersQuery->free();
+}
+
+$validCreatorIds = array_values(array_filter(array_map('intval', array_keys($users)), static function ($userId) {
+    return $userId > 0;
+}));
+$creatorIdListForSql = '';
+if (!empty($validCreatorIds)) {
+    $creatorIdListForSql = implode(', ', $validCreatorIds);
 }
 
 $loggedInUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
@@ -523,7 +566,7 @@ function fetch_lead_by_id(mysqli $mysqli, int $leadId): ?array
         return null;
     }
 
-    $statement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+    $statement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ? AND created_by IS NOT NULL');
     if (!$statement instanceof mysqli_stmt) {
         return null;
     }
@@ -538,7 +581,21 @@ function fetch_lead_by_id(mysqli $mysqli, int $leadId): ?array
     $leadRow = $result ? $result->fetch_assoc() : null;
     $statement->close();
 
-    return $leadRow ?: null;
+    if (!$leadRow) {
+        return null;
+    }
+
+    $createdById = isset($leadRow['created_by']) ? (int) $leadRow['created_by'] : 0;
+    if ($createdById <= 0) {
+        return null;
+    }
+
+    global $validCreatorIds;
+    if (is_array($validCreatorIds) && !empty($validCreatorIds) && !in_array($createdById, $validCreatorIds, true)) {
+        return null;
+    }
+
+    return $leadRow;
 }
 
 function lead_avatar_initial(string $name): string
@@ -713,7 +770,10 @@ $leadStats = [
     'lost' => 0,
 ];
 
-$statsQuery = $mysqli->query('SELECT stage FROM all_leads');
+$statsQuery = null;
+if ($creatorIdListForSql !== '') {
+    $statsQuery = $mysqli->query('SELECT stage FROM all_leads WHERE created_by IN (' . $creatorIdListForSql . ')');
+}
 if ($statsQuery instanceof mysqli_result) {
     while ($statsRow = $statsQuery->fetch_assoc()) {
         $leadStats['total']++;
@@ -747,7 +807,10 @@ $ratingOptions = [
 
 $stageFilterOptions = $stageOptions;
 $dynamicStageLabels = [];
-$distinctStageQuery = $mysqli->query('SELECT DISTINCT stage FROM all_leads WHERE stage IS NOT NULL AND stage <> ""');
+$distinctStageQuery = null;
+if ($creatorIdListForSql !== '') {
+    $distinctStageQuery = $mysqli->query('SELECT DISTINCT stage FROM all_leads WHERE stage IS NOT NULL AND stage <> "" AND created_by IN (' . $creatorIdListForSql . ')');
+}
 if ($distinctStageQuery instanceof mysqli_result) {
     while ($stageRow = $distinctStageQuery->fetch_assoc()) {
         $formattedStage = format_lead_stage($stageRow['stage'] ?? '');
@@ -762,7 +825,10 @@ $stageFilterOptions = array_values(array_unique(array_merge($stageFilterOptions,
 $assignedFilterOptions = array_values(array_filter(array_map('trim', $users), static function ($value) {
     return $value !== '';
 }));
-$assignedQuery = $mysqli->query('SELECT DISTINCT assigned_to FROM all_leads WHERE assigned_to IS NOT NULL AND assigned_to <> "" ORDER BY assigned_to ASC');
+$assignedQuery = null;
+if ($creatorIdListForSql !== '') {
+    $assignedQuery = $mysqli->query('SELECT DISTINCT assigned_to FROM all_leads WHERE assigned_to IS NOT NULL AND assigned_to <> "" AND created_by IN (' . $creatorIdListForSql . ') ORDER BY assigned_to ASC');
+}
 if ($assignedQuery instanceof mysqli_result) {
     while ($assignedRow = $assignedQuery->fetch_assoc()) {
         $assignedName = trim((string) ($assignedRow['assigned_to'] ?? ''));
@@ -775,7 +841,10 @@ if ($assignedQuery instanceof mysqli_result) {
 sort($assignedFilterOptions, SORT_NATURAL | SORT_FLAG_CASE);
 
 $sourceFilterOptions = [];
-$sourceQuery = $mysqli->query('SELECT DISTINCT source FROM all_leads WHERE source IS NOT NULL AND source <> "" ORDER BY source ASC');
+$sourceQuery = null;
+if ($creatorIdListForSql !== '') {
+    $sourceQuery = $mysqli->query('SELECT DISTINCT source FROM all_leads WHERE source IS NOT NULL AND source <> "" AND created_by IN (' . $creatorIdListForSql . ') ORDER BY source ASC');
+}
 if ($sourceQuery instanceof mysqli_result) {
     while ($sourceRow = $sourceQuery->fetch_assoc()) {
         $sourceValue = trim((string) ($sourceRow['source'] ?? ''));
@@ -815,6 +884,17 @@ if (strlen($filterSearch) > 255) {
 $whereClauses = [];
 $queryParams = [];
 $paramTypes = '';
+
+if (!empty($validCreatorIds)) {
+    $creatorPlaceholders = implode(', ', array_fill(0, count($validCreatorIds), '?'));
+    $whereClauses[] = "`created_by` IN ($creatorPlaceholders)";
+    foreach ($validCreatorIds as $creatorId) {
+        $queryParams[] = $creatorId;
+        $paramTypes .= 'i';
+    }
+} else {
+    $whereClauses[] = '0';
+}
 
 if ($filterStage !== '') {
     $whereClauses[] = '`stage` LIKE ?';
@@ -925,7 +1005,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
         exit;
     }
 
-    $existingStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+    $existingStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ? AND created_by IS NOT NULL');
     if (!$existingStatement instanceof mysqli_stmt) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Unable to prepare the lookup statement.']);
@@ -947,6 +1027,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
     if (!$existingLeadRow) {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+        exit;
+    }
+
+    $existingCreatedBy = isset($existingLeadRow['created_by']) ? (int) $existingLeadRow['created_by'] : 0;
+    if ($existingCreatedBy <= 0) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'This lead must be associated with a registered user.']);
+        exit;
+    }
+
+    if (!empty($validCreatorIds) && !in_array($existingCreatedBy, $validCreatorIds, true)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'This lead is no longer associated with a registered user.']);
         exit;
     }
 
@@ -1042,7 +1135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
 
     $updateStatement->close();
 
-    $selectStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+    $selectStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ? AND created_by IS NOT NULL');
     if (!$selectStatement instanceof mysqli_stmt) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Unable to prepare the fetch statement.']);
@@ -1064,6 +1157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
     if (!$updatedLeadRow) {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+        exit;
+    }
+
+    $updatedCreatedBy = isset($updatedLeadRow['created_by']) ? (int) $updatedLeadRow['created_by'] : 0;
+    if ($updatedCreatedBy <= 0 || (!empty($validCreatorIds) && !in_array($updatedCreatedBy, $validCreatorIds, true))) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'The updated lead is not associated with a registered user.']);
         exit;
     }
 

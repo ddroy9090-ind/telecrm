@@ -155,12 +155,40 @@ CREATE TABLE IF NOT EXISTS `all_leads` (
     urgency VARCHAR(100) DEFAULT NULL,
     alternate_email VARCHAR(255) DEFAULT NULL,
     payout_received TINYINT(1) NOT NULL DEFAULT 0,
+    created_by INT UNSIGNED DEFAULT NULL,
+    created_by_name VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 SQL;
 
 if (!$mysqli->query($createAllLeadsTable)) {
     die('Failed to ensure all_leads table exists: ' . $mysqli->error);
+}
+
+// Ensure created_by column exists so every lead can be traced back to a registered user
+$createdByColumnCheck = $mysqli->query("SHOW COLUMNS FROM all_leads LIKE 'created_by'");
+if ($createdByColumnCheck) {
+    if ($createdByColumnCheck->num_rows === 0) {
+        if (!$mysqli->query("ALTER TABLE all_leads ADD COLUMN created_by INT UNSIGNED DEFAULT NULL AFTER payout_received")) {
+            die('Failed to add created_by column: ' . $mysqli->error);
+        }
+    }
+    $createdByColumnCheck->free();
+} else {
+    die('Failed to inspect all_leads table for created_by column: ' . $mysqli->error);
+}
+
+// Ensure created_by_name column exists for legacy installations
+$createdByNameColumnCheck = $mysqli->query("SHOW COLUMNS FROM all_leads LIKE 'created_by_name'");
+if ($createdByNameColumnCheck) {
+    if ($createdByNameColumnCheck->num_rows === 0) {
+        if (!$mysqli->query("ALTER TABLE all_leads ADD COLUMN created_by_name VARCHAR(255) DEFAULT NULL AFTER created_by")) {
+            die('Failed to add created_by_name column: ' . $mysqli->error);
+        }
+    }
+    $createdByNameColumnCheck->free();
+} else {
+    die('Failed to inspect all_leads table for created_by_name column: ' . $mysqli->error);
 }
 
 // Ensure password_hash column exists for legacy installations

@@ -47,6 +47,8 @@ CREATE TABLE `all_leads` (
   `urgency` varchar(100) DEFAULT NULL,
   `alternate_email` varchar(255) DEFAULT NULL,
   `payout_received` tinyint(1) NOT NULL DEFAULT 0,
+  `created_by` int(10) UNSIGNED DEFAULT NULL,
+  `created_by_name` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -54,8 +56,8 @@ CREATE TABLE `all_leads` (
 -- Dumping data for table `all_leads`
 --
 
-INSERT INTO `all_leads` (`id`, `stage`, `rating`, `assigned_to`, `source`, `name`, `phone`, `email`, `alternate_phone`, `nationality`, `interested_in`, `property_type`, `location_preferences`, `budget_range`, `size_required`, `purpose`, `urgency`, `alternate_email`, `payout_received`, `created_at`) VALUES
-(1, '[\"New\", \"Contacted\", \"Follow Up - In Progress\", \"Q', 'Warm', 'Agent 1', 'Website', 'Shoaib Ahmad', '08400438136', 'shoaib@reliantsurveyors.com', '08400438136', 'India', 'Invest', 'Apartment', 'Dubai', '500K - 1.9 M', '35,00 sq.ft', 'For Living', 'Flexible', 'shoaib@reliantsurveyors.com', 1, '2025-10-09 10:20:41');
+INSERT INTO `all_leads` (`id`, `stage`, `rating`, `assigned_to`, `source`, `name`, `phone`, `email`, `alternate_phone`, `nationality`, `interested_in`, `property_type`, `location_preferences`, `budget_range`, `size_required`, `purpose`, `urgency`, `alternate_email`, `payout_received`, `created_by`, `created_by_name`, `created_at`) VALUES
+(1, '[\"New\", \"Contacted\", \"Follow Up - In Progress\", \"Q', 'Warm', 'Agent 1', 'Website', 'Shoaib Ahmad', '08400438136', 'shoaib@reliantsurveyors.com', '08400438136', 'India', 'Invest', 'Apartment', 'Dubai', '500K - 1.9 M', '35,00 sq.ft', 'For Living', 'Flexible', 'shoaib@reliantsurveyors.com', 1, 6, 'Shoaib Ahmad', '2025-10-09 10:20:41');
 
 -- --------------------------------------------------------
 

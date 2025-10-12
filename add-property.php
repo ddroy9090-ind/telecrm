@@ -7,7 +7,101 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 require_once __DIR__ . '/includes/config.php';
-include __DIR__ . '/includes/common-header.php';
+
+if (!function_exists('db')) {
+  /**
+   * Provide a shared PDO connection using the credentials from config.php.
+   */
+  function db(): PDO
+  {
+    static $pdo = null;
+
+    if ($pdo instanceof PDO) {
+      return $pdo;
+    }
+
+    global $host, $username, $password, $database;
+
+    $dsn  = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $host, $database);
+    $opts = [
+      PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+      PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
+
+    $pdo = new PDO($dsn, $username, $password, $opts);
+
+    return $pdo;
+  }
+}
+
+if (!function_exists('csrf_token')) {
+  function csrf_token(): string
+  {
+    if (!isset($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+      $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+  }
+}
+
+if (!function_exists('csrf_regenerate_token')) {
+  function csrf_regenerate_token(): void
+  {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+  }
+}
+
+if (!function_exists('csrf_check')) {
+  function csrf_check(?string $token): void
+  {
+    $stored = $_SESSION['csrf_token'] ?? null;
+
+    if (!is_string($token) || $token === '' || !is_string($stored) || $stored === '' || !hash_equals($stored, $token)) {
+      throw new RuntimeException('Your session has expired. Please refresh the page and try again.');
+    }
+
+    csrf_regenerate_token();
+  }
+}
+
+if (!function_exists('rl_hit')) {
+  function rl_hit(string $key, int $maxPerMinute): void
+  {
+    if ($maxPerMinute <= 0) {
+      return;
+    }
+
+    $now         = time();
+    $windowStart = $now - 60;
+
+    if (!isset($_SESSION['rate_limits']) || !is_array($_SESSION['rate_limits'])) {
+      $_SESSION['rate_limits'] = [];
+    }
+
+    $history = $_SESSION['rate_limits'][$key] ?? [];
+    if (!is_array($history)) {
+      $history = [];
+    }
+
+    $history = array_filter(
+      $history,
+      static function ($timestamp) use ($windowStart) {
+        return is_int($timestamp) && $timestamp >= $windowStart;
+      }
+    );
+
+    if (count($history) >= $maxPerMinute) {
+      throw new RuntimeException('Too many requests. Please try again after a short while.');
+    }
+
+    $history[] = $now;
+    $_SESSION['rate_limits'][$key] = $history;
+  }
+}
+
+csrf_token();
 
 $errors = [];
 $successMessage = null;
@@ -321,7 +415,7 @@ if ($isEditing) {
 
   if ($editingProperty === null) {
     $_SESSION['property_error'] = 'The selected property could not be found.';
-    header('Location: all_properties.php');
+    header('Location: property-listing.php');
     exit;
   }
 }
@@ -840,7 +934,7 @@ try {
           }
 
           $_SESSION['property_success'] = 'Your Property Details has been Updated.';
-          header('Location: all_properties.php');
+          header('Location: property-listing.php');
           exit;
         }
 
@@ -864,7 +958,7 @@ try {
 
         $_SESSION['add_property_success'] = 'Your Property Has Been Added Successfully';
         $uploadedFilesToCleanup = [];
-        header('Location: add_property.php');
+        header('Location: add-property.php');
         exit;
       } catch (Throwable $e) {
         $errors[] = 'An unexpected error occurred while saving the property. Please try again.';
@@ -881,6 +975,9 @@ try {
       }
     }
   }
+} catch (RuntimeException $e) {
+  $errors[] = $e->getMessage();
+  error_log('Property form error: ' . $e->getMessage());
 } catch (Throwable $e) {
   $errors[] = 'An unexpected error occurred while saving the property. Please try again.';
   error_log('Failed to add property: ' . $e->getMessage());
@@ -1773,7 +1870,7 @@ $pageDescription = $isEditing
                     <div class="col-12">
                         <div class="d-flex justify-content-end gap-2">
                             <?php if ($isEditing): ?>
-                                <a href="all_properties.php" class="btn btn-outline-secondary">Cancel</a>
+                                <a href="property-listing.php" class="btn btn-outline-secondary">Cancel</a>
                             <?php else: ?>
                                 <button type="reset" class="btn btn-outline-secondary">Reset</button>
                             <?php endif; ?>

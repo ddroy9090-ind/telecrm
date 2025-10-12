@@ -484,7 +484,7 @@ include 'includes/common-header.php';
             <!-- Gallery + Agent -->
             <div class="row">
                 <!-- Left: Gallery -->
-                <div class="col-12 col-lg-8">
+                <div class="col-lg-12">
                     <div class="hh-gallery-01-head " data-animation-in="animate__fadeInDown"
                         data-animation-out="animate__fadeOutUp">
                         <h3>Property Gallery</h3>
@@ -561,56 +561,6 @@ include 'includes/common-header.php';
                         </div>
                     </div>
                 </div>
-
-                <!-- Right: Agent panel -->
-                <div class="col-12 col-lg-4">
-                    <aside class="hh-gallery-01-agent " data-animation-in="animate__flipInY"
-                        data-animation-out="animate__flipOutY">
-                        <div class="card-head">
-                            <div class="avatar">
-                                <img src="<?= $assetPathEsc('assets/icons/profile.webp') ?>" alt="" width="100%">
-                            </div>
-                            <div class="info">
-                                <strong>Sarah Al-Mansouri</strong>
-                                <span>Senior Property Consultant</span>
-                                <em><b style="color: #fff; font-size: 18px;">★★★★★</b> · 5.0 Rating</em>
-                            </div>
-                        </div>
-
-                        <div class="cta-row">
-                            <button type="button" class="call" onclick="window.location.href='tel:+971 42554683'">
-                                <img src="<?= $assetPathEsc('assets/icons/phone.webp') ?>" alt="" width="16">
-                                Call
-                            </button>
-                            <button type="button" class="wa"
-                                onclick="window.open('https://wa.me/97142554683','_blank')">
-                                <img src="<?= $assetPathEsc('assets/icons/whatsapp.webp') ?>" alt="WhatsApp" width="20">
-                                WhatsApp
-                            </button>
-
-                        </div>
-
-                        <button type="button" class="ghost-wide" onclick="openPopup()">
-                            <img src="<?= $assetPathEsc('assets/icons/calendar.webp') ?>" alt="" width="16">
-                            Schedule Viewing
-                        </button>
-
-                        <div class="actions">
-                            <!-- <button type="button">
-                                <img src="<?= $assetPathEsc('assets/icons/video-call.png') ?>" alt="" width="20">
-                                3D Virtual Tour
-                            </button> -->
-                            <button type="button" onclick="Brochurepopup()">
-                                <img src="<?= $assetPathEsc('assets/icons/brochure-download.webp') ?>" alt="" width="20">
-                                Download Brochure
-                            </button>
-                            <button type="button" onclick="openPopup()">
-                                <img src="<?= $assetPathEsc('assets/icons/floorplan.png') ?>" alt="" width="20">
-                                View Floor Plans
-                            </button>
-                        </div>
-                    </aside>
-                </div>
             </div>
         </div>
 
@@ -628,7 +578,7 @@ include 'includes/common-header.php';
         <div class="container">
             <!-- Body -->
             <div class="row">
-                <div class="col-12 col-lg-8">
+                <div class="col-lg-12">
                     <nav class="hh-tabs " data-animation-in="animate__fadeInDown"
                         data-animation-out="animate__fadeOutUp" role="tablist" aria-label="Property details tabs">
                         <ul>
@@ -670,7 +620,7 @@ include 'includes/common-header.php';
                             aria-labelledby="hh-tab-overview-btn">
                             <div class="container-fluid">
                                 <div class="row">
-                                    <div class="col-lg-12 p-0">
+                                    <div class="col-lg-12">
                                         <div class="project-overview ">
                                             <div class="project-header">
                                                 <h3><?= htmlspecialchars($titleText, ENT_QUOTES, 'UTF-8') ?></h3>
@@ -859,60 +809,6 @@ include 'includes/common-header.php';
 
                     </div>
                 </div>
-
-
-                <!-- Right: sidebar -->
-                <div class="col-12 col-lg-4">
-                    <aside>
-
-                        <div class="agent-card " id="contactAgent" data-animation-in="animate__fadeIn"
-                            data-animation-out="animate__fadeOut">
-
-                            <div class="agent-head">
-                                <div class="avatar">
-                                    <img src="<?= $assetPathEsc('assets/icons/chat.webp') ?>" alt="">
-                                </div>
-                                <div class="agent-info">
-                                    <strong>Contact Agent</strong>
-                                </div>
-                            </div>
-
-                            <form method="POST" action="process_offplan_lead">
-                                <input type="hidden" name="redirect"
-                                    value="property-details.php?id=<?= (int) $propertyId ?>#contactAgent">
-                                <input type="hidden" name="property_id" value="<?= (int) $propertyId ?>">
-                                <input type="hidden" name="property_title"
-                                    value="<?= htmlspecialchars($titleText, ENT_QUOTES, 'UTF-8') ?>">
-                                <input type="hidden" name="form_type" value="popup">
-                                <label>
-                                    <input type="text" name="name" id="contact_full_name" placeholder="Enter your full name" required>
-                                </label>
-
-                                <label>
-                                    <input type="email" name="email" id="contact_email_address" placeholder="your.email@example.com" required>
-                                </label>
-
-                                <label>
-                                    <input type="text" name="country" id="contact_country" class="js-country-select" placeholder="Enter your country" required>
-                                </label>
-
-                                <label>
-                                    <input type="tel" name="phone" id="contact_phone_number" class="mt-3 js-intl-phone" placeholder="+971 50 123 4567" required>
-                                </label>
-
-                                <div class="g-recaptcha" data-sitekey="6LfsT9IrAAAAALx6HawW63nF2e1c9nLRJwXNDxTM"></div>
-
-                                <button type="submit" class="send mt-3">Submit</button>
-                                <p class="reg-note terms-and-privacy">
-                                    By clicking Submit, you agree to our
-                                    <a href="terms-and-conditions.php">Terms</a> &amp;
-                                    <a href="privacy-policy.php">Privacy Policy</a>.
-                                </p>
-                            </form>
-
-                        </div>
-                    </aside>
-                </div>
             </div>
         </div>
     </div>
@@ -922,7 +818,7 @@ include 'includes/common-header.php';
         <div class="container">
             <div class="row">
                 <!-- LEFT: Highlights + Payment Plan -->
-                <div class="col-12 col-lg-8">
+                <div class="col-lg-12">
 
                     <!-- Investment Highlights -->
                     <section class="inv-high ">
@@ -986,86 +882,6 @@ include 'includes/common-header.php';
                     </section>
 
                 </div>
-
-                <!-- RIGHT: Mortgage Calculator -->
-                <div class="col-12 col-lg-4 " data-animation-in="animate__fadeInRight"
-                    data-animation-out="animate__fadeOutRight">
-                    <aside class="mort-card " data-animation-in="animate__flipInY"
-                        data-animation-out="animate__flipOutY">
-                        <header>
-                            <!-- <img src="assets/icons/mortgage.png" alt="" width="20"> -->
-                            <h5>Mortgage Calculator</h5>
-                        </header>
-
-                        <!-- price + rate -->
-                        <div class="fld-row">
-                            <label>Property Price</label>
-                            <div class="amount">
-                                <span class="adorn">$</span>
-                                <input id="mc-price" type="text" value="2,500,000" inputmode="numeric" />
-                            </div>
-                        </div>
-
-                        <div class="fld-row">
-                            <label>Interest Rate (%)</label>
-                            <div class="amount">
-                                <span class="adorn">%</span>
-                                <input id="mc-rate" type="number" step="0.1" value="3.5" />
-                            </div>
-                        </div>
-
-                        <!-- Down payment -->
-                        <div class="range-row">
-                            <div class="r-label">
-                                <span>Down Payment : <b id="mc-dp-lbl">25%</b> (<b id="mc-dp-amt">AED 625,000</b>)</span>
-                            </div>
-                            <input id="mc-dp" type="range" min="10" max="50" step="1" value="25" />
-                            <div class="r-scale">
-                                <span>10%</span><span>50%</span>
-                            </div>
-                        </div>
-
-                        <!-- Loan term -->
-                        <div class="range-row">
-                            <div class="r-label">
-                                <span>Loan Term : <b id="mc-term-lbl">25 years</b></span>
-                            </div>
-                            <input id="mc-term" type="range" min="10" max="35" step="1" value="25" />
-                            <div class="r-scale">
-                                <span>10 years</span><span>35 years</span>
-                            </div>
-                        </div>
-
-                        <!-- Results -->
-                        <div class="result-row">
-                            <div class="pill gray">
-                                <span>Loan Amount</span>
-                                <strong id="mc-loan">AED 1,875,000</strong>
-                            </div>
-                            <div class="pill green">
-                                <span>Monthly Payment</span>
-                                <strong id="mc-monthly">AED 9,387</strong>
-                            </div>
-                        </div>
-
-                        <div class="totals">
-                            <div>
-                                <span>Total Interest</span>
-                                <b id="mc-interest">AED 941,008</b>
-                            </div>
-                            <div>
-                                <span>Total Payment</span>
-                                <b id="mc-total">AED 2,816,008</b>
-                            </div>
-                            <div>
-                                <span>P&I Payment</span>
-                                <b id="mc-pi">AED 9,387</b>
-                            </div>
-                        </div>
-
-                        <button type="button" class="cta">Get Pre-Approved</button>
-                    </aside>
-                </div>
             </div>
         </div>
     </div>
@@ -1094,7 +910,7 @@ include 'includes/common-header.php';
 
             <!-- Main grid -->
             <div class="row g-4">
-                <div class="col-lg-8 col-lg-8" data-animation-in="animate__fadeInLeft"
+                <div class="col-lg-12" data-animation-in="animate__fadeInLeft"
                     data-animation-out="animate__fadeOutLeft">
                     <div class="hh-location-01-map-card">
 
@@ -1115,50 +931,6 @@ include 'includes/common-header.php';
                                     <span>We're preparing an interactive experience for this property.</span>
                                 </div>
                             <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-lg-4" data-animation-in="animate__fadeInRight"
-                    data-animation-out="animate__fadeOutRight">
-                    <div class="hh-location-01-side">
-                        <div class="hh-location-01-permit">
-                            <div class="head">
-                                <img src="<?= $assetPathEsc('assets/icons/home.svg') ?>" alt="Property permit icon">
-                                <strong>Property Permit</strong>
-                            </div>
-                            <?php if ($permitBarcode || ($property['permit_no'] ?? '') !== '' || $completionDate): ?>
-                                <div class="qr-row">
-                                    <?php if ($permitBarcode): ?>
-                                        <img class="qr" src="<?= htmlspecialchars($permitBarcode, ENT_QUOTES, 'UTF-8') ?>"
-                                            alt="Property permit QR code" width="120">
-                                    <?php endif; ?>
-                                    <div class="permit-box">
-                                        <span>Permit Number</span>
-                                        <b><?= htmlspecialchars($property['permit_no'] ?: 'Available on request', ENT_QUOTES, 'UTF-8') ?></b>
-                                        <?php if ($completionDate): ?>
-                                            <em>Completion: <?= htmlspecialchars($completionDate, ENT_QUOTES, 'UTF-8') ?></em>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php else: ?>
-                                <p class="mb-0">Permit information will be shared soon.</p>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="hh-location-01-contact">
-                            <div class="head">
-                                <img src="<?= $assetPathEsc('assets/icons/video-call.png') ?>" alt="Contact icon">
-                                <strong>Quick Contact</strong>
-                            </div>
-                            <p>Speak with our property specialists for personalised assistance.</p>
-                            <a class="call" href="tel:+97142554683">
-                                <img src="<?= $assetPathEsc('assets/icons/customer-support.webp') ?>" alt="Call icon">
-                                <span>Call Now: +971 425 54683</span>
-                            </a>
-                            <a class="email" href="mailto:contact@houzzhunt.com">
-                                <img src="<?= $assetPathEsc('assets/icons/message.webp') ?>" alt="Email icon">
-                                <span>Email Agent</span>
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -1245,199 +1017,6 @@ include 'includes/common-header.php';
         </div>
     </div>
 
-
-
-    <!-- parent: .hh-register-01 -->
-    <div class="hh-register-01 ">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-12">
-                    <form class="reg-card " action="#" method="post" novalidate>
-                        <input type="hidden" name="property_id" value="<?= (int) $propertyId ?>">
-                        <input type="hidden" name="property_title"
-                            value="<?= htmlspecialchars($titleText, ENT_QUOTES, 'UTF-8') ?>">
-                        <div class="reg-head">
-                            <h3>Register your interest</h3>
-                            <p>Fill form below and our agent will contact you shortly.</p>
-                        </div>
-
-                        <div class="row">
-
-                            <div class="col-12 col-lg-4">
-                                <!-- <label for="ri-name">Full Name*</label> -->
-                                <input id="ri-name" name="full_name" type="text" placeholder="Full Name*">
-                            </div>
-
-                            <div class="col-12 col-lg-4">
-                                <!-- <label for="ri-email">Email*</label> -->
-                                <input id="ri-email" name="email" type="email" placeholder="Email Address*">
-                            </div>
-
-                            <div class="col-12 col-lg-4">
-                                <!-- <label for="ri-mobile">Mobile*</label> -->
-                                <input id="ri-mobile" name="mobile" type="tel" placeholder="50 123 4567" class="js-intl-phone">
-                            </div>
-
-                            <div class="col-12 col-lg-4">
-                                <!-- <label for="ri-project">Interested In*</label> -->
-                                <select id="ri-project" name="project_name" class="select-dropDownClass">
-                                    <option value="">Interested In</option>
-                                    <option value="jumeirah-reside">Secondary</option>
-                                    <option value="downtown-dubai">Offplan</option>
-                                </select>
-                            </div>
-
-
-                            <div class="col-12 col-lg-4">
-                                <!-- <label for="ri-budget">Select Country*</label> -->
-                                <input id="ri-budget" name="budget_range" type="text" placeholder="Budget Range*" class="js-country-select">
-                            </div>
-
-                            <div class="col-12 col-lg-4">
-                                <!-- <label class="only-for-space">&nbsp;</label> -->
-                                <button type="submit" class="submit-btn">Submit Details</button>
-                            </div>
-                        </div>
-
-                        <p class="reg-note">
-                            By clicking Submit, you agree to our
-                            <a href="terms-and-conditions.php">Terms</a> &amp;
-                            <a href="privacy-policy.php">Privacy Policy</a>.
-                        </p>
-                    </form>
-
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- footer five start -->
-    <!-- <div class="footer-section-five">
-        <div class="container">
-            <div class="row gutter-y-30">
-                <div class="col-12 col-lg-3 col-md-6">
-                    <div class="footer-about-five">
-                        <div class="footer-logo-five animate fadeInUp wow">
-                            <img src="<?= $assetPathEsc('assets/images/logo/logo.svg') ?>">
-                        </div>
-                        <p class="lead">Your trusted partner in premium real estate across the UAE and Middle East. We
-                            bring
-                            you curated properties, expert advice and a smooth real estate experience tailored for
-                            modern
-                            living.
-                        </p>
-                        <ul class="footer-social-media-five">
-                            <li>
-                                <a href="https://www.instagram.com/houzzhunt/?hl=en"><img
-                                        src="<?= $assetPathEsc('assets/icons/instagram.png') ?>" alt="icon"></a>
-                            </li>
-                            <li>
-                                <a href="https://www.facebook.com/people/Houzz-Hunt/61574436629351/"><img
-                                        src="<?= $assetPathEsc('assets/icons/facebook.png') ?>" alt="icon"></a>
-                            </li>
-                            <li>
-                                <a href="https://x.com/HouzzHunt"><img src="<?= $assetPathEsc('assets/icons/twitter.png') ?>" alt="icon"></a>
-                            </li>
-                            <li>
-                                <a href="https://www.linkedin.com/company/houzz-hunt/"><img
-                                        src="<?= $assetPathEsc('assets/icons/linkedin.png') ?>" alt="icon"></a>
-                            </li>
-                            <li>
-                                <a href="https://www.youtube.com/@HouzzHunt"><img src="<?= $assetPathEsc('assets/icons/youtube.png') ?>"
-                                        alt="icon"></a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-6 col-lg-3 col-md-6">
-                    <div class="footer-widget-two">
-                        <h4>Usefull Links</h4>
-                        <ul class="footer-menu-two">
-                            <li>
-
-                                <a href="index.php">Home</a>
-                            </li>
-                            <li>
-
-                                <a href="about.php">About</a>
-                            </li>
-                            <li>
-
-                                <a href="services.php">Services </a>
-                            </li>
-                            <li>
-
-                                <a href="blogs.php">Blogs</a>
-                            </li>
-                            <li>
-
-                                <a href="contact.php">Contact Us</a>
-                            </li>
-                            <li>
-
-                                <a href="careers.php">Career</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-6 col-lg-3 col-md-6">
-                    <div class="footer-widget-two">
-                        <h4>Services</h4>
-                        <ul class="footer-menu-two">
-                            <li>
-
-                                <a href="residential.php">Residential</a>
-                            </li>
-                            <li>
-
-                                <a href="commercial.php">Commercial</a>
-                            </li>
-                            <li>
-
-                                <a href="mortgage-services.php">Mortgage Services</a>
-                            </li>
-                            <li>
-
-                                <a href="investment.php">Investment</a>
-                            </li>
-                            <li>
-
-                                <a href="valuation-advisory.php">Valuation & Advisory</a>
-                            </li>
-                            <li>
-
-                                <a href="research.php">Research</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-12 col-lg-3 col-md-6">
-                    <div class="footer-widget-contact">
-                        <h4>Contact Us</h4>
-                        <ul class="footer-location-four">
-                            <li>
-                                <span><img src="<?= $assetPathEsc('assets/images/svg/footer-two/footer-two-mail.svg') ?>" alt="icon"></span>
-                                <a href="mailto:contact@houzzhunt.com">contact@houzzhunt.com</a>
-                            </li>
-                            <li>
-                                <span><img src="<?= $assetPathEsc('assets/images/svg/footer-two/footer-two-address.svg') ?>" alt="icon"></span>
-                                <p>806, Capital Golden Tower
-
-                                    Business Bay, Dubai, U.A.E</p>
-                            </li>
-                            <li>
-                                <span><img src="<?= $assetPathEsc('assets/images/svg/footer-two/footer-two-call.svg') ?>" alt="icon"></span>
-                                <a href="telto:+97142554683">+971 42554683</a>
-                            </li>
-                        </ul>
-
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div> -->
-    <!-- footer five end -->
 
     <!-- Popup Form -->
     <div class="popup-overlay" id="propertyEnquirey">

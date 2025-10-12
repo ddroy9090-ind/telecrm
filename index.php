@@ -6,15 +6,15 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("Location: login.php");
     exit;
 }
+
+include __DIR__ . '/includes/common-header.php';
+include __DIR__ . '/includes/config.php';
 ?>
-<?php include 'includes/common-header.php'; ?>
+
 
 <div id="adminPanel">
-    <!-- Sidebar -->
-    <?php include 'includes/sidebar.php'; ?>
-
-    <!-- Topbar -->
-    <?php include 'includes/topbar.php'; ?>
+    <?php include __DIR__ . '/includes/sidebar.php'; ?>
+    <?php include __DIR__ . '/includes/topbar.php'; ?>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -23,4 +23,4 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     </main>
 </div>
 
-<?php include 'includes/common-footer.php'; ?>
+<?php include __DIR__ . '/includes/common-footer.php'; ?>

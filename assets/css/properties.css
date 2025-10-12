@@ -83,7 +83,7 @@ p {
 
 .terms-and-privacy a {
     text-decoration: underline;
-    color: #004526;
+    color: #02796f;
 }
 
 /* .hh-hero-01 header em {
@@ -113,7 +113,7 @@ p {
     max-width: 60%;
 }
 
-.hh-hero-01 form>.container{
+.hh-hero-01 form>.container {
     background: #ffffff;
     border-radius: 14px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
@@ -173,7 +173,7 @@ p {
 
 .hh-hero-01 select:focus,
 .hh-hero-01 input[type="search"]:focus {
-    border-color: #004526;
+    border-color: #02796f;
     box-shadow: 0 0 0 4px rgba(0, 118, 106, 0.12);
 }
 
@@ -185,13 +185,14 @@ p {
     height: 100%;
     justify-content: flex-start;
 }
+
 /* 
 .hh-hero-01 button[type="submit"] {
     height: 48px;
     padding: 0 24px;
     border-radius: 10px;
     border: 0;
-    background: #004526;
+    background: #02796f;
     color: #ffffff;
     font-weight: 500;
     cursor: pointer;
@@ -212,7 +213,7 @@ p {
     width: 48px;
     border-radius: 12px;
     background: #ffffff;
-    border: 2px solid #004526;
+    border: 2px solid #02796f;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -324,9 +325,9 @@ p {
 }
 
 .hh-properties-01-toggle button {
-    border: 1px solid #004526;
+    border: 1px solid #02796f;
     background: #fff;
-    color: #004526;
+    color: #02796f;
     border-radius: 8px;
     cursor: pointer;
     transition: background .2s ease-in-out;
@@ -335,7 +336,7 @@ p {
 
 .hh-properties-01-toggle button.active,
 .hh-properties-01-toggle button:hover {
-    background: #004526;
+    background: #02796f;
     color: #fff;
     position: relative;
     bottom: 2px;
@@ -410,7 +411,7 @@ p {
 }
 
 .hh-properties-01-tags .green {
-    background: #004526;
+    background: #02796f;
     color: #fff;
 }
 
@@ -437,12 +438,12 @@ p {
     margin-bottom: 15px !important;
     font-size: 20px;
     font-weight: 600;
-    color: #004526;
+    color: #02796f;
     transition: color .25s ease-in-out;
 }
 
 .hh-properties-01 article:hover .hh-properties-01-body h3 {
-    color: #004526;
+    color: #02796f;
     transition: transform .25s ease-in-out;
 }
 
@@ -452,7 +453,7 @@ p {
     justify-content: center;
     width: 18px;
     height: 18px;
-    color: #004526;
+    color: #02796f;
     flex-shrink: 0;
 }
 
@@ -498,13 +499,13 @@ p {
 .hh-properties-01-foot strong {
     font-size: 20px;
     font-weight: 600;
-    color: #004526;
+    color: #02796f;
 }
 
 .hh-properties-01-foot .details-link {
-    border: 1px solid #004526;
+    border: 1px solid #02796f;
     background: transparent;
-    color: #004526;
+    color: #02796f;
     padding: 6px 16px;
     border-radius: 8px;
     font-weight: 600;
@@ -515,7 +516,7 @@ p {
 }
 
 .hh-properties-01-foot .details-link:hover {
-    background: #004526;
+    background: #02796f;
     color: #fff;
 }
 
@@ -524,10 +525,10 @@ p {
     padding: 12px 32px;
     font-size: 16px;
     font-weight: 600;
-    color: #004526;
+    color: #02796f;
     /* text color */
     background: transparent;
-    border: 2px solid #004526;
+    border: 2px solid #02796f;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -537,7 +538,7 @@ p {
 
 /* Hover effect */
 .hh-btn-load:hover {
-    background: #004526;
+    background: #02796f;
     /* fill green */
     color: #fff;
     /* invert text */
@@ -558,7 +559,7 @@ p {
     color: #fff;
     display: flex;
     align-items: flex-end;
-    padding: 0 0 140px;
+    padding: 0 0 50px;
     overflow: hidden;
 }
 
@@ -606,7 +607,7 @@ p {
     height: 40px;
     border-radius: 10px;
     background: #fff;
-    color: #004526;
+    color: #02796f;
     border: none;
     cursor: pointer;
     display: flex;
@@ -615,12 +616,12 @@ p {
 }
 
 .hh-iconbtn:hover {
-    background: #004526;
+    background: #02796f;
     color: #fff;
 }
 
 .hh-primarypill {
-    background: #004526;
+    background: #02796f;
     color: #fff;
     border: none;
     padding: 8px 18px;
@@ -640,7 +641,8 @@ p {
 .hh-property-hero-info {
     max-width: 900px;
     position: relative;
-    top: 113px;
+    /* top: 113px; */
+    padding-left: 20px;
 }
 
 .hh-property-hero-tags {
@@ -670,7 +672,7 @@ p {
 
 
 .hh-property-hero-tags .green {
-    background: #004526;
+    background: #02796f;
     color: #fff;
 }
 
@@ -759,7 +761,7 @@ p {
 /* CTA bottom center */
 .hh-property-hero-ctas {
     position: absolute;
-    bottom: -110px;
+    bottom: 0px;
     right: -5%;
     transform: translateX(-50%);
     display: flex;
@@ -783,32 +785,31 @@ p {
 }
 
 .hh-property-hero-ctas .cta-solid {
-    background: #004526;
+    background: #02796f;
     color: #fff;
     border: none;
 }
 
 .hh-property-hero-ctas .cta-solid:hover {
-    background: #004526;
+    background: #02796f;
     color: #fff;
 }
 
 .hh-property-hero-ctas .cta-outline {
     background: #fff;
-    color: #004526;
+    color: #02796f;
     border: none;
 }
 
 .hh-property-hero-ctas .cta-outline:hover {
-    background: #004526;
+    background: #02796f;
     color: #fff;
 }
 
 
 
 .hh-gallery-01 {
-
-    padding: 50px 0;
+    padding: 50px 20px;
 }
 
 /* Header */
@@ -844,7 +845,7 @@ p {
 }
 
 .hh-gallery-01-head-actions .solid {
-    background: linear-gradient(90deg, #004526 0%, #004526 100%);
+    background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
     color: #fff;
 }
 
@@ -869,7 +870,7 @@ p {
 }
 
 .hh-gallery-01-main .swiper-slide {
-    height: 375px;
+    height: 450px;
 }
 
 .hh-gallery-01-main img {
@@ -940,7 +941,7 @@ p {
     border-radius: 10px;
     border: none;
     background: rgba(255, 255, 255, .9);
-    color: #004526;
+    color: #02796f;
     cursor: pointer;
     box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
     z-index: 99;
@@ -1004,7 +1005,7 @@ p {
 }
 
 .hh-gallery-01-thumbs .swiper-slide-thumb-active {
-    border-color: #004526;
+    border-color: #02796f;
     transform: translateY(-1px);
 }
 
@@ -1022,7 +1023,7 @@ p {
 .hh-gallery-01-agent .card-head {
     border-radius: 14px;
     padding: 30px 18px;
-    background: linear-gradient(90deg, #004526 0%, #004526 100%);
+    background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
     color: #ffff;
     display: flex;
     gap: 12px;
@@ -1078,7 +1079,7 @@ p {
     justify-content: center;
     gap: 8px;
     transition: filter .2s ease-in-out;
-    background-color: #004526;
+    background-color: #02796f;
     color: #fff;
 }
 
@@ -1099,8 +1100,8 @@ p {
 
 /* .hh-gallery-01-agent .cta-row .call {
     background: #fff;
-    color: #004526;
-    border: 1px solid #004526;
+    color: #02796f;
+    border: 1px solid #02796f;
 } */
 
 /* .hh-gallery-01-agent .cta-row .call img {
@@ -1109,8 +1110,8 @@ p {
 
 /* .hh-gallery-01-agent .cta-row .wa {
     background: #fff;
-    color: #004526;
-    border: 1px solid #004526;
+    color: #02796f;
+    border: 1px solid #02796f;
 }
 
 .hh-gallery-01-agent .cta-row .call:hover {
@@ -1250,12 +1251,12 @@ p {
 .hh-details-01 {
     font-family: "Open Sans", sans-serif;
     color: #1b2b2a;
-    padding-bottom: 0px;
+    padding: 0 20px 20px 20px;
 
 }
 
 .hh-details-01 .tab-content .tab-pane h3 {
-    color: #004526;
+    color: #02796f;
     padding: 15px 0;
     margin: 0;
     font-size: 20px;
@@ -1337,7 +1338,7 @@ p {
     border-radius: 20px;
     /* border: 1px solid #e5e7eb; */
     /* box-shadow: 0 8px 30px rgba(0,0,0,0.05); */
-    max-width: 900px;
+    max-width: 100%;
     margin: auto;
 }
 
@@ -1351,7 +1352,7 @@ p {
 .project-header h6 {
     font-size: 1.1rem;
     /* font-weight: 500; */
-    color: #004526;
+    color: #02796f;
     margin-bottom: 20px;
 }
 
@@ -1436,7 +1437,7 @@ p {
 .hh-details-01 .floor-grid span {
     display: block;
     font-weight: 500;
-    color: #004526;
+    color: #02796f;
 }
 
 .hh-details-01 .floor-grid em {
@@ -1475,7 +1476,7 @@ p {
     align-items: center;
     gap: 12px;
     margin-bottom: 15px;
-    /* border-bottom: 1px #004526 solid; */
+    /* border-bottom: 1px #02796f solid; */
     padding-bottom: 7px;
 }
 
@@ -1521,7 +1522,7 @@ p {
     align-items: center;
     gap: 8px;
     margin-bottom: 6px;
-    color: #004526;
+    color: #02796f;
     font-weight: 500;
     font-size: 14px;
 }
@@ -1560,7 +1561,7 @@ p {
 .hh-details-01 .agent-card input:focus,
 .hh-details-01 .agent-card select:focus,
 .hh-details-01 .agent-card textarea:focus {
-    border-color: #004526;
+    border-color: #02796f;
     box-shadow: none;
 }
 
@@ -1630,7 +1631,7 @@ p {
 }
 
 .hh-details-01 .switch input:checked+i {
-    background: #004526;
+    background: #02796f;
 }
 
 .hh-details-01 .switch input:checked+i::after {
@@ -1648,7 +1649,7 @@ p {
     height: 46px;
     border-radius: 10px;
     border: 0;
-    background: #004526;
+    background: #02796f;
     color: #fff;
     font-weight: 500;
     cursor: pointer;
@@ -1699,7 +1700,7 @@ p {
 .hh-details-01 .calc-card .input-wrap .adorn {
     padding: 0 10px;
     background: #f3f7f6;
-    color: #004526;
+    color: #02796f;
     font-weight: 500;
     height: 44px;
     display: flex;
@@ -1805,7 +1806,7 @@ p {
 .hh-developer-01 .stat strong {
     display: block;
     font-size: 22px;
-    color: #004526;
+    color: #02796f;
     margin-bottom: 4px;
     font-weight: 500;
 }
@@ -1888,7 +1889,7 @@ p {
 
 .hh-floorplans-01 .fp-view:hover,
 .hh-floorplans-01 .fp-view:focus-visible {
-    background: #004526;
+    background: #02796f;
     box-shadow: 0 16px 32px rgba(24, 163, 148, 0.25);
     transform: translateY(-2px);
     color: #fff;
@@ -1931,7 +1932,7 @@ p {
 }
 
 .hh-floorplans-01 .fp-aside::-webkit-scrollbar-thumb {
-    background-color: #004526;
+    background-color: #02796f;
     border-radius: 10px;
 }
 
@@ -1943,7 +1944,7 @@ p {
 .hh-floorplans-01 .fp-aside {
     scrollbar-width: thin;
     /* thin scrollbar */
-    scrollbar-color: #004526 transparent;
+    scrollbar-color: #02796f transparent;
 }
 
 
@@ -1995,7 +1996,7 @@ p {
     display: block;
     font-size: 14px;
     font-weight: 500;
-    color: #004526;
+    color: #02796f;
 }
 
 .hh-floorplans-01 .fp-box-head span {
@@ -2031,7 +2032,7 @@ p {
 }
 
 .hh-floorplans-01 .fp-meta b {
-    color: #004526;
+    color: #02796f;
     font-size: 13px;
     font-weight: 500;
 }
@@ -2045,7 +2046,7 @@ p {
 
 /* when selected */
 .hh-floorplans-01 .fp-box[aria-selected="true"] {
-    background: #004526;
+    background: #02796f;
     box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
     outline: 0;
 }
@@ -2127,7 +2128,7 @@ p {
 
 .hh-floorplans-01 .fp-lightbox-close:hover,
 .hh-floorplans-01 .fp-lightbox-close:focus-visible {
-    background: #004526;
+    background: #02796f;
     color: #fff;
     box-shadow: 0 18px 36px rgba(24, 163, 148, 0.35);
     transform: translateY(-2px);
@@ -2173,7 +2174,7 @@ p {
 
 .hh-floorplans-01 .fp-lightbox-nav:hover,
 .hh-floorplans-01 .fp-lightbox-nav:focus-visible {
-    background: #004526;
+    background: #02796f;
     box-shadow: 0 18px 40px rgba(24, 163, 148, 0.35);
     transform: translateY(-2px);
 }
@@ -2228,7 +2229,7 @@ p {
 .hh-invest-01 {
     font-family: "Open Sans", sans-serif;
     color: #1b2b2a;
-    padding-top: 0;
+    padding: 0 20px 30px 20px;
 }
 
 .hh-invest-01 h4 {
@@ -2293,7 +2294,7 @@ p {
 .hh-invest-01 .hi-grid strong {
     display: block;
     font-size: 22px;
-    color: #004526;
+    color: #02796f;
     margin-bottom: 4px;
     font-weight: 500;
 }
@@ -2340,7 +2341,7 @@ p {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #004526;
+    color: #02796f;
     font-weight: 500;
     font-size: 14px;
 }
@@ -2364,7 +2365,7 @@ p {
 
 .hh-invest-01 .plan-item .amt b {
     display: block;
-    color: #004526;
+    color: #02796f;
     font-size: 20px;
     font-weight: 600;
     margin-bottom: 4px;
@@ -2431,7 +2432,7 @@ p {
     height: 42px;
     padding: 0 21px;
     background: #f3f7f6;
-    color: #004526;
+    color: #02796f;
     font-weight: 500;
     display: flex;
     align-items: center
@@ -2472,7 +2473,7 @@ p {
     width: 100%;
     height: 6px;
     border-radius: 999px;
-    background: #004526;
+    background: #02796f;
     outline: none
 }
 
@@ -2522,7 +2523,7 @@ p {
 
 .hh-invest-01 .pill span {
     display: block;
-    color: #004526;
+    color: #02796f;
     font-size: 12px;
     margin-bottom: 4px
 }
@@ -2537,7 +2538,7 @@ p {
 
 .hh-invest-01 .pill strong {
     font-size: 18px;
-    color: #004526;
+    color: #02796f;
     font-weight: 400;
 }
 
@@ -2571,7 +2572,7 @@ p {
     height: 44px;
     border: 0;
     border-radius: 10px;
-    background: #004526;
+    background: #02796f;
     color: #fff;
     font-weight: 500;
     cursor: pointer;
@@ -2587,9 +2588,9 @@ p {
 .hh-location-01 {
     font-family: "Open Sans", sans-serif;
     color: #333;
-    /* padding-bottom: 50px; */
+    padding-bottom:0 20px 30px 20;
     background-color: #fff;
-    padding-top: 0;
+
 }
 
 /* Heading */
@@ -2709,7 +2710,7 @@ p {
 }
 
 .hh-location-01 .map-placeholder strong {
-    color: #004526;
+    color: #02796f;
     font-size: 16px;
 }
 
@@ -2739,7 +2740,7 @@ p {
 
 .hh-location-01 .hh-landmarks-head strong {
     font-size: 18px;
-    color: #004526;
+    color: #02796f;
     font-weight: 600;
 }
 
@@ -2775,7 +2776,7 @@ p {
     width: 40px;
     height: 40px;
     border-radius: 14px;
-    background: #004526;
+    background: #02796f;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2866,7 +2867,7 @@ p {
 }
 
 .hh-location-01 .hh-location-01-permit {
-    /* background: linear-gradient(135deg, #0f8a7a 0%, #004526 100%); */
+    /* background: linear-gradient(135deg, #0f8a7a 0%, #02796f 100%); */
     border-radius: 12px;
     padding: 24px;
     /* box-shadow: 0 26px 48px -34px rgba(11, 111, 102, 0.6); */
@@ -2968,7 +2969,7 @@ p {
 .hh-location-01 .hh-location-01-contact .head strong {
     font-size: 18px;
     font-weight: 600;
-    color: #004526;
+    color: #02796f;
 }
 
 .hh-location-01 .hh-location-01-contact p {
@@ -2992,7 +2993,7 @@ p {
 }
 
 .hh-location-01 .hh-location-01-contact .call {
-    background: #004526;
+    background: #02796f;
     color: #fff;
 }
 
@@ -3009,7 +3010,7 @@ p {
 
 .hh-location-01 .hh-location-01-contact .email {
     background: rgba(22, 187, 170, 0.08);
-    color: #004526;
+    color: #02796f;
     border: 1px solid rgba(22, 187, 170, 0.3);
 }
 
@@ -3042,7 +3043,7 @@ p {
     display: flex;
     flex-direction: column;
     gap: 18px;
-    border-left: 5px solid #004526;
+    border-left: 5px solid #02796f;
 }
 
 /* Permit Heading */
@@ -3056,7 +3057,7 @@ p {
 .permit-heading h6 {
     font-size: 20px;
     font-weight: 600;
-    color: #004526;
+    color: #02796f;
     margin: 0;
 }
 
@@ -3089,7 +3090,7 @@ p {
 /* ===== CTA Banner ===== */
 .hh-cta-01 .cta-banner {
 
-    /* background: #004526; */
+    /* background: #02796f; */
     color: #fff;
     border-radius: 12px;
     padding: 40px 32px;
@@ -3147,7 +3148,7 @@ p {
 
 .hh-cta-01 .cta-btn.secondary:hover {
     background: #fff;
-    color: #004526;
+    color: #02796f;
     transform: translateY(-2px);
 }
 
@@ -3210,7 +3211,7 @@ p {
 .hh-register-01 .reg-card label {
     display: block;
     font-weight: 500;
-    color: #004526;
+    color: #02796f;
     margin-bottom: 6px;
     font-size: 14px;
 }
@@ -3293,7 +3294,7 @@ p {
     height: 44px;
     border: 0;
     border-radius: 7px;
-    background: #004526;
+    background: #02796f;
     color: #fff;
     font-weight: 500;
     cursor: pointer;
@@ -3317,7 +3318,7 @@ p {
 }
 
 .hh-register-01 .reg-note a {
-    color: #004526;
+    color: #02796f;
     text-decoration: underline;
 }
 
@@ -3327,7 +3328,7 @@ p {
 
 .footer-section-five {
     position: relative;
-    background-color: #004526;
+    background-color: #02796f;
     /* dark green base */
     background-image: url("../images/banner/footer.png");
     background-repeat: repeat;
@@ -3520,7 +3521,7 @@ body.no-scroll {
 
 .popup-image {
     width: 50%;
-    background-image: url('../images/offplan/modal-popup.jpg');
+    background-image: url('../images/banner/modal-popup.webp');
     background-repeat: no-repeat;
     background-position: right;
     background-size: cover;
@@ -3591,7 +3592,7 @@ body.no-scroll {
 
 /* Button 1: Green Glossy */
 .btn-green-glossy {
-    /* background: linear-gradient(135deg, #004526, #4caf50); */
+    /* background: linear-gradient(135deg, #02796f, #4caf50); */
     background: linear-gradient(245deg, #0f635c, #067e74);
     color: #fff;
 }
@@ -3606,7 +3607,7 @@ body.no-scroll {
 .popup-form .appointment-form .form-group textarea,
 .popup-form .appointment-form .form-group input[type="tel"] {
     width: 100%;
-    border: 1px solid #004526;
+    border: 1px solid #02796f;
     border-radius: 6px;
     padding: 6px 14px;
     box-shadow: none;
@@ -3619,7 +3620,7 @@ body.no-scroll {
 .popup-form .appointment-form .form-group select:focus,
 .popup-form .appointment-form .form-group textarea:focus,
 .popup-form .appointment-form .form-group input[type="tel"]:focus {
-    border-color: #004526;
+    border-color: #02796f;
     /* subtle focus color */
     box-shadow: 0 0 6px rgba(0, 150, 136, 0.3);
     /* smooth glow */
@@ -3870,13 +3871,13 @@ body.no-scroll {
     height: 40px;
     border-radius: 50%;
     /* background: #e9f6f4; */
-    /* background-color: #004526; */
+    /* background-color: #02796f; */
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
     /* color: #0c9f84; */
-    color: #004526;
+    color: #02796f;
 }
 
 .amenities-list li span {
@@ -3892,8 +3893,8 @@ body.no-scroll {
 
 
 .info-section {
-    background: #004526;
-    padding: 50px 0;
+    background: #02796f;
+    padding: 50px 20px;
 }
 
 .info-card {
@@ -3902,14 +3903,14 @@ body.no-scroll {
     border-radius: 12px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     background-color: #fff;
-    color: #004526;
+    color: #02796f;
     border-color: #fff;
 }
 
 
 
 .info-card .details {
-    color: #004526;
+    color: #02796f;
     font-size: 14px;
     /* font-weight: 600; */
 }
@@ -4084,7 +4085,7 @@ body.no-scroll {
     .project-header h6 {
         font-size: 16px;
         /* font-weight: 500; */
-        color: #004526;
+        color: #02796f;
         margin-bottom: 20px;
     }
 
@@ -4206,7 +4207,7 @@ body.no-scroll {
 /* For Firefox */
 .amenities-list-1 {
     scrollbar-width: thin;
-    scrollbar-color: #004526 transparent;
+    scrollbar-color: #02796f transparent;
 }
 
 
@@ -4228,7 +4229,7 @@ body.no-scroll {
 /* selected OR hover */
 .hh-floorplans-01 .fp-box[aria-selected="true"],
 .hh-floorplans-01 .fp-box:hover {
-    background: #004526;
+    background: #02796f;
     box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
     outline: 0;
 }

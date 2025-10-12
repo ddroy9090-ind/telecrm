@@ -306,8 +306,8 @@ button:focus:not(:focus-visible) {
 
 .lead-sidebar__name {
     margin: 0;
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 28px;
+    font-weight: 300;
     letter-spacing: 0.01em;
     color: #ffffff;
 }
@@ -428,9 +428,10 @@ button:focus:not(:focus-visible) {
 
 .lead-sidebar__section-title {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 300;
     color: #0f172a;
     margin: 0;
+    text-transform: uppercase;
 }
 
 .lead-sidebar__details {

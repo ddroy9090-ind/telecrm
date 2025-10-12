@@ -31,10 +31,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Determine active item based on current page
   const currentPath = window.location.pathname.split("/").pop() || "index.php";
-  const pathAliases = {
-    "property-details.php": "property-listing.php",
-  };
-  const normalizedPath = pathAliases[currentPath] || currentPath;
   let activeItem = null;
 
   menuLinks.forEach((link) => {
@@ -50,7 +46,7 @@ document.addEventListener("DOMContentLoaded", function () {
       dropdownParent.classList.remove("active");
     }
 
-    if (linkPath === normalizedPath && parentItem) {
+    if (linkPath === currentPath && parentItem) {
       activeItem = parentItem;
     }
   });
@@ -236,85 +232,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const body = document.body;
   let overlayHideTimer = null;
   let activeTrigger = null;
-
-  const pageContext = leadTable.dataset.pageType || "all";
-
-  const normalizeAssigneeValue = (value) => {
-    if (value === null || typeof value === "undefined") {
-      return "";
-    }
-
-    return String(value).trim().toLowerCase().replace(/\s+/g, " ");
-  };
-
-  const currentAssigneeTokens = (() => {
-    if (pageContext !== "my") {
-      return [];
-    }
-
-    const rawTokens = leadTable.dataset.currentAssigneeTokens || "";
-    if (!rawTokens) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(rawTokens);
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      return parsed
-        .map((token) => normalizeAssigneeValue(token))
-        .filter((token) => token !== "");
-    } catch (error) {
-      console.error("Failed to parse assignee token list", error);
-      return [];
-    }
-  })();
-
-  const isAssigneeCurrentUser = (normalizedValue) => {
-    if (!normalizedValue) {
-      return false;
-    }
-
-    return currentAssigneeTokens.some((token) => {
-      if (!token) {
-        return false;
-      }
-
-      return (
-        normalizedValue === token ||
-        normalizedValue.includes(token) ||
-        token.includes(normalizedValue)
-      );
-    });
-  };
-
-  const ensureMyLeadsPlaceholder = () => {
-    if (pageContext !== "my") {
-      return;
-    }
-
-    const tbody = leadTable.querySelector("tbody");
-    if (!tbody) {
-      return;
-    }
-
-    const dataRows = tbody.querySelectorAll("tr[data-lead-id]");
-    const placeholderRow = tbody.querySelector("[data-empty-row]");
-
-    if (dataRows.length === 0) {
-      if (!placeholderRow) {
-        const emptyRow = document.createElement("tr");
-        emptyRow.setAttribute("data-empty-row", "true");
-        emptyRow.innerHTML =
-          '<td colspan="6" class="text-center py-4">No leads assigned to you yet.</td>';
-        tbody.appendChild(emptyRow);
-      }
-    } else if (placeholderRow) {
-      placeholderRow.remove();
-    }
-  };
 
   const sidebarFields = {
     avatar: leadSidebar.querySelector('[data-lead-field="avatarInitial"]'),
@@ -651,7 +568,7 @@ document.addEventListener("DOMContentLoaded", function () {
     urgency: 'moveInTimeline',
     size_required: 'sizeRequired',
     source: 'source',
-    assigned_to: 'assignedToId',
+    assigned_to: 'assignedTo',
     purpose: 'purpose',
   };
 
@@ -667,39 +584,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const rawValue = leadData && payloadKey in leadData ? leadData[payloadKey] : '';
-
-      if (fieldKey === 'assigned_to' && field.input.tagName === 'SELECT') {
-        const assignedId = rawValue;
-        const assignedLabel = leadData && Object.prototype.hasOwnProperty.call(leadData, 'assignedTo')
-          ? leadData.assignedTo
-          : '';
-
-        const value =
-          assignedId !== null && typeof assignedId !== 'undefined' && String(assignedId).trim() !== ''
-            ? String(assignedId).trim()
-            : '';
-
-        let matched = false;
-        Array.from(field.input.options).forEach((option) => {
-          const isMatch = option.value === value;
-          option.selected = isMatch;
-          if (isMatch) {
-            matched = true;
-          }
-        });
-
-        if (!matched) {
-          if (value === '') {
-            field.input.value = '';
-          } else {
-            const option = new Option(assignedLabel || value, value, true, true);
-            field.input.add(option);
-          }
-        }
-
-        continue;
-      }
-
       const value = Array.isArray(rawValue) ? rawValue.join(', ') : String(rawValue ?? '');
 
       if (field.input.tagName === 'SELECT') {
@@ -912,22 +796,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const assignedSelect = row.querySelector('[data-lead-assigned-select]');
     if (assignedSelect) {
-      const desiredValue =
-        typeof rowInfo.assigned_to_id !== 'undefined' && rowInfo.assigned_to_id !== null
-          ? String(rowInfo.assigned_to_id)
-          : typeof rowInfo.assigned_to_raw !== 'undefined' && rowInfo.assigned_to_raw !== null
-          ? String(rowInfo.assigned_to_raw)
-          : typeof rowInfo.assigned_to !== 'undefined' && rowInfo.assigned_to !== null
-          ? String(rowInfo.assigned_to)
-          : '';
-
-      const desiredLabel =
-        (typeof rowInfo.assigned_to_label === 'string' && rowInfo.assigned_to_label.trim() !== '')
-          ? rowInfo.assigned_to_label
-          : typeof rowInfo.assigned_to === 'string'
-          ? rowInfo.assigned_to
-          : desiredValue;
-
+      const desiredValue = rowInfo.assigned_to || '';
       let hasMatch = false;
       Array.from(assignedSelect.options).forEach((option) => {
         const isMatch = option.value === desiredValue;
@@ -936,14 +805,8 @@ document.addEventListener("DOMContentLoaded", function () {
           hasMatch = true;
         }
       });
-
       if (!hasMatch) {
-        if (!desiredValue) {
-          assignedSelect.value = '';
-        } else {
-          const fallbackOption = new Option(desiredLabel || desiredValue, desiredValue, true, true);
-          assignedSelect.add(fallbackOption);
-        }
+        assignedSelect.value = '';
       }
     }
 
@@ -1640,120 +1503,6 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Failed to parse lead data", error);
     }
   };
-
-  const assignedSelects = leadTable.querySelectorAll('[data-lead-assigned-select]');
-  assignedSelects.forEach((select) => {
-    const rememberValue = () => {
-      select.dataset.previousValue = select.value || "";
-    };
-
-    rememberValue();
-
-    select.addEventListener("focus", rememberValue);
-    select.addEventListener("pointerdown", rememberValue);
-    select.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        rememberValue();
-      }
-    });
-
-    select.addEventListener("change", (event) => {
-      event.stopPropagation();
-
-      const row = select.closest("tr[data-lead-id]");
-      const leadId = row
-        ? Number(row.dataset.leadId || row.getAttribute("data-lead-id") || 0)
-        : 0;
-
-      if (!leadId) {
-        showFeedback("Unable to determine which lead to update.", "error");
-        select.value = select.dataset.previousValue || "";
-        return;
-      }
-
-      const nextValue = select.value || "";
-      const previousValue = select.dataset.previousValue || "";
-
-      if (nextValue === previousValue) {
-        return;
-      }
-
-      const requestPayload = {
-        id: leadId,
-        assigned_to: nextValue,
-      };
-
-      select.disabled = true;
-      select.classList.add("is-updating");
-      select.setAttribute("aria-busy", "true");
-
-      fetch("all-leads.php?action=update-lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(requestPayload),
-      })
-        .then((response) =>
-          parseJsonResponse(response, "Unable to update the lead assignment.")
-        )
-        .then((data) => {
-          applyLeadResponse(data.lead);
-
-          const updatedAssignedId =
-            (data?.lead?.row && data.lead.row.assigned_to_id != null && data.lead.row.assigned_to_id !== '')
-              ? String(data.lead.row.assigned_to_id)
-              : data?.lead?.payload && data.lead.payload.assignedToId != null && data.lead.payload.assignedToId !== ''
-              ? String(data.lead.payload.assignedToId)
-              : nextValue !== ''
-              ? nextValue
-              : '';
-
-          const updatedAssignedToken =
-            updatedAssignedId !== ''
-              ? updatedAssignedId
-              : (data?.lead?.row && data.lead.row.assigned_to_raw) ||
-                (data?.lead?.payload && data.lead.payload.assignedToRaw) ||
-                nextValue;
-
-          select.dataset.previousValue = nextValue;
-
-          if (pageContext === "my") {
-            const normalizedAssigned = normalizeAssigneeValue(updatedAssignedToken);
-            const rowElement = row;
-
-            if (!isAssigneeCurrentUser(normalizedAssigned) && rowElement) {
-              if (currentLeadRow === rowElement) {
-                closeSidebar();
-              }
-
-              rowElement.remove();
-              ensureMyLeadsPlaceholder();
-            } else {
-              ensureMyLeadsPlaceholder();
-            }
-          }
-
-          const successMessage = data?.message || "Lead updated successfully.";
-          showFeedback(successMessage, "success");
-        })
-        .catch((error) => {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Unable to update the lead assignment.";
-          showFeedback(message, "error");
-          select.value = previousValue;
-          select.dataset.previousValue = previousValue;
-        })
-        .finally(() => {
-          select.disabled = false;
-          select.classList.remove("is-updating");
-          select.removeAttribute("aria-busy");
-        });
-    });
-  });
 
   leadTable.querySelectorAll("tbody tr[data-lead-json]").forEach((row) => {
     row.addEventListener("click", (event) => {

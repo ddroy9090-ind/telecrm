@@ -1884,65 +1884,65 @@ button:focus:not(:focus-visible) {
 /* New */
 
 .stage-badge.new {
-  background: linear-gradient(135deg, #d9faff 0%, #e6fdff 100%);
-  border-color: #9deff8;
-  color: #004d5a;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Contacted */
 .stage-badge.contacted {
-  background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
-  border-color: #cbd5e1;
-  color: #1e293b;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Follow Up – In Progress */
 .stage-badge.followup {
-  background: linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 100%);
-  border-color: #94a3b8;
-  color: #0f172a;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Qualified */
 .stage-badge.qualified {
-  background: linear-gradient(135deg, #e9d5ff 0%, #f3e8ff 100%);
-  border-color: #c084fc;
-  color: #581c87;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Meeting Scheduled */
 .stage-badge.meeting-scheduled {
-  background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
-  border-color: #fde68a;
-  color: #92400e;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Meeting Done */
 .stage-badge.meeting-done {
-  background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
-  border-color: #ddd6fe;
-  color: #4c1d95;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Offer Made */
 .stage-badge.offer-made {
-  background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
-  border-color: #93c5fd;
-  color: #1e3a8a;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Negotiation */
 .stage-badge.negotiation {
-  background: linear-gradient(135deg, #f3e8ff 0%, #f5d0fe 100%);
-  border-color: #d8b4fe;
-  color: #6b21a8;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* Site Visit */
 .stage-badge.site-visit {
-  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
-  border-color: #d1d5db;
-  color: #111827;
+  background-color:#008000;
+  border-color: #008000;
+  color: #fff;
 }
 
 /* ================================

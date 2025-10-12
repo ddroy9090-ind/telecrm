@@ -452,6 +452,11 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath): ?s
         return null;
     }
 
+    $path = preg_replace('#^uploads/(?:properties/)?#', '', $path);
+    if ($path === null) {
+        return null;
+    }
+
     $path = preg_replace('#^properties/#', '', $path);
     if ($path === null) {
         return null;

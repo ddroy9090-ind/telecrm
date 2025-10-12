@@ -492,7 +492,7 @@ $leadQueryError = '';
 
 if (!empty($primaryIdentifiers)) {
     $placeholders = implode(', ', array_fill(0, count($primaryIdentifiers), '?'));
-    $sql = "SELECT * FROM all_leads WHERE assigned_to IS NOT NULL AND TRIM(assigned_to) <> '' AND LOWER(TRIM(assigned_to)) IN ($placeholders) ORDER BY created_at DESC";
+    $sql = "SELECT * FROM all_leads WHERE assigned_to IS NOT NULL AND TRIM(assigned_to) <> '' AND LOWER(TRIM(assigned_to)) IN ($placeholders) AND created_by IS NOT NULL AND EXISTS (SELECT 1 FROM users WHERE users.id = all_leads.created_by) ORDER BY created_at DESC";
     $stmt = $mysqli->prepare($sql);
 
     if ($stmt instanceof mysqli_stmt) {
@@ -532,7 +532,7 @@ if ($currentUserRole !== '') {
 if (!empty($roleLikePatterns)) {
     $roleLikePatterns = array_values(array_unique($roleLikePatterns));
     $likeFragments = implode(' OR ', array_fill(0, count($roleLikePatterns), 'LOWER(assigned_to) LIKE ?'));
-    $sql = "SELECT * FROM all_leads WHERE assigned_to IS NOT NULL AND TRIM(assigned_to) <> '' AND ($likeFragments) ORDER BY created_at DESC";
+    $sql = "SELECT * FROM all_leads WHERE assigned_to IS NOT NULL AND TRIM(assigned_to) <> '' AND ($likeFragments) AND created_by IS NOT NULL AND EXISTS (SELECT 1 FROM users WHERE users.id = all_leads.created_by) ORDER BY created_at DESC";
     $stmt = $mysqli->prepare($sql);
 
     if ($stmt instanceof mysqli_stmt) {

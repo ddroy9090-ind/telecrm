@@ -45,44 +45,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $payoutReceived = isset($_POST['payout_received']) ? 1 : 0;
     $payoutReceivedInput = $payoutReceived ? '1' : '0';
 
-    $stmt = $mysqli->prepare(
-        "INSERT INTO `all_leads` (stage, rating, assigned_to, source, name, phone, email, alternate_phone, nationality, interested_in, property_type, location_preferences, budget_range, size_required, purpose, urgency, alternate_email, payout_received) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    );
+    $createdById = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
+    $createdByName = trim($_SESSION['username'] ?? '');
+    if ($createdByName === '') {
+        $createdByName = trim($_SESSION['email'] ?? '');
+    }
+    if ($createdByName === '') {
+        $createdByName = $createdById > 0 ? 'User #' . $createdById : '';
+    }
 
-    if ($stmt) {
-        $stmt->bind_param(
-            'sssssssssssssssssi',
-            $formData['stage'],
-            $formData['rating'],
-            $formData['assigned_to'],
-            $formData['source'],
-            $formData['name'],
-            $formData['phone'],
-            $formData['email'],
-            $formData['alternate_phone'],
-            $formData['nationality'],
-            $formData['interested_in'],
-            $formData['property_type'],
-            $formData['location_preferences'],
-            $formData['budget_range'],
-            $formData['size_required'],
-            $formData['purpose'],
-            $formData['urgency'],
-            $formData['alternate_email'],
-            $payoutReceived
+    if ($createdById <= 0) {
+        $errorMessage = 'Your session has expired. Please log in again before adding a lead.';
+    } else {
+        $stmt = $mysqli->prepare(
+            "INSERT INTO `all_leads` (stage, rating, assigned_to, source, name, phone, email, alternate_phone, nationality, interested_in, property_type, location_preferences, budget_range, size_required, purpose, urgency, alternate_email, payout_received, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
-        if ($stmt->execute()) {
-            $stmt->close();
-            $_SESSION['flash_success'] = 'Lead has been added successfully.';
-            header('Location: ' . $_SERVER['PHP_SELF']);
-            exit;
+        if ($stmt) {
+            $stmt->bind_param(
+                str_repeat('s', 17) . 'iis',
+                $formData['stage'],
+                $formData['rating'],
+                $formData['assigned_to'],
+                $formData['source'],
+                $formData['name'],
+                $formData['phone'],
+                $formData['email'],
+                $formData['alternate_phone'],
+                $formData['nationality'],
+                $formData['interested_in'],
+                $formData['property_type'],
+                $formData['location_preferences'],
+                $formData['budget_range'],
+                $formData['size_required'],
+                $formData['purpose'],
+                $formData['urgency'],
+                $formData['alternate_email'],
+                $payoutReceived,
+                $createdById,
+                $createdByName
+            );
+
+            if ($stmt->execute()) {
+                $stmt->close();
+                $_SESSION['flash_success'] = 'Lead has been added successfully.';
+                header('Location: ' . $_SERVER['PHP_SELF']);
+                exit;
+            } else {
+                $errorMessage = 'Failed to add lead: ' . $stmt->error;
+                $stmt->close();
+            }
         } else {
-            $errorMessage = 'Failed to add lead: ' . $stmt->error;
-            $stmt->close();
+            $errorMessage = 'Failed to prepare statement: ' . $mysqli->error;
         }
-    } else {
-        $errorMessage = 'Failed to prepare statement: ' . $mysqli->error;
     }
 }
 

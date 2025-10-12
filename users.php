@@ -140,6 +140,36 @@ if ($result) {
     $result->free();
 }
 
+$userStats = [
+    'total' => count($users),
+    'roles' => [
+        'admin' => 0,
+        'manager' => 0,
+        'agent' => 0,
+    ],
+];
+
+foreach ($users as $user) {
+    $roleKey = $user['role'] ?? '';
+    if (isset($userStats['roles'][$roleKey])) {
+        $userStats['roles'][$roleKey]++;
+    }
+}
+
+if (!function_exists('format_user_percentage')) {
+    function format_user_percentage(int $count, int $total): string
+    {
+        if ($total <= 0) {
+            return '0%';
+        }
+
+        $percentage = ($count / $total) * 100;
+        $formatted = number_format($percentage, 1);
+
+        return rtrim(rtrim($formatted, '0'), '.') . '%';
+    }
+}
+
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 ?>
@@ -162,51 +192,51 @@ unset($_SESSION['flash']);
         </div>
 
         <div class="row g-3 user-stats">
-            <div class="col-12 col-md-6 col-xl-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <div class="stats-card">
-                    <div class="stats-card-icon paid">
-                        <i class="bx bx-credit-card"></i>
+                    <div class="stats-card-icon total">
+                        <i class="bx bx-group"></i>
                     </div>
                     <div class="stats-card-body">
-                        <span class="stats-label">Paid Users</span>
-                        <h2 class="mb-0">4,567</h2>
-                        <span class="stats-subtitle">Last week analytics</span>
-                    </div>
-                    <div class="stats-card-footer">
-                        <span class="trend trend-up">+6.8%</span>
-                        <span class="comparison">vs last week</span>
+                        <span class="stats-label">Total Users</span>
+                        <h2 class="mb-0"><?php echo number_format($userStats['total']); ?></h2>
+                        <span class="stats-subtitle">Across all roles</span>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <div class="stats-card">
-                    <div class="stats-card-icon active">
-                        <i class="bx bx-user-check"></i>
+                    <div class="stats-card-icon admin">
+                        <i class="bx bx-id-card"></i>
                     </div>
                     <div class="stats-card-body">
-                        <span class="stats-label">Active Users</span>
-                        <h2 class="mb-0">19,680</h2>
-                        <span class="stats-subtitle">Last week analytics</span>
-                    </div>
-                    <div class="stats-card-footer">
-                        <span class="trend trend-down">-1.4%</span>
-                        <span class="comparison">vs last week</span>
+                        <span class="stats-label">Admins</span>
+                        <h2 class="mb-0"><?php echo number_format($userStats['roles']['admin']); ?></h2>
+                        <span class="stats-subtitle"><?php echo format_user_percentage($userStats['roles']['admin'], $userStats['total']); ?> of total</span>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <div class="stats-card">
-                    <div class="stats-card-icon pending">
-                        <i class="bx bx-time-five"></i>
+                    <div class="stats-card-icon manager">
+                        <i class="bx bx-user-voice"></i>
                     </div>
                     <div class="stats-card-body">
-                        <span class="stats-label">Pending Users</span>
-                        <h2 class="mb-0">237</h2>
-                        <span class="stats-subtitle">Last week analytics</span>
+                        <span class="stats-label">Managers</span>
+                        <h2 class="mb-0"><?php echo number_format($userStats['roles']['manager']); ?></h2>
+                        <span class="stats-subtitle"><?php echo format_user_percentage($userStats['roles']['manager'], $userStats['total']); ?> of total</span>
                     </div>
-                    <div class="stats-card-footer">
-                        <span class="trend trend-up">+0.2%</span>
-                        <span class="comparison">vs last week</span>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="stats-card">
+                    <div class="stats-card-icon agent">
+                        <i class="bx bx-user-circle"></i>
+                    </div>
+                    <div class="stats-card-body">
+                        <span class="stats-label">Agents</span>
+                        <h2 class="mb-0"><?php echo number_format($userStats['roles']['agent']); ?></h2>
+                        <span class="stats-subtitle"><?php echo format_user_percentage($userStats['roles']['agent'], $userStats['total']); ?> of total</span>
                     </div>
                 </div>
             </div>

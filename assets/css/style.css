@@ -893,6 +893,26 @@ button:focus:not(:focus-visible) {
     background-color: #f4f4f4;
 }
 
+.stats-card-icon.total {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(59, 130, 246, 0.32));
+    color: #2563eb;
+}
+
+.stats-card-icon.admin {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.18), rgba(250, 204, 21, 0.32));
+    color: #b45309;
+}
+
+.stats-card-icon.manager {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(16, 185, 129, 0.32));
+    color: #047857;
+}
+
+.stats-card-icon.agent {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(139, 92, 246, 0.32));
+    color: #6d28d9;
+}
+
 .stats-card-icon.session {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(99, 102, 241, 0.32));
     color: #4f46e5;

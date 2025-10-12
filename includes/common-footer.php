@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 $pageScriptFiles = $pageScriptFiles ?? [];
 $pageInlineScripts = $pageInlineScripts ?? [];
 ?>

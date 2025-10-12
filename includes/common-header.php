@@ -1,10 +1,12 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 $pageTitle = $pageTitle ?? 'Admin Panel - Dashboard';
 $metaDescription = $metaDescription ?? '';
 $metaKeywords = $metaKeywords ?? '';
 $htmlLang = $htmlLang ?? 'hi';
 $additionalStyles = $additionalStyles ?? [];
-$baseHref = hh_base_href();
+$baseHref = function_exists('hh_base_href') ? hh_base_href() : '/';
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8') ?>">

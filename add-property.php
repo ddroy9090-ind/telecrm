@@ -1,17 +1,13 @@
 <?php
+session_start();
 
-declare(strict_types=1);
-
-require_once __DIR__ . '/includes/bootstrap.php';
-require_once __DIR__ . '/includes/render.php';
-require_once __DIR__ . '/includes/auth.php';
-
-process_logout();
-
-if (!is_authenticated()) {
-  header('Location: login.php');
-  exit;
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: login.php');
+    exit;
 }
+
+require_once __DIR__ . '/includes/config.php';
+include __DIR__ . '/includes/common-header.php';
 
 $errors = [];
 $successMessage = null;

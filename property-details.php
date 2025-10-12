@@ -1777,20 +1777,48 @@ $pageInlineScripts[] = <<<'HTML'
         const lightbox = section.querySelector('.fp-lightbox');
         const lbImg = lightbox ? lightbox.querySelector('img') : null;
         const viewButtons = Array.from(section.querySelectorAll('.fp-view'));
+        const buttonIndexByTarget = new Map();
+        buttons.forEach((btn, index) => {
+            const targetSel = btn.getAttribute('data-bs-target');
+            if (targetSel) {
+                buttonIndexByTarget.set(targetSel, index);
+            }
+        });
+
         const planImages = Array.from(section.querySelectorAll('.fp-pane img[data-fp-index]'))
-            .map((img) => {
-                const planIndex = Number(img.getAttribute('data-fp-index'));
-                if (Number.isNaN(planIndex)) {
+            .map((img, position) => {
+                if (!img) {
                     return null;
                 }
-                return { index: planIndex, el: img };
+
+                const pane = img.closest('.fp-pane');
+                const paneTarget = pane && pane.id ? `#${pane.id}` : null;
+                const rawIndex = img.getAttribute('data-fp-index');
+                const planIndex = rawIndex !== null ? Number.parseInt(rawIndex, 10) : Number.NaN;
+                const buttonIndex = (paneTarget && buttonIndexByTarget.has(paneTarget))
+                    ? buttonIndexByTarget.get(paneTarget)
+                    : (Number.isNaN(planIndex) ? position : planIndex);
+
+                return {
+                    position,
+                    planIndex: Number.isNaN(planIndex) ? null : planIndex,
+                    buttonIndex: typeof buttonIndex === 'number' ? buttonIndex : position,
+                    targetSel: paneTarget,
+                    el: img
+                };
             })
-            .filter(Boolean)
-            .sort((a, b) => a.index - b.index);
+            .filter((item) => item && item.el);
+
         let lbIndex = 0;
 
-        function syncActive(index) {
-            activateButton(index);
+        function syncActive(buttonIndex, targetSel) {
+            if (typeof buttonIndex === 'number' && buttonIndex >= 0 && buttonIndex < buttons.length) {
+                activateButton(buttonIndex);
+                return;
+            }
+            if (targetSel) {
+                showPane(targetSel);
+            }
         }
 
         function setLightboxImage(position) {
@@ -1799,17 +1827,29 @@ $pageInlineScripts[] = <<<'HTML'
                 return;
             }
             const img = item.el;
-            lbImg.src = img.src;
+            lbImg.src = img.currentSrc || img.src;
             lbImg.alt = img.alt || 'Floor plan preview';
             lbIndex = position;
-            syncActive(item.index);
+            syncActive(item.buttonIndex, item.targetSel);
+        }
+
+        function findPlanPosition(index) {
+            let position = planImages.findIndex((item) => item.planIndex === index);
+            if (position !== -1) {
+                return position;
+            }
+            position = planImages.findIndex((item) => item.buttonIndex === index);
+            if (position !== -1) {
+                return position;
+            }
+            return planImages.findIndex((item) => item.position === index);
         }
 
         function openLightbox(index) {
             if (!lightbox || !lbImg) {
                 return;
             }
-            const position = planImages.findIndex((item) => item.index === index);
+            const position = findPlanPosition(index);
             if (position === -1) {
                 return;
             }
@@ -1848,19 +1888,35 @@ $pageInlineScripts[] = <<<'HTML'
 
         viewButtons.forEach((btn) => {
             btn.addEventListener('click', (event) => {
-                const index = Number(btn.getAttribute('data-fp-index'));
+                event.stopPropagation();
+                event.preventDefault();
+                const rawIndex = btn.getAttribute('data-fp-index');
+                const index = rawIndex !== null ? Number.parseInt(rawIndex, 10) : Number.NaN;
                 if (!Number.isNaN(index)) {
-                    event.stopPropagation();
                     openLightbox(index);
+                    return;
                 }
+                const pane = btn.closest('.fp-pane');
+                if (pane && pane.id) {
+                    const targetSel = `#${pane.id}`;
+                    const buttonIndex = buttonIndexByTarget.get(targetSel);
+                    if (typeof buttonIndex === 'number') {
+                        openLightbox(buttonIndex);
+                        return;
+                    }
+                }
+                openLightbox(0);
             });
         });
 
         planImages.forEach((item) => {
             const img = item.el;
             img.style.cursor = 'zoom-in';
-            img.addEventListener('click', () => {
-                openLightbox(item.index);
+            img.addEventListener('click', (event) => {
+                event.preventDefault();
+                openLightbox(
+                    item.planIndex ?? item.buttonIndex ?? item.position
+                );
             });
         });
 
@@ -1873,10 +1929,16 @@ $pageInlineScripts[] = <<<'HTML'
                 closeBtn.addEventListener('click', closeLightbox);
             }
             if (prevBtn) {
-                prevBtn.addEventListener('click', prevLightbox);
+                prevBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    prevLightbox();
+                });
             }
             if (nextBtn) {
-                nextBtn.addEventListener('click', nextLightbox);
+                nextBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    nextLightbox();
+                });
             }
 
             lightbox.addEventListener('click', (event) => {

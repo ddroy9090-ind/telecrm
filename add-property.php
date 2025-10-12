@@ -983,11 +983,6 @@ try {
   error_log('Failed to add property: ' . $e->getMessage());
 }
 
-$pageTitle = $isEditing ? 'Edit Property' : 'Add Property';
-$pageDescription = $isEditing
-  ? 'Update an existing property listing by refining project details, media, and investment highlights.'
-  : 'Create a new property listing by sharing project details, media, and investment highlights.';
-
 ?>
 <?php include 'includes/common-header.php'; ?>
 
@@ -1000,16 +995,7 @@ $pageDescription = $isEditing
 
     <!-- Main Content -->
     <main class="main-content">
-        <h1 class="main-heading">Add Property</h1>
-        <p class="subheading">Create and manage property details.</p>
         <main class="content">
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
-                <div>
-                    <h2 class="title-heading"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h2>
-                    <p class="para mb-0"><?= htmlspecialchars($pageDescription, ENT_QUOTES, 'UTF-8') ?></p>
-                </div>
-            </div>
-
             <div class="box">
                 <?php if ($successMessage): ?>
                     <div class="alert alert-success alert-dismissible fade show mb-4" role="alert" data-success-alert data-auto-dismiss="5000">
@@ -1039,7 +1025,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="assets/images/file.png" alt="Media uploads icon" class="section-title-icon">
+                                    <img src="assets/icons/file.png" alt="Media uploads icon" class="section-title-icon">
                                     <span>Media Uploads</span>
                                 </h4>
                                 <p class="section-subtitle">Upload the marketing assets that will showcase this project.</p>
@@ -1055,7 +1041,7 @@ $pageDescription = $isEditing
                                             name="hero_banner"
                                             accept="image/*">
                                         <div class="upload-content">
-                                            <img src="assets/images/file.png" alt="Upload Icon" width="30px">
+                                            <img src="assets/icons/file.png" alt="Upload Icon" width="30px">
                                             <p>Drop files here or click to upload</p>
                                             <p class="upload-file-name text-muted"></p>
                                         </div>
@@ -1082,7 +1068,7 @@ $pageDescription = $isEditing
                                             name="brochure"
                                             accept="application/pdf">
                                         <div class="upload-content">
-                                            <img src="assets/images/file.png" alt="Upload Icon" width="30px">
+                                            <img src="assets/icons/file.png" alt="Upload Icon" width="30px">
                                             <p>Drop files here or click to upload</p>
                                             <p class="upload-file-name text-muted"></p>
                                         </div>
@@ -1107,7 +1093,7 @@ $pageDescription = $isEditing
                                             accept="image/*"
                                             multiple>
                                         <div class="upload-content">
-                                            <img src="assets/images/file.png" alt="Upload Icon" width="30px">
+                                            <img src="assets/icons/file.png" alt="Upload Icon" width="30px">
                                             <p>Drop files here or click to upload</p>
                                             <p class="upload-file-name text-muted"></p>
                                         </div>
@@ -1142,7 +1128,7 @@ $pageDescription = $isEditing
                                             name="developer_logo"
                                             accept="image/*">
                                         <div class="upload-content">
-                                            <img src="assets/images/file.png" alt="Upload Icon" width="30px">
+                                            <img src="assets/icons/file.png" alt="Upload Icon" width="30px">
                                             <p>Drop files here or click to upload</p>
                                             <p class="upload-file-name text-muted"></p>
                                         </div>
@@ -1169,7 +1155,7 @@ $pageDescription = $isEditing
                                             name="permit_barcode"
                                             accept="image/*">
                                         <div class="upload-content">
-                                            <img src="assets/images/file.png" alt="Upload Icon" width="30px">
+                                            <img src="assets/icons/file.png" alt="Upload Icon" width="30px">
                                             <p>Drop files here or click to upload</p>
                                             <p class="upload-file-name text-muted"></p>
                                         </div>
@@ -1194,7 +1180,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="../assets/icons/seo.png" alt="SEO settings icon" class="section-title-icon">
+                                    <img src="assets/icons/seo.png" alt="SEO settings icon" class="section-title-icon">
                                     <span>SEO Meta Information</span>
                                 </h4>
                                 <p class="section-subtitle">Provide meta tags to optimise the property details page for search engines.</p>
@@ -1236,7 +1222,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="assets/images/icon-project-details.svg" alt="Project details icon" class="section-title-icon">
+                                    <img src="assets/icons/icon-project-details.svg" alt="Project details icon" class="section-title-icon">
                                     <span>Project Details</span>
                                 </h4>
                                 <p class="section-subtitle">Capture essential project details to help clients evaluate the opportunity.</p>
@@ -1365,7 +1351,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="assets/images/icons/community.svg" alt="Amenities icon" class="section-title-icon">
+                                    <img src="assets/icons/community.svg" alt="Amenities icon" class="section-title-icon">
                                     <span>Key Features &amp; Amenities</span>
                                 </h4>
                                 <p class="section-subtitle">Select the standout amenities that define this project.</p>
@@ -1395,7 +1381,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="../assets/flaticons/residential.png" alt="Developer information icon" class="section-title-icon">
+                                    <img src="assets/icons/residential.png" alt="Developer information icon" class="section-title-icon">
                                     <span>Developer Information</span>
                                 </h4>
                                 <p class="section-subtitle">Share the developer's credentials and proven track record.</p>
@@ -1465,7 +1451,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="../assets/icons/floorplan.png" alt="Floor plan icon" class="section-title-icon">
+                                    <img src="assets/icons/floorplan.png" alt="Floor plan icon" class="section-title-icon">
                                     <span>Floor Plans</span>
                                 </h4>
                                 <p class="section-subtitle">Upload floor plans with their key details.</p>
@@ -1490,7 +1476,7 @@ $pageDescription = $isEditing
                                                         accept="image/*,application/pdf"
                                                         data-floor-plan-input="file">
                                                     <div class="upload-content">
-                                                        <img src="assets/images/file.png" alt="Upload Icon" width="30px">
+                                                        <img src="assets/icons/file.png" alt="Upload Icon" width="30px">
                                                         <p>Drop files here or click to upload</p>
                                                         <p class="upload-file-name text-muted"></p>
                                                     </div>
@@ -1598,7 +1584,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="assets/images/icons/video-call.png" alt="Video and links icon" class="section-title-icon">
+                                    <img src="assets/icons/video-call.png" alt="Video and links icon" class="section-title-icon">
                                     <span>Media &amp; Links</span>
                                 </h4>
                                 <p class="section-subtitle">Add supporting media links to enhance the listing.</p>
@@ -1632,7 +1618,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="assets/images/icons/location.png" alt="Location pin icon" class="section-title-icon">
+                                    <img src="assets/icons/location.png" alt="Location pin icon" class="section-title-icon">
                                     <span>Location &amp; Accessibility</span>
                                 </h4>
                             </div>
@@ -1727,7 +1713,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="assets/images/icons/growth-chart.png" alt="Investment growth icon" class="section-title-icon">
+                                    <img src="assets/icons/growth-chart.png" alt="Investment growth icon" class="section-title-icon">
                                     <span>Investment Highlights</span>
                                 </h4>
                                 <p class="section-subtitle">Summarize the investment rationale to attract buyers.</p>
@@ -1781,7 +1767,7 @@ $pageDescription = $isEditing
                         <section class="form-section">
                             <div class="section-header">
                                 <h4 class="section-title">
-                                    <img src="assets/images/icons/wallet.png" alt="Payment plan icon" class="section-title-icon">
+                                    <img src="assets/icons/wallet.png" alt="Payment plan icon" class="section-title-icon">
                                     <span>Payment Plan</span>
                                 </h4>
                                 <p class="section-subtitle">Outline the financial structure to help investors plan their purchase.</p>

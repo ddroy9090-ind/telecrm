@@ -3,7 +3,7 @@ $pageScriptFiles = $pageScriptFiles ?? [];
 $pageInlineScripts = $pageInlineScripts ?? [];
 ?>
     <!-- Core Libraries -->
-    <script src="/assets/js/jquery-3.7.1.min.js"></script>
+    <script src="<?= htmlspecialchars(hh_asset('assets/js/jquery-3.7.1.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/country-select-js@2.0.1/build/js/countrySelect.min.js"></script>
@@ -33,7 +33,7 @@ $pageInlineScripts = $pageInlineScripts ?? [];
     <?php endforeach; ?>
 
     <!-- Custom JS -->
-    <script src="assets/js/custom.js"></script>
+    <script src="<?= htmlspecialchars(hh_asset('assets/js/custom.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

@@ -34,6 +34,9 @@ if (!$property) {
     exit;
 }
 
+$assetPath = static fn(string $path): string => hh_asset($path);
+$assetPathEsc = static fn(string $path): string => htmlspecialchars(hh_asset($path), ENT_QUOTES, 'UTF-8');
+
 $decodeList = static function (?string $json): array {
     if (!$json) {
         return [];
@@ -100,7 +103,7 @@ $extractParagraphs = static function ($value): array {
 
 $uploadsBasePath = 'assets/uploads/properties/';
 $legacyUploadsPrefix = 'admin/assets/uploads/properties/';
-$normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $legacyUploadsPrefix): ?string {
+$normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $legacyUploadsPrefix, $assetPath): ?string {
     if (!is_string($path)) {
         return null;
     }
@@ -117,14 +120,14 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath, $le
     $path = ltrim($path, '/');
 
     if (str_starts_with($path, $uploadsBasePath)) {
-        return $path;
+        return $assetPath($path);
     }
 
     if (str_starts_with($path, $legacyUploadsPrefix)) {
-        return $uploadsBasePath . substr($path, strlen($legacyUploadsPrefix));
+        return $assetPath($uploadsBasePath . substr($path, strlen($legacyUploadsPrefix)));
     }
 
-    return $uploadsBasePath . $path;
+    return $assetPath($uploadsBasePath . $path);
 };
 
 $heroBanner = is_string($property['hero_banner'] ?? '') && $property['hero_banner'] !== ''
@@ -142,7 +145,8 @@ if (!$galleryImages && $heroBanner) {
     $galleryImages[] = $heroBanner;
 }
 
-$primaryImage = $heroBanner ?? ($galleryImages[0] ?? 'assets/images/offplan/breez-by-danube.webp');
+$defaultHeroImage = $assetPath('assets/images/offplan/breez-by-danube.webp');
+$primaryImage = $heroBanner ?? ($galleryImages[0] ?? $defaultHeroImage);
 
 if (!$galleryImages) {
     $galleryImages[] = $primaryImage;
@@ -335,19 +339,19 @@ $aboutDeveloperParagraphs = $extractParagraphs($property['about_developer'] ?? n
 
 $specItems = [];
 if (!empty($property['bedroom'])) {
-    $specItems[] = ['icon' => 'assets/icons/bed.webp', 'label' => trim((string) $property['bedroom']), 'suffix' => ' Bedrooms'];
+    $specItems[] = ['icon' => $assetPath('assets/icons/bed.webp'), 'label' => trim((string) $property['bedroom']), 'suffix' => ' Bedrooms'];
 }
 if (!empty($property['bathroom'])) {
-    $specItems[] = ['icon' => 'assets/icons/bathroom.webp', 'label' => trim((string) $property['bathroom']), 'suffix' => ' Bathrooms'];
+    $specItems[] = ['icon' => $assetPath('assets/icons/bathroom.webp'), 'label' => trim((string) $property['bathroom']), 'suffix' => ' Bathrooms'];
 }
 if (!empty($property['parking'])) {
-    $specItems[] = ['icon' => 'assets/icons/parking.webp', 'label' => trim((string) $property['parking']), 'suffix' => ' Parking'];
+    $specItems[] = ['icon' => $assetPath('assets/icons/parking.webp'), 'label' => trim((string) $property['parking']), 'suffix' => ' Parking'];
 }
 if (!empty($property['total_area'])) {
-    $specItems[] = ['icon' => 'assets/icons/area.webp', 'label' => trim((string) $property['total_area']), 'suffix' => ''];
+    $specItems[] = ['icon' => $assetPath('assets/icons/area.webp'), 'label' => trim((string) $property['total_area']), 'suffix' => ''];
 }
 if ($completionDate) {
-    $specItems[] = ['icon' => 'assets/icons/calendar.webp', 'label' => $completionDate, 'suffix' => ' Completion'];
+    $specItems[] = ['icon' => $assetPath('assets/icons/calendar.webp'), 'label' => $completionDate, 'suffix' => ' Completion'];
 }
 
 $investmentHighlights = array_filter([
@@ -408,7 +412,7 @@ include 'includes/common-header.php';
             <a href="property-listing.php" class="hh-property-hero-back">← Back to Listings</a>
             <div class="hh-property-hero-top-actions">
                 <button type="button" class="hh-primarypill" onclick="openPopup()"><img width="14"
-                        src="assets/icons/phone.webp" alt=""> Contact Us</button>
+                        src="<?= $assetPathEsc('assets/icons/phone.webp') ?>" alt=""> Contact Us</button>
             </div>
         </div>
         <div class="container">
@@ -433,7 +437,7 @@ include 'includes/common-header.php';
                                 <?= htmlspecialchars($property['project_name'], ENT_QUOTES, 'UTF-8') ?></p>
                         <?php endif; ?>
                         <?php if (!empty($property['property_location'])): ?>
-                            <div class="hh-property-hero-loc"><img src="assets/icons/location.png" alt=""
+                            <div class="hh-property-hero-loc"><img src="<?= $assetPathEsc('assets/icons/location.png') ?>" alt=""
                                     width="16"><?= htmlspecialchars($property['property_location'], ENT_QUOTES, 'UTF-8') ?>
                             </div>
                         <?php endif; ?>
@@ -518,7 +522,7 @@ include 'includes/common-header.php';
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <div class="swiper-slide">
-                                        <img src="assets/images/offplan/breez-by-danube.webp" alt="Placeholder image">
+                                        <img src="<?= $assetPathEsc('assets/images/offplan/breez-by-danube.webp') ?>" alt="Placeholder image">
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -550,7 +554,7 @@ include 'includes/common-header.php';
                                                 src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt=""></div>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <div class="swiper-slide"><img src="assets/images/offplan/breez-by-danube.webp" alt="">
+                                    <div class="swiper-slide"><img src="<?= $assetPathEsc('assets/images/offplan/breez-by-danube.webp') ?>" alt="">
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -564,7 +568,7 @@ include 'includes/common-header.php';
                         data-animation-out="animate__flipOutY">
                         <div class="card-head">
                             <div class="avatar">
-                                <img src="assets/icons/profile.webp" alt="" width="100%">
+                                <img src="<?= $assetPathEsc('assets/icons/profile.webp') ?>" alt="" width="100%">
                             </div>
                             <div class="info">
                                 <strong>Sarah Al-Mansouri</strong>
@@ -575,33 +579,33 @@ include 'includes/common-header.php';
 
                         <div class="cta-row">
                             <button type="button" class="call" onclick="window.location.href='tel:+971 42554683'">
-                                <img src="assets/icons/phone.webp" alt="" width="16">
+                                <img src="<?= $assetPathEsc('assets/icons/phone.webp') ?>" alt="" width="16">
                                 Call
                             </button>
                             <button type="button" class="wa"
                                 onclick="window.open('https://wa.me/97142554683','_blank')">
-                                <img src="assets/icons/whatsapp.webp" alt="WhatsApp" width="20">
+                                <img src="<?= $assetPathEsc('assets/icons/whatsapp.webp') ?>" alt="WhatsApp" width="20">
                                 WhatsApp
                             </button>
 
                         </div>
 
                         <button type="button" class="ghost-wide" onclick="openPopup()">
-                            <img src="assets/icons/calendar.webp" alt="" width="16">
+                            <img src="<?= $assetPathEsc('assets/icons/calendar.webp') ?>" alt="" width="16">
                             Schedule Viewing
                         </button>
 
                         <div class="actions">
                             <!-- <button type="button">
-                                <img src="assets/icons/video-call.png" alt="" width="20">
+                                <img src="<?= $assetPathEsc('assets/icons/video-call.png') ?>" alt="" width="20">
                                 3D Virtual Tour
                             </button> -->
                             <button type="button" onclick="Brochurepopup()">
-                                <img src="assets/icons/brochure-download.webp" alt="" width="20">
+                                <img src="<?= $assetPathEsc('assets/icons/brochure-download.webp') ?>" alt="" width="20">
                                 Download Brochure
                             </button>
                             <button type="button" onclick="openPopup()">
-                                <img src="assets/icons/floorplan.png" alt="" width="20">
+                                <img src="<?= $assetPathEsc('assets/icons/floorplan.png') ?>" alt="" width="20">
                                 View Floor Plans
                             </button>
                         </div>
@@ -760,7 +764,7 @@ include 'includes/common-header.php';
                                                             data-bs-toggle="tab"
                                                             data-bs-target="<?= htmlspecialchars($targetId, ENT_QUOTES, 'UTF-8') ?>">
                                                             <div class="fp-box-head">
-                                                                <img src="assets/icons/floorplan.png" alt="">
+                                                                <img src="<?= $assetPathEsc('assets/icons/floorplan.png') ?>" alt="">
                                                                 <div>
                                                                     <strong><?= htmlspecialchars($plan['title'] ?: ('Floor Plan ' . ($index + 1)), ENT_QUOTES, 'UTF-8') ?></strong>
                                                                 </div>
@@ -809,7 +813,7 @@ include 'includes/common-header.php';
                                                 data-animation-out="animate__flipOutX">
                                                 <div class="dev-head">
                                                     <div class="dev-ico">
-                                                        <img src="assets/icons/residential.png" width="25" alt="">
+                                                        <img src="<?= $assetPathEsc('assets/icons/residential.png') ?>" width="25" alt="">
                                                     </div>
                                                     <div class="dev-title">
                                                         <strong><?= htmlspecialchars($property['developer_name'] ?: 'Developer', ENT_QUOTES, 'UTF-8') ?></strong>
@@ -866,7 +870,7 @@ include 'includes/common-header.php';
 
                             <div class="agent-head">
                                 <div class="avatar">
-                                    <img src="assets/icons/chat.webp" alt="">
+                                    <img src="<?= $assetPathEsc('assets/icons/chat.webp') ?>" alt="">
                                 </div>
                                 <div class="agent-info">
                                     <strong>Contact Agent</strong>
@@ -923,7 +927,7 @@ include 'includes/common-header.php';
                     <!-- Investment Highlights -->
                     <section class="inv-high ">
                         <header>
-                            <span><img src="assets/icons/growth-chart.png" alt="" width="25"></span>
+                            <span><img src="<?= $assetPathEsc('assets/icons/growth-chart.png') ?>" alt="" width="25"></span>
                             <h4>Investment Highlights</h4>
                         </header>
 
@@ -947,7 +951,7 @@ include 'includes/common-header.php';
                     <!-- Flexible Payment Plan -->
                     <section class="pay-plan ">
                         <header>
-                            <span><img src="assets/icons/wallet.png" alt="" width="25"></span>
+                            <span><img src="<?= $assetPathEsc('assets/icons/wallet.png') ?>" alt="" width="25"></span>
                             <h4>Flexible Payment Plan</h4>
                         </header>
 
@@ -1074,7 +1078,7 @@ include 'includes/common-header.php';
                 <div class="col-12">
                     <div class="hh-location-card-head">
                         <div class="hh-location-card-icon">
-                            <img src="assets/icons/location.png" alt="Interactive map icon">
+                            <img src="<?= $assetPathEsc('assets/icons/location.png') ?>" alt="Interactive map icon">
                         </div>
                         <div class="hh-location-card-text">
                             <h4>Prime Location & Connectivity</h4>
@@ -1106,7 +1110,7 @@ include 'includes/common-header.php';
                                 <?php endif; ?>
                             <?php else: ?>
                                 <div class="map-placeholder">
-                                    <img src="assets/icons/globe.png" alt="Map coming soon">
+                                    <img src="<?= $assetPathEsc('assets/icons/globe.png') ?>" alt="Map coming soon">
                                     <strong>Location map coming soon</strong>
                                     <span>We're preparing an interactive experience for this property.</span>
                                 </div>
@@ -1119,7 +1123,7 @@ include 'includes/common-header.php';
                     <div class="hh-location-01-side">
                         <div class="hh-location-01-permit">
                             <div class="head">
-                                <img src="assets/icons/home.svg" alt="Property permit icon">
+                                <img src="<?= $assetPathEsc('assets/icons/home.svg') ?>" alt="Property permit icon">
                                 <strong>Property Permit</strong>
                             </div>
                             <?php if ($permitBarcode || ($property['permit_no'] ?? '') !== '' || $completionDate): ?>
@@ -1143,16 +1147,16 @@ include 'includes/common-header.php';
 
                         <div class="hh-location-01-contact">
                             <div class="head">
-                                <img src="assets/icons/video-call.png" alt="Contact icon">
+                                <img src="<?= $assetPathEsc('assets/icons/video-call.png') ?>" alt="Contact icon">
                                 <strong>Quick Contact</strong>
                             </div>
                             <p>Speak with our property specialists for personalised assistance.</p>
                             <a class="call" href="tel:+97142554683">
-                                <img src="assets/icons/customer-support.webp" alt="Call icon">
+                                <img src="<?= $assetPathEsc('assets/icons/customer-support.webp') ?>" alt="Call icon">
                                 <span>Call Now: +971 425 54683</span>
                             </a>
                             <a class="email" href="mailto:contact@houzzhunt.com">
-                                <img src="assets/icons/message.webp" alt="Email icon">
+                                <img src="<?= $assetPathEsc('assets/icons/message.webp') ?>" alt="Email icon">
                                 <span>Email Agent</span>
                             </a>
                         </div>
@@ -1167,18 +1171,18 @@ include 'includes/common-header.php';
                         <?php if ($locationAccess): ?>
                             <?php
                             $landmarkIconKeywords = [
-                                'mall' => 'assets/icons/location.png',
-                                'marina' => 'assets/icons/location.png',
-                                'airport' => 'assets/icons/location.png',
-                                'metro' => 'assets/icons/location.png',
-                                'station' => 'assets/icons/location.png',
-                                'school' => 'assets/icons/location.png',
-                                'hospital' => 'assets/icons/location.png',
-                                'beach' => 'assets/icons/location.png',
-                                'park' => 'assets/icons/location.png',
-                                'tower' => 'assets/icons/location.png',
+                                'mall' => $assetPath('assets/icons/location.png'),
+                                'marina' => $assetPath('assets/icons/location.png'),
+                                'airport' => $assetPath('assets/icons/location.png'),
+                                'metro' => $assetPath('assets/icons/location.png'),
+                                'station' => $assetPath('assets/icons/location.png'),
+                                'school' => $assetPath('assets/icons/location.png'),
+                                'hospital' => $assetPath('assets/icons/location.png'),
+                                'beach' => $assetPath('assets/icons/location.png'),
+                                'park' => $assetPath('assets/icons/location.png'),
+                                'tower' => $assetPath('assets/icons/location.png'),
                             ];
-                            $defaultLandmarkIcon = 'assets/icons/location.png';
+                            $defaultLandmarkIcon = $assetPath('assets/icons/location.png');
                             ?>
                             <div class="hh-landmarks-grid">
                                 <?php foreach ($locationAccess as $item): ?>
@@ -1314,7 +1318,7 @@ include 'includes/common-header.php';
                 <div class="col-12 col-lg-3 col-md-6">
                     <div class="footer-about-five">
                         <div class="footer-logo-five animate fadeInUp wow">
-                            <img src="assets/images/logo/logo.svg">
+                            <img src="<?= $assetPathEsc('assets/images/logo/logo.svg') ?>">
                         </div>
                         <p class="lead">Your trusted partner in premium real estate across the UAE and Middle East. We
                             bring
@@ -1325,21 +1329,21 @@ include 'includes/common-header.php';
                         <ul class="footer-social-media-five">
                             <li>
                                 <a href="https://www.instagram.com/houzzhunt/?hl=en"><img
-                                        src="assets/icons/instagram.png" alt="icon"></a>
+                                        src="<?= $assetPathEsc('assets/icons/instagram.png') ?>" alt="icon"></a>
                             </li>
                             <li>
                                 <a href="https://www.facebook.com/people/Houzz-Hunt/61574436629351/"><img
-                                        src="assets/icons/facebook.png" alt="icon"></a>
+                                        src="<?= $assetPathEsc('assets/icons/facebook.png') ?>" alt="icon"></a>
                             </li>
                             <li>
-                                <a href="https://x.com/HouzzHunt"><img src="assets/icons/twitter.png" alt="icon"></a>
+                                <a href="https://x.com/HouzzHunt"><img src="<?= $assetPathEsc('assets/icons/twitter.png') ?>" alt="icon"></a>
                             </li>
                             <li>
                                 <a href="https://www.linkedin.com/company/houzz-hunt/"><img
-                                        src="assets/icons/linkedin.png" alt="icon"></a>
+                                        src="<?= $assetPathEsc('assets/icons/linkedin.png') ?>" alt="icon"></a>
                             </li>
                             <li>
-                                <a href="https://www.youtube.com/@HouzzHunt"><img src="assets/icons/youtube.png"
+                                <a href="https://www.youtube.com/@HouzzHunt"><img src="<?= $assetPathEsc('assets/icons/youtube.png') ?>"
                                         alt="icon"></a>
                             </li>
                         </ul>
@@ -1412,17 +1416,17 @@ include 'includes/common-header.php';
                         <h4>Contact Us</h4>
                         <ul class="footer-location-four">
                             <li>
-                                <span><img src="assets/images/svg/footer-two/footer-two-mail.svg" alt="icon"></span>
+                                <span><img src="<?= $assetPathEsc('assets/images/svg/footer-two/footer-two-mail.svg') ?>" alt="icon"></span>
                                 <a href="mailto:contact@houzzhunt.com">contact@houzzhunt.com</a>
                             </li>
                             <li>
-                                <span><img src="assets/images/svg/footer-two/footer-two-address.svg" alt="icon"></span>
+                                <span><img src="<?= $assetPathEsc('assets/images/svg/footer-two/footer-two-address.svg') ?>" alt="icon"></span>
                                 <p>806, Capital Golden Tower
 
                                     Business Bay, Dubai, U.A.E</p>
                             </li>
                             <li>
-                                <span><img src="assets/images/svg/footer-two/footer-two-call.svg" alt="icon"></span>
+                                <span><img src="<?= $assetPathEsc('assets/images/svg/footer-two/footer-two-call.svg') ?>" alt="icon"></span>
                                 <a href="telto:+97142554683">+971 42554683</a>
                             </li>
                         </ul>

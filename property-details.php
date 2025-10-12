@@ -393,7 +393,8 @@ $developerStats = array_values(array_filter([
     <?php if ($metaKeywords !== ''): ?>
         <meta name="keywords" content="<?= htmlspecialchars($metaKeywords, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
-    <link rel="stylesheet" href="assets/vendors/bootstrap/css/bootstrap.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/country-select-js@2.0.1/build/css/countrySelect.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/css/intlTelInput.css" />
@@ -1555,7 +1556,8 @@ $developerStats = array_values(array_filter([
         </div>
     </div>
 
-    <script src="assets/vendors/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="assets/vendors/jquery/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/country-select-js@2.0.1/build/js/countrySelect.min.js"></script>
@@ -1564,96 +1566,7 @@ $developerStats = array_values(array_filter([
     <!-- reCAPTCHA script -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const animatedElements = Array.from(document.querySelectorAll('[data-animation-in]'));
-
-            if (!animatedElements.length) {
-                return;
-            }
-
-            const ensureBaseClasses = (el) => {
-                if (!el.classList.contains('animate__animated')) {
-                    el.classList.add('animate__animated');
-                }
-            };
-
-            const handleAnimationEnd = (event) => {
-                const el = event.currentTarget;
-                if (event.target !== el) {
-                    return;
-                }
-
-                const inClass = el.dataset.animationIn;
-                const outClass = el.dataset.animationOut;
-
-                if (inClass && el.classList.contains(inClass)) {
-                    el.classList.remove(inClass);
-                }
-
-                if (outClass && el.classList.contains(outClass)) {
-                    el.classList.remove(outClass);
-                    el.classList.remove('animate-scroll-visible');
-                }
-            };
-
-            animatedElements.forEach((el) => {
-                el.addEventListener('animationend', handleAnimationEnd);
-            });
-
-            if (!('IntersectionObserver' in window)) {
-                animatedElements.forEach((el) => {
-                    ensureBaseClasses(el);
-                    el.classList.add('animate-scroll-visible');
-                    const inClass = el.dataset.animationIn;
-                    if (inClass) {
-                        el.classList.add(inClass);
-                    }
-                });
-                return;
-            }
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    const el = entry.target;
-                    const inClass = el.dataset.animationIn;
-                    const outClass = el.dataset.animationOut;
-
-                    ensureBaseClasses(el);
-
-                    if (entry.isIntersecting) {
-                        el.classList.add('animate-scroll-visible');
-                        if (outClass) {
-                            el.classList.remove(outClass);
-                        }
-                        if (inClass) {
-                            el.classList.remove(inClass);
-                            // Force reflow to restart the animation
-                            void el.offsetWidth;
-                            el.classList.add(inClass);
-                        }
-                    } else {
-                        if (outClass) {
-                            if (inClass) {
-                                el.classList.remove(inClass);
-                            }
-                            el.classList.add(outClass);
-                        } else {
-                            el.classList.remove('animate-scroll-visible');
-                            if (inClass) {
-                                el.classList.remove(inClass);
-                            }
-                        }
-                    }
-                });
-            }, {
-                threshold: 0.2,
-                rootMargin: '0px 0px -10% 0px'
-            });
-
-            animatedElements.forEach((el) => observer.observe(el));
-        });
-    </script>
+    
 
     <script>
         /* ---- Swiper thumbs + main ---- */

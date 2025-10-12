@@ -430,8 +430,14 @@ $pageEnd = $propertyCount > 0 ? min($offset + count($offplanProperties), $proper
 $propertyLabel = $propertyCount === 1 ? 'property' : 'properties';
 $updatedLabel = date('F j, Y');
 
-$uploadsBasePath = 'assets/uploads/';
-$normalizeImagePath = static function (?string $path) use ($uploadsBasePath): ?string {
+$uploadsBaseRelativePath = 'assets/uploads/';
+$adminUploadsBaseRelativePath = 'admin/assets/uploads/';
+$propertiesSubdirectory = 'properties/';
+$normalizeImagePath = static function (?string $path) use (
+    $uploadsBaseRelativePath,
+    $adminUploadsBaseRelativePath,
+    $propertiesSubdirectory
+): ?string {
     if (!is_string($path)) {
         return null;
     }
@@ -445,25 +451,37 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath): ?s
         return $path;
     }
 
-    $path = ltrim($path, '/');
-
-    $path = preg_replace('#^(?:admin/)?assets/uploads/#', '', $path);
+    $path = preg_replace('#^\\./+#', '', $path);
     if ($path === null) {
         return null;
     }
 
-    $path = preg_replace('#^uploads/#', '', $path);
-    if ($path === null) {
+    $segments = array_values(array_filter(
+        explode('/', $path),
+        static fn(string $segment): bool => $segment !== '' && $segment !== '.' && $segment !== '..'
+    ));
+
+    if ($segments === []) {
         return null;
     }
 
-    $path = ltrim($path, '/');
-    if ($path === '') {
-        return null;
+    while ($segments && strtolower($segments[0]) === 'telecrm') {
+        array_shift($segments);
     }
 
-    $decodedPath = rawurldecode($path);
-    $segments = array_values(array_filter(explode('/', $decodedPath), static fn($segment) => $segment !== ''));
+    if ($segments && strtolower($segments[0]) === 'admin') {
+        array_shift($segments);
+    }
+
+    if ($segments && strtolower($segments[0]) === 'assets') {
+        array_shift($segments);
+        if ($segments && strtolower($segments[0]) === 'uploads') {
+            array_shift($segments);
+        }
+    } elseif ($segments && strtolower($segments[0]) === 'uploads') {
+        array_shift($segments);
+    }
+
     if ($segments === []) {
         return null;
     }
@@ -473,7 +491,32 @@ $normalizeImagePath = static function (?string $path) use ($uploadsBasePath): ?s
         $segments
     );
 
-    return $uploadsBasePath . implode('/', $normalizedSegments);
+    $relativePath = implode('/', $normalizedSegments);
+    $relativePathLower = strtolower($relativePath);
+    $propertiesPrefix = strtolower($propertiesSubdirectory);
+    $hasPropertiesPrefix = strncmp($relativePathLower, $propertiesPrefix, strlen($propertiesPrefix)) === 0;
+
+    $candidates = [];
+    // Try modern assets/uploads paths first, then fall back to admin-prefixed variants
+    // to cover legacy TeleCRM deployments where files may still reside under admin/.
+    $candidates[] = $uploadsBaseRelativePath . $relativePath;
+    if (!$hasPropertiesPrefix) {
+        $candidates[] = $uploadsBaseRelativePath . $propertiesSubdirectory . $relativePath;
+    }
+    $candidates[] = $adminUploadsBaseRelativePath . $relativePath;
+    if (!$hasPropertiesPrefix) {
+        $candidates[] = $adminUploadsBaseRelativePath . $propertiesSubdirectory . $relativePath;
+    }
+
+    $uniqueCandidates = array_values(array_unique($candidates));
+    foreach ($uniqueCandidates as $candidate) {
+        $absolutePath = __DIR__ . '/' . ltrim($candidate, '/');
+        if (is_file($absolutePath)) {
+            return $candidate;
+        }
+    }
+
+    return $uniqueCandidates[0] ?? null;
 };
 
 $title = 'Dubai Off-Plan Properties for Sale | High ROI Deals';

@@ -914,14 +914,14 @@ p {
 
 /* Next button */
 .hh-gallery-01-main .nav.next::after {
-    background-image: url("../icons/next-arrow.png");
+    background-image: url("../icons/next-arrow.webp");
     left: 4px;
     position: relative;
 }
 
 /* Prev button */
 .hh-gallery-01-main .nav.prev::after {
-    background-image: url("../icons/pre-arrow.png");
+    background-image: url("../icons/pre-arrow.webp");
 }
 
 
@@ -1240,11 +1240,11 @@ p {
 }
 
 .hh-gallery-01-lightbox .lb-prev::after {
-    background-image: url("../icons/pre-arrow.png");
+    background-image: url("../icons/pre-arrow.webp");
 }
 
 .hh-gallery-01-lightbox .lb-next::after {
-    background-image: url("../icons/next-arrow.png");
+    background-image: url("../icons/next-arrow.webp");
 }
 
 .hh-details-01 {
@@ -3730,7 +3730,7 @@ body.no-scroll {
     border: none;
     width: 16px;
     height: 16px;
-    background: url("../icons/down-arrow.png") no-repeat center center;
+    background: url("../icons/down-arrow.webp") no-repeat center center;
     background-size: contain;
     position: absolute;
     right: 14px;

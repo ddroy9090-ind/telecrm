@@ -335,19 +335,19 @@ $aboutDeveloperParagraphs = $extractParagraphs($property['about_developer'] ?? n
 
 $specItems = [];
 if (!empty($property['bedroom'])) {
-    $specItems[] = ['icon' => 'assets/icons/bed.png', 'label' => trim((string) $property['bedroom']), 'suffix' => ' Bedrooms'];
+    $specItems[] = ['icon' => 'assets/icons/bed.webp', 'label' => trim((string) $property['bedroom']), 'suffix' => ' Bedrooms'];
 }
 if (!empty($property['bathroom'])) {
-    $specItems[] = ['icon' => 'assets/icons/bathroom.png', 'label' => trim((string) $property['bathroom']), 'suffix' => ' Bathrooms'];
+    $specItems[] = ['icon' => 'assets/icons/bathroom.webp', 'label' => trim((string) $property['bathroom']), 'suffix' => ' Bathrooms'];
 }
 if (!empty($property['parking'])) {
-    $specItems[] = ['icon' => 'assets/icons/parking.png', 'label' => trim((string) $property['parking']), 'suffix' => ' Parking'];
+    $specItems[] = ['icon' => 'assets/icons/parking.webp', 'label' => trim((string) $property['parking']), 'suffix' => ' Parking'];
 }
 if (!empty($property['total_area'])) {
-    $specItems[] = ['icon' => 'assets/icons/area.png', 'label' => trim((string) $property['total_area']), 'suffix' => ''];
+    $specItems[] = ['icon' => 'assets/icons/area.webp', 'label' => trim((string) $property['total_area']), 'suffix' => ''];
 }
 if ($completionDate) {
-    $specItems[] = ['icon' => 'assets/icons/calendar.png', 'label' => $completionDate, 'suffix' => ' Completion'];
+    $specItems[] = ['icon' => 'assets/icons/calendar.webp', 'label' => $completionDate, 'suffix' => ' Completion'];
 }
 
 $investmentHighlights = array_filter([
@@ -425,7 +425,7 @@ $developerStats = array_values(array_filter([
             <a href="property-listing.php" class="hh-property-hero-back">← Back to Listings</a>
             <div class="hh-property-hero-top-actions">
                 <button type="button" class="hh-primarypill" onclick="openPopup()"><img width="14"
-                        src="assets/flaticons/phone.png" alt=""> Contact Us</button>
+                        src="assets/icons/phone.webp" alt=""> Contact Us</button>
             </div>
         </div>
         <div class="container">
@@ -581,7 +581,7 @@ $developerStats = array_values(array_filter([
                         data-animation-out="animate__flipOutY">
                         <div class="card-head">
                             <div class="avatar">
-                                <img src="assets/icons/profile.png" alt="" width="100%">
+                                <img src="assets/icons/profile.webp" alt="" width="100%">
                             </div>
                             <div class="info">
                                 <strong>Sarah Al-Mansouri</strong>
@@ -592,19 +592,19 @@ $developerStats = array_values(array_filter([
 
                         <div class="cta-row">
                             <button type="button" class="call" onclick="window.location.href='tel:+971 42554683'">
-                                <img src="assets/flaticons/phone.png" alt="" width="16">
+                                <img src="assets/icons/phone.webp" alt="" width="16">
                                 Call
                             </button>
                             <button type="button" class="wa"
                                 onclick="window.open('https://wa.me/97142554683','_blank')">
-                                <img src="assets/flaticons/whatsapp.png" alt="WhatsApp" width="20">
+                                <img src="assets/icons/whatsapp.webp" alt="WhatsApp" width="20">
                                 WhatsApp
                             </button>
 
                         </div>
 
                         <button type="button" class="ghost-wide" onclick="openPopup()">
-                            <img src="assets/icons/calendar.png" alt="" width="16">
+                            <img src="assets/icons/calendar.webp" alt="" width="16">
                             Schedule Viewing
                         </button>
 
@@ -614,7 +614,7 @@ $developerStats = array_values(array_filter([
                                 3D Virtual Tour
                             </button> -->
                             <button type="button" onclick="Brochurepopup()">
-                                <img src="assets/icons/brochure-download.png" alt="" width="20">
+                                <img src="assets/icons/brochure-download.webp" alt="" width="20">
                                 Download Brochure
                             </button>
                             <button type="button" onclick="openPopup()">
@@ -826,7 +826,7 @@ $developerStats = array_values(array_filter([
                                                 data-animation-out="animate__flipOutX">
                                                 <div class="dev-head">
                                                     <div class="dev-ico">
-                                                        <img src="assets/flaticons/residential.png" width="25" alt="">
+                                                        <img src="assets/icons/residential.png" width="25" alt="">
                                                     </div>
                                                     <div class="dev-title">
                                                         <strong><?= htmlspecialchars($property['developer_name'] ?: 'Developer', ENT_QUOTES, 'UTF-8') ?></strong>
@@ -883,7 +883,7 @@ $developerStats = array_values(array_filter([
 
                             <div class="agent-head">
                                 <div class="avatar">
-                                    <img src="assets/icons/chat.png" alt="">
+                                    <img src="assets/icons/chat.webp" alt="">
                                 </div>
                                 <div class="agent-info">
                                     <strong>Contact Agent</strong>
@@ -1165,11 +1165,11 @@ $developerStats = array_values(array_filter([
                             </div>
                             <p>Speak with our property specialists for personalised assistance.</p>
                             <a class="call" href="tel:+97142554683">
-                                <img src="assets/icons/customer-support.png" alt="Call icon">
+                                <img src="assets/icons/customer-support.webp" alt="Call icon">
                                 <span>Call Now: +971 425 54683</span>
                             </a>
                             <a class="email" href="mailto:contact@houzzhunt.com">
-                                <img src="assets/icons/message.png" alt="Email icon">
+                                <img src="assets/icons/message.webp" alt="Email icon">
                                 <span>Email Agent</span>
                             </a>
                         </div>
@@ -1325,7 +1325,7 @@ $developerStats = array_values(array_filter([
     </div>
 
     <!-- footer five start -->
-    <div class="footer-section-five">
+    <!-- <div class="footer-section-five">
         <div class="container">
             <div class="row gutter-y-30">
                 <div class="col-12 col-lg-3 col-md-6">
@@ -1449,7 +1449,7 @@ $developerStats = array_values(array_filter([
 
             </div>
         </div>
-    </div>
+    </div> -->
     <!-- footer five end -->
 
     <!-- Popup Form -->
@@ -1558,7 +1558,7 @@ $developerStats = array_values(array_filter([
 
     <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/vendors/jquery/jquery-3.7.1.min.js"></script>
+    <script src="/assets/js/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/country-select-js@2.0.1/build/js/countrySelect.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js"></script>

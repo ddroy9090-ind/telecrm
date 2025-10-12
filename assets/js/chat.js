@@ -305,6 +305,39 @@
         }
     }
 
+    function parseDatasetJSON(value) {
+        if (!value) {
+            return [];
+        }
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            console.warn('Failed to parse chat dataset payload.', error);
+            return [];
+        }
+    }
+
+    function hydrateSidebarFromDataset() {
+        const initialUsers = parseDatasetJSON(app.dataset.initialUsers);
+        const initialGroups = parseDatasetJSON(app.dataset.initialGroups);
+        let hydrated = false;
+
+        if (initialUsers.length > 0) {
+            state.sidebarData.users = initialUsers;
+            hydrated = true;
+        }
+
+        if (initialGroups.length > 0) {
+            state.sidebarData.groups = initialGroups;
+            hydrated = true;
+        }
+
+        if (hydrated) {
+            renderSidebar();
+        }
+    }
+
     function renderUsers() {
         const list = state.userList;
         if (!list) {
@@ -772,6 +805,7 @@
         setupGroupModal();
         initSearch();
         state.messageForm.addEventListener('submit', handleSend);
+        hydrateSidebarFromDataset();
         startSidebarRefresh();
         startHeartbeat();
     }

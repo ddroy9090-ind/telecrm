@@ -2,7 +2,7 @@
 session_start();
 
 // Check if user is logged in
-if(!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("Location: login.php");
     exit;
 }
@@ -155,59 +155,38 @@ unset($_SESSION['flash']);
     <!-- Main Content -->
     <main class="main-content">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">Users</h1>
+            <div>
+                <h1 class="main-heading">Users</h1>
+                <p class="subheading">Manage and track all your real estate users</p>
+            </div>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
                 <i class="bx bx-user-plus me-1"></i> Add User
             </button>
         </div>
 
-        <div class="row g-3 user-stats">
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="stats-card">
-                    <div class="stats-card-icon paid">
-                        <i class="bx bx-credit-card"></i>
-                    </div>
-                    <div class="stats-card-body">
-                        <span class="stats-label">Paid Users</span>
-                        <h2 class="mb-0">4,567</h2>
-                        <span class="stats-subtitle">Last week analytics</span>
-                    </div>
-                    <div class="stats-card-footer">
-                        <span class="trend trend-up">+6.8%</span>
-                        <span class="comparison">vs last week</span>
-                    </div>
+        <div class="row g-3 lead-stats">
+            <div class="col-md-3">
+                <div class="stat-card total-leads">
+                    <h6>Total Users</h6>
+                    <h2>3</h2>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="stats-card">
-                    <div class="stats-card-icon active">
-                        <i class="bx bx-user-check"></i>
-                    </div>
-                    <div class="stats-card-body">
-                        <span class="stats-label">Active Users</span>
-                        <h2 class="mb-0">19,680</h2>
-                        <span class="stats-subtitle">Last week analytics</span>
-                    </div>
-                    <div class="stats-card-footer">
-                        <span class="trend trend-down">-1.4%</span>
-                        <span class="comparison">vs last week</span>
-                    </div>
+            <div class="col-md-3">
+                <div class="stat-card active-leads">
+                    <h6>Total Admin</h6>
+                    <h2>19,680</h2>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="stats-card">
-                    <div class="stats-card-icon pending">
-                        <i class="bx bx-time-five"></i>
-                    </div>
-                    <div class="stats-card-body">
-                        <span class="stats-label">Pending Users</span>
-                        <h2 class="mb-0">237</h2>
-                        <span class="stats-subtitle">Last week analytics</span>
-                    </div>
-                    <div class="stats-card-footer">
-                        <span class="trend trend-up">+0.2%</span>
-                        <span class="comparison">vs last week</span>
-                    </div>
+            <div class="col-md-3">
+                <div class="stat-card closed-leads">
+                    <h6>Total Agents</h6>
+                    <h2>237</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card lost-leads">
+                    <h6>Total Manager</h6>
+                    <h2>0</h2>
                 </div>
             </div>
         </div>
@@ -219,10 +198,10 @@ unset($_SESSION['flash']);
             </div>
         <?php endif; ?>
 
-        <div class="card shadow-sm users-card">
+        <div class="card lead-table-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table users-table align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 lead-table">
                         <thead>
                             <tr>
                                 <th scope="col">Full Name</th>
@@ -242,16 +221,16 @@ unset($_SESSION['flash']);
                                     <tr>
                                         <td>
                                             <?php
-                                                $name = trim($user['full_name']);
-                                                $initial = '?';
-                                                if ($name !== '') {
-                                                    if (function_exists('mb_substr')) {
-                                                        $initial = mb_substr($name, 0, 1, 'UTF-8');
-                                                    } else {
-                                                        $initial = substr($name, 0, 1);
-                                                    }
+                                            $name = trim($user['full_name']);
+                                            $initial = '?';
+                                            if ($name !== '') {
+                                                if (function_exists('mb_substr')) {
+                                                    $initial = mb_substr($name, 0, 1, 'UTF-8');
+                                                } else {
+                                                    $initial = substr($name, 0, 1);
                                                 }
-                                                $initial = strtoupper($initial ?: '?');
+                                            }
+                                            $initial = strtoupper($initial ?: '?');
                                             ?>
                                             <div class="d-flex align-items-center gap-2">
                                                 <div class="user-avatar">
@@ -267,11 +246,11 @@ unset($_SESSION['flash']);
                                         </td>
                                         <td>
                                             <?php
-                                                $roleClass = [
-                                                    'admin' => 'badge-role-admin',
-                                                    'manager' => 'badge-role-manager',
-                                                    'agent' => 'badge-role-agent'
-                                                ][$user['role']] ?? 'badge-role-default';
+                                            $roleClass = [
+                                                'admin' => 'badge-role-admin',
+                                                'manager' => 'badge-role-manager',
+                                                'agent' => 'badge-role-agent'
+                                            ][$user['role']] ?? 'badge-role-default';
                                             ?>
                                             <span class="badge <?php echo $roleClass; ?>">
                                                 <?php echo htmlspecialchars(ucfirst($user['role'])); ?>
@@ -331,22 +310,22 @@ unset($_SESSION['flash']);
 
                             <div class="col-lg-12 col-md-6 mb-3">
                                 <label for="emailAddress" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="emailAddress" name="email"  required>
+                                <input type="email" class="form-control" id="emailAddress" name="email" required>
                             </div>
 
                             <div class="col-lg-12 col-md-6 mb-3">
                                 <label for="contactNumber" class="form-label">Contact Number</label>
-                                <input type="tel" class="form-control" id="contactNumber" name="contact_number"  inputmode="tel">
+                                <input type="tel" class="form-control" id="contactNumber" name="contact_number" inputmode="tel">
                             </div>
 
                             <div class="col-lg-6 col-md-6 mb-3">
                                 <label for="addPassword" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="addPassword" name="password"  required autocomplete="new-password">
+                                <input type="password" class="form-control" id="addPassword" name="password" required autocomplete="new-password">
                             </div>
 
                             <div class="col-lg-6 col-md-6 mb-3">
                                 <label for="addConfirmPassword" class="form-label">Confirm Password</label>
-                                <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password"  required autocomplete="new-password">
+                                <input type="password" class="form-control" id="addConfirmPassword" name="confirm_password" required autocomplete="new-password">
                             </div>
 
                             <div class="col-lg-12 col-md-6 mb-3">

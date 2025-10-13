@@ -71,6 +71,11 @@ function hh_normalize_label(string $label): string
     return trim($label);
 }
 
+function hh_escape(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
 function hh_format_stage(?string $stage): string
 {
     $stage = trim((string) $stage);
@@ -83,6 +88,21 @@ function hh_format_stage(?string $stage): string
     $stage = preg_replace('/\s+/', ' ', $stage);
 
     return ucwords(hh_strtolower($stage));
+}
+
+function hh_format_datetime(?string $value): string
+{
+    if ($value === null || trim($value) === '') {
+        return '—';
+    }
+
+    $timestamp = strtotime($value);
+
+    if ($timestamp === false) {
+        return '—';
+    }
+
+    return date('d M Y, h:i A', $timestamp);
 }
 
 $dashboardMetrics = [
@@ -244,6 +264,33 @@ if (empty($monthlyPropertyReport['labels'])) {
     $monthlyPropertyReport['labels'] = $months;
     $monthlyPropertyReport['data']   = array_fill(0, count($months), 0);
 }
+
+$recentLeads = [];
+
+if (hh_table_exists($mysqli, 'all_leads')) {
+    $recentLeadResult = $mysqli->query(
+        'SELECT id, name, phone, email, stage, rating, created_at '
+        . 'FROM `all_leads` '
+        . 'ORDER BY COALESCE(created_at, "1970-01-01 00:00:00") DESC, id DESC '
+        . 'LIMIT 3'
+    );
+
+    if ($recentLeadResult instanceof mysqli_result) {
+        while ($lead = $recentLeadResult->fetch_assoc()) {
+            $recentLeads[] = [
+                'id'        => isset($lead['id']) ? (int) $lead['id'] : null,
+                'name'      => trim((string) ($lead['name'] ?? '')),
+                'phone'     => trim((string) ($lead['phone'] ?? '')),
+                'email'     => trim((string) ($lead['email'] ?? '')),
+                'stage'     => hh_format_stage($lead['stage'] ?? ''),
+                'rating'    => trim((string) ($lead['rating'] ?? '')),
+                'createdAt' => $lead['created_at'] ?? null,
+            ];
+        }
+
+        $recentLeadResult->free();
+    }
+}
 ?>
 
 <div id="adminPanel">
@@ -294,6 +341,63 @@ if (empty($monthlyPropertyReport['labels'])) {
                 <div class="col-lg-6">
                     <div class="chart-section">
                         <div id="chart"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="stat-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Recent Leads</h5>
+                            <a class="btn btn-sm btn-primary" href="all-leads.php">View All</a>
+                        </div>
+                        <?php if (empty($recentLeads)) : ?>
+                            <p class="mb-0 text-muted">No leads available.</p>
+                        <?php else : ?>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Lead</th>
+                                            <th scope="col">Contact</th>
+                                            <th scope="col">Stage</th>
+                                            <th scope="col">Rating</th>
+                                            <th scope="col">Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recentLeads as $lead) : ?>
+                                            <tr>
+                                                <td>
+                                                    <?php if ($lead['name'] !== '') : ?>
+                                                        <?= hh_escape($lead['name']); ?>
+                                                    <?php elseif ($lead['id'] !== null) : ?>
+                                                        Lead #<?= (int) $lead['id']; ?>
+                                                    <?php else : ?>
+                                                        —
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $contactDetails = array_filter([
+                                                        $lead['phone'] !== '' ? hh_escape($lead['phone']) : null,
+                                                        $lead['email'] !== '' ? hh_escape($lead['email']) : null,
+                                                    ]);
+
+                                                    echo !empty($contactDetails)
+                                                        ? implode('<br>', $contactDetails)
+                                                        : '—';
+                                                    ?>
+                                                </td>
+                                                <td><?= hh_escape($lead['stage']); ?></td>
+                                                <td><?= $lead['rating'] !== '' ? hh_escape(ucfirst(hh_strtolower($lead['rating']))) : 'Unrated'; ?></td>
+                                                <td><?= hh_escape(hh_format_datetime($lead['createdAt'])); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

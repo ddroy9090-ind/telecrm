@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_property_id'])
 
 try {
     $propertiesStmt = $pdo->query(
-        'SELECT id, project_name, property_title, property_location, property_type, starting_price, created_at
+        'SELECT id, project_name, property_title, property_location, property_type, starting_price, brochure, created_at
          FROM properties_list
          ORDER BY created_at DESC, id DESC'
     );
@@ -99,14 +99,14 @@ include __DIR__ . '/includes/common-header.php';
                         <th scope="col">Location</th>
                         <th scope="col">Property Type</th>
                         <th scope="col">Price</th>
-                        <th scope="col">PBrochure Download</th>
+                        <th scope="col">Brochure</th>
                         <th scope="col" class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if (!$properties): ?>
                     <tr>
-                        <td colspan="5" class="text-center py-4">
+                        <td colspan="6" class="text-center py-4">
                             No properties found.
                         </td>
                     </tr>
@@ -121,6 +121,15 @@ include __DIR__ . '/includes/common-header.php';
                         $location = trim((string) ($property['property_location'] ?? ''));
                         $propertyType = trim((string) ($property['property_type'] ?? ''));
                         $startingPrice = trim((string) ($property['starting_price'] ?? ''));
+                        $brochurePath = trim((string) ($property['brochure'] ?? ''));
+                        $brochureUrl = '';
+                        if ($brochurePath !== '') {
+                            if (preg_match('#^(?:https?:)?//#i', $brochurePath)) {
+                                $brochureUrl = $brochurePath;
+                            } else {
+                                $brochureUrl = hh_asset($brochurePath);
+                            }
+                        }
                         ?>
                         <tr>
                             <td>
@@ -150,6 +159,22 @@ include __DIR__ . '/includes/common-header.php';
                                     <span class="fw-semibold text-success">
                                         <?php echo htmlspecialchars($startingPrice, ENT_QUOTES, 'UTF-8'); ?>
                                     </span>
+                                <?php else: ?>
+                                    <span class="text-muted">N/A</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($brochureUrl !== ''): ?>
+                                    <a
+                                        href="<?php echo htmlspecialchars($brochureUrl, ENT_QUOTES, 'UTF-8'); ?>"
+                                        class="btn btn-sm btn-outline-success"
+                                        target="_blank"
+                                        rel="noopener"
+                                        download
+                                    >
+                                        <i class="bx bx-download"></i>
+                                        <span class="ms-1">Download</span>
+                                    </a>
                                 <?php else: ?>
                                     <span class="text-muted">N/A</span>
                                 <?php endif; ?>

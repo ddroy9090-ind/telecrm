@@ -168,7 +168,7 @@ include __DIR__ . '/includes/common-header.php';
                                         onsubmit="return confirm('Are you sure you want to delete this property?');"
                                     >
                                         <input type="hidden" name="delete_property_id" value="<?php echo $propertyId; ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" style="font-size: 18px;">
                                             <i class="bx bx-trash"></i>
                                         </button>
                                     </form>

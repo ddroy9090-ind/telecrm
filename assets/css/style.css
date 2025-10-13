@@ -83,9 +83,10 @@ button:focus:not(:focus-visible) {
 
 .btn-outline-primary {
     color: #02796f;
-    border-color: #02796f;
+    border: none;
     background-color: transparent;
     transition: all 0.3s ease-in-out;
+    font-size: 20px;
 }
 
 .btn-outline-primary:hover,

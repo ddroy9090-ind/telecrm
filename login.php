@@ -47,319 +47,277 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Admin Panel</title>
-    <link rel="icon" href="assets/images/logo/favicon.svg" type="image/svg+xml">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <title>Houzz Hunt CRM - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="assets/images/logo/favicon.svg">
     <style>
-        body {
-            background: linear-gradient(135deg, rgba(0, 168, 107, 0.9), rgba(0, 69, 38, 0.95));
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+        .login-wrapper {
+            /* background-color: #0d2d2b; */
+            background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
+            color: #d1d1c9;
             min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-family: 'Poppins', sans-serif;
-            color: #f5f6f7;
-
-            /* 🌫️ Glassmorphism effect */
-            backdrop-filter: blur(12px) saturate(180%);
-            -webkit-backdrop-filter: blur(12px) saturate(180%);
-            background-clip: padding-box;
-            box-shadow: inset 0 0 80px rgba(255, 255, 255, 0.1);
         }
 
-        .login-wrapper {
-            width: 100%;
-            max-width: 1100px;
-            padding: 30px 15px;
+        span.whiteYellow {
+            color: #fff;
+            font-family: "Open Sans", sans-serif;
+            /* font-style: italic; */
+            /* background: linear-gradient(97.08deg, #fff 0%, #edbb68 55.06%); */
+            /* -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text; */
+            font-weight: 300;
         }
 
-        .login-shell {
-            background: rgba(12, 16, 14, 0.75);
+
+
+        /* .login-wrapper h1 {
+            color: #d4a83a;
+            font-weight: bold;
+        } */
+
+        .login-logo {
+            width: 200px;
+            position: relative;
+            right: 20px;
+            margin-bottom: 20px;
+        }
+
+        .login-wrapper h2 {
+            margin-bottom: 0px;
+            font-size: 40px;
+            font-weight: 300;
+            line-height: 1.3;
+            color: #fff;
+            font-family: "Open Sans", sans-serif;
+            /* font-style: italic; */
+        }
+
+        .login-wrapper p {
+            margin: 0;
+            color: #fff;
+            padding-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .login-wrapper .line {
+            width: 17%;
+            height: 2px;
+            background-color: #fff;
+            margin: 0px 0;
+        }
+
+        .login-wrapper .feature-icon img {
+            width: 36px;
+            height: 36px;
+        }
+
+        .login-box {
+            background: #f8f9fa;
             border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 0;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 69, 38, 0.35);
+            padding: 30px;
         }
 
-        .visual-panel {
-            position: relative;
-            background: linear-gradient(145deg, rgba(0, 69, 38, 0.85), rgba(0, 69, 38, 0.25));
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            min-height: 420px;
-            padding: 40px;
+        .login-box h3 {
+            font-weight: 400;
+            margin-bottom: 5px;
+            color: #111;
+            text-align: center;
         }
 
-        .visual-panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: url('https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=900&q=80') center/cover no-repeat;
-            opacity: 0.8;
+        .login-form .form-group label {
+            display: inline-block;
+            margin-bottom: 5px;
+            color: #111;
         }
 
-        .visual-panel::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(160deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 0.65) 80%);
-        }
-
-        .visual-content {
-            position: relative;
-            text-align: left;
-            z-index: 1;
-            width: 100%;
-        }
-
-        .visual-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 999px;
-            background: rgba(245, 246, 247, 0.12);
-            color: #e9f7ef;
-            font-size: 0.85rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .visual-title {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-top: 30px;
-            margin-bottom: 14px;
-        }
-
-        .visual-text {
-            color: rgba(233, 247, 239, 0.8);
-            line-height: 1.6;
-            max-width: 360px;
-        }
-
-        .form-panel {
-            padding: 50px 45px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            /* background: linear-gradient(180deg, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.85)); */
-        }
-
-        .form-panel h2 {
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-
-        .form-panel p {
-            color: rgba(245, 246, 247, 0.65);
-            margin-bottom: 30px;
-        }
-
-        .form-floating .form-control {
-            background: rgba(18, 26, 22, 0.85);
-            border: 1px solid #fff;
-            color: #f1f8f4;
-            padding: 18px 20px;
-            border-radius: 16px;
-        }
-
-
-
-        .form-floating label {
-            color: rgba(233, 247, 239, 0.65);
-        }
-
-        .form-floating .form-control:focus {
-            border-color: #004526;
-            box-shadow: 0 0 0 0.25rem rgba(0, 69, 38, 0.25);
-            background: rgba(18, 26, 22, 0.95);
-        }
-
-        .input-group-text {
-            background: rgba(18, 26, 22, 0.85);
-            border: 1px solid #fff;
-            color: #70ffba;
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        }
-
-        .input-group .btn {
-            position: relative;
-            z-index: 2;
-            border: 1px #fff solid;
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
-        .input-group .form-control {
-            background: rgba(18, 26, 22, 0.85);
-            border-left: none;
-            border-radius: 12px;
-            color: #f1f8f4;
-        }
-
-        .input-group .form-control:focus {
-            background: rgba(18, 26, 22, 0.95);
-            color: #f1f8f4;
+        .login-form .form-group input {
             box-shadow: none;
-            outline: none;
-            border-color: #fff;
+            border: 1px #004a44 solid;
         }
 
-        .auth-actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            font-size: 0.9rem;
-            color: rgba(245, 246, 247, 0.7);
+        .login-box p {
+            color: #6a7c7c;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        .auth-actions a {
-            color: #70ffba;
-            text-decoration: none;
+        .login-box .form-control {
+            border-radius: 8px;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #00a86b, #004526);
+        .login-box button {
+            background-color: #0d2d2b;
             border: none;
-            border-radius: 18px;
-            padding: 14px 18px;
+            border-radius: 8px;
+            width: 100%;
+            padding: 10px;
+            color: #fff;
+        }
+
+        .login-box button:hover {
+            background-color: #154442;
+        }
+
+        .login-box .forgot {
+            color: #eebd2b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .login-box .forgot:hover {
+            text-decoration: underline;
+        }
+
+        .login-box .contact {
+            color: #f0c22b;
+            text-decoration: none;
             font-weight: 600;
-            letter-spacing: 0.05em;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #00c57c, #00673f);
+        .login-box .contact:hover {
+            text-decoration: underline;
         }
 
-        .login-meta {
-            margin-top: 28px;
-            color: rgba(245, 246, 247, 0.6);
-            font-size: 0.8rem;
+        .footer-text {
+            font-size: 13px;
+            color: #fff;
+            margin-top: 30px;
+            text-align: center;
         }
 
-        .alert {
-            border-radius: 16px;
-            background: rgba(220, 53, 69, 0.12);
-            border: 1px solid rgba(220, 53, 69, 0.45);
-            color: #ffb3bd;
+        .text-golden {
+            color: #fff;
         }
 
-        @media (max-width: 991px) {
-            .form-panel {
-                padding: 40px 30px;
-            }
+        .form-group .form-check label {
+            color: #6a7c7c;
+        }
 
-            .visual-panel {
-                min-height: 320px;
-            }
+        small {
+            color: #6a7c7c;
         }
     </style>
 </head>
 
 <body>
     <div class="login-wrapper">
-        <div class="login-shell">
-            <div class="visual-panel">
-                <div class="visual-content">
-                    <span class="visual-pill"><i class="bx bx-bolt-circle"></i> TeleCRM</span>
-                    <h2 class="visual-title">Create Your Account to Unleash Your Dreams</h2>
-                    <p class="visual-text">By signing in, you agree to the latest Terms of Service and Privacy Policy. Start exploring the future today.</p>
-                </div>
-            </div>
-            <div class="form-panel">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2>HouzzHunt TeleCRM</h2>
+        <div class="container">
+            <div class="row justify-content-between">
+                <!-- Left Section -->
+                <div class="col-lg-7 d-flex flex-column justify-content-center">
+                    <a href="index.php"><img src="assets/images/logo/houzz-hun-golden-logo.png" alt="" class="login-logo"></a>
+                    <p>REAL ESTATE CRM</p>
+                    <div class="line"></div>
+                    <h2><span class="whiteYellow">HouzzHunt CRM Portal</span></h2>
+                    <p>Your all-in-one platform for managing Dubai’s real estate operations.</p>
+                    <p class="mt-4">Log in to manage your leads, track client journeys, monitor listings, and drive sales performance with real-time insights.</p>
+
+                    <div class="row mt-5">
+                        <div class="col-4">
+                            <div class="feature-icon mb-2">
+                                <img src="assets/icons/listing.png" alt="Lead Management">
+                            </div>
+                            <strong class="text-golden">Lead Management</strong>
+                            <p class="m-0">Capture, qualify, and convert potential buyers efficiently.</p>
+                        </div>
+                        <div class="col-4">
+                            <div class="feature-icon mb-2">
+                                <img src="assets/icons/client-management.png" alt="Client Relationship">
+                            </div>
+                            <strong class="text-golden">Client Relationship</strong>
+                            <p class="m-0">Track communications, follow-ups, and engagement history.</p>
+                        </div>
+                        <div class="col-4">
+                            <div class="feature-icon mb-2">
+                                <img src="assets/icons/analytics.png" alt="Analytics Dashboard">
+                            </div>
+                            <strong class="text-golden">Analytics Dashboard</strong>
+                            <p class="m-0">View key performance indicators and campaign results in real time.</p>
+                        </div>
                     </div>
                 </div>
 
-                <?php if (isset($error)): ?>
-                    <div class="alert alert-danger" role="alert">
-                        <i class="bx bx-error-circle"></i> <?php echo $error; ?>
-                    </div>
-                <?php endif; ?>
 
-                <form method="POST" action="">
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bx bx-envelope"></i></span>
-                            <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($email); ?>" required autocomplete="email">
+                <!-- Right Section -->
+                <div class="col-lg-4  align-items-center">
+                    <div class="login-box w-100">
+                        <h3>Welcome Back</h3>
+                        <p>Sign in to your partner account</p>
+
+                        <?php if (isset($error)): ?>
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bx bx-error-circle"></i> <?php echo $error; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Login Form -->
+                        <form class="login-form" method="POST" action="">
+                            <div class="mb-3 form-group">
+                                <label>Email Address</label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+
+                            <div class="mb-3 form-group position-relative">
+                                <label>Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <!-- Custom Toggle Icon -->
+                                <span id="togglePassword"
+                                    style="position:absolute; right:15px; top:55%; cursor:pointer; font-size:14px; user-select:none;">
+                                    👁️
+                                </span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="form-check form-group">
+                                    <input class="form-check-input" type="checkbox" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">Remember me</label>
+                                </div>
+                                <a href="#" class="forgot">Forgot password?</a>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">Sign In to Portal</button>
+                        </form>
+
+                        <script>
+                            // Password toggle functionality
+                            const togglePassword = document.querySelector("#togglePassword");
+                            const password = document.querySelector("#password");
+
+                            togglePassword.addEventListener("click", function() {
+                                const type = password.getAttribute("type") === "password" ? "text" : "password";
+                                password.setAttribute("type", type);
+
+                                // Change icon between open-eye and closed-eye
+                                this.textContent = type === "password" ? "👁️" : "🙈";
+                            });
+                        </script>
+
+
+
+                        <div class="text-center mt-3">
+                            <small>Need access? <a href="#" class="contact">Contact Admin</a></small>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bx bx-lock"></i></span>
-                            <input type="password" class="form-control" name="password" required autocomplete="current-password" id="loginPassword">
-                            <button type="button" class="btn btn-outline-secondary" data-password-toggle="#loginPassword" aria-label="Toggle password visibility">
-                                <i class="bx bx-show"></i>
-                            </button>
-                        </div>
+                    <div class="footer-text">
+                        Powered by Houzz Hunt Real Estate Technology
                     </div>
-                    <div class="auth-actions">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="remember">
-                            <label class="form-check-label" for="remember">Remember me</label>
-                        </div>
-                        <!-- <a href="#">Forgot password?</a> -->
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bx bx-log-in"></i>
-                        <span>Login</span>
-                    </button>
-                    <div class="text-center login-meta">
-                        <small>Default admin: admin@example.com / admin123</small>
-                    </div>
-                </form>
+                </div>
             </div>
+
+
         </div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggle = document.querySelector('[data-password-toggle]');
-            if (!toggle) {
-                return;
-            }
-
-            toggle.addEventListener('click', function() {
-                const target = document.querySelector(this.getAttribute('data-password-toggle'));
-                if (!target) {
-                    return;
-                }
-
-                const icon = this.querySelector('i');
-                const isHidden = target.getAttribute('type') === 'password';
-                target.setAttribute('type', isHidden ? 'text' : 'password');
-                if (icon) {
-                    icon.classList.toggle('bx-show', !isHidden);
-                    icon.classList.toggle('bx-hide', isHidden);
-                }
-                this.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
-            });
-        });
-    </script>
 </body>
 
 </html>

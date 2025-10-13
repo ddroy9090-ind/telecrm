@@ -346,16 +346,14 @@ if (hh_table_exists($mysqli, 'all_leads')) {
             </div>
             <div class="row mt-5">
                 <div class="col-12">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Recent Leads</h5>
-                            <a class="btn btn-sm btn-primary" href="all-leads.php">View All</a>
-                        </div>
-                        <?php if (empty($recentLeads)) : ?>
-                            <p class="mb-0 text-muted">No leads available.</p>
-                        <?php else : ?>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Recent Leads</h5>
+                        <a class="btn btn-sm btn-primary" href="all-leads.php">View All</a>
+                    </div>
+                    <div class="card lead-table-card">
+                        <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-sm mb-0">
+                                <table class="table table-hover align-middle mb-0 lead-table">
                                     <thead>
                                         <tr>
                                             <th scope="col">Lead</th>
@@ -366,38 +364,78 @@ if (hh_table_exists($mysqli, 'all_leads')) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($recentLeads as $lead) : ?>
+                                        <?php if (empty($recentLeads)) : ?>
                                             <tr>
-                                                <td>
-                                                    <?php if ($lead['name'] !== '') : ?>
-                                                        <?= hh_escape($lead['name']); ?>
-                                                    <?php elseif ($lead['id'] !== null) : ?>
-                                                        Lead #<?= (int) $lead['id']; ?>
-                                                    <?php else : ?>
-                                                        —
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php
-                                                    $contactDetails = array_filter([
-                                                        $lead['phone'] !== '' ? hh_escape($lead['phone']) : null,
-                                                        $lead['email'] !== '' ? hh_escape($lead['email']) : null,
-                                                    ]);
-
-                                                    echo !empty($contactDetails)
-                                                        ? implode('<br>', $contactDetails)
-                                                        : '—';
-                                                    ?>
-                                                </td>
-                                                <td><?= hh_escape($lead['stage']); ?></td>
-                                                <td><?= $lead['rating'] !== '' ? hh_escape(ucfirst(hh_strtolower($lead['rating']))) : 'Unrated'; ?></td>
-                                                <td><?= hh_escape(hh_format_datetime($lead['createdAt'])); ?></td>
+                                                <td colspan="5" class="text-center text-muted py-4">No leads available. Add your first lead to get started.</td>
                                             </tr>
-                                        <?php endforeach; ?>
+                                        <?php else : ?>
+                                            <?php foreach ($recentLeads as $lead) : ?>
+                                                <?php
+                                                $displayName = '—';
+                                                $initial     = '?';
+
+                                                if ($lead['name'] !== '') {
+                                                    $displayName = $lead['name'];
+                                                    if (function_exists('mb_substr')) {
+                                                        $initial = mb_substr($lead['name'], 0, 1, 'UTF-8');
+                                                    } else {
+                                                        $initial = substr($lead['name'], 0, 1);
+                                                    }
+                                                } elseif ($lead['id'] !== null) {
+                                                    $displayName = sprintf('Lead #%d', (int) $lead['id']);
+                                                    $initial     = substr((string) ((int) $lead['id']), 0, 1);
+                                                }
+
+                                                $initial = strtoupper($initial !== '' ? $initial : '?');
+
+                                                $contactDetails = array_values(array_filter([
+                                                    $lead['phone'] !== '' ? hh_escape($lead['phone']) : null,
+                                                    $lead['email'] !== '' ? hh_escape($lead['email']) : null,
+                                                ]));
+
+                                                $stageBadgeClass = 'badge bg-light text-dark';
+                                                $ratingBadgeClass = 'badge bg-light text-dark';
+
+                                                $ratingLabel = $lead['rating'] !== ''
+                                                    ? hh_escape(ucfirst(hh_strtolower($lead['rating'])))
+                                                    : 'Unrated';
+                                                ?>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <div class="user-avatar">
+                                                                <span><?= hh_escape($initial); ?></span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="fw-semibold text-dark"><?= hh_escape($displayName); ?></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <?php if (!empty($contactDetails)) : ?>
+                                                            <div class="d-flex flex-column">
+                                                                <?php foreach ($contactDetails as $detail) : ?>
+                                                                    <span><?= $detail; ?></span>
+                                                                <?php endforeach; ?>
+                                                            </div>
+                                                        <?php else : ?>
+                                                            <span class="text-muted">Not provided</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <span class="<?= $stageBadgeClass; ?>"><?= hh_escape($lead['stage']); ?></span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="<?= $ratingBadgeClass; ?>"><?= $ratingLabel; ?></span>
+                                                    </td>
+                                                    <td><?= hh_escape(hh_format_datetime($lead['createdAt'])); ?></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
                                     </tbody>
                                 </table>
                             </div>
-                        <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>

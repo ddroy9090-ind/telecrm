@@ -224,7 +224,9 @@ $pageInlineScripts = $pageInlineScripts ?? [];
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        var options = {
+        var monthlyReport = <?php echo json_encode($monthlyPropertyReport ?? ['labels' => [], 'data' => []], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
+        var propertyChartOptions = {
             chart: {
                 type: 'bar',
                 height: 350,
@@ -233,7 +235,7 @@ $pageInlineScripts = $pageInlineScripts ?? [];
                 }
             },
             title: {
-                text: 'Monthly Property Sales (Demo)',
+                text: 'Monthly Property Availability',
                 align: 'center',
                 style: {
                     fontSize: '18px',
@@ -241,22 +243,25 @@ $pageInlineScripts = $pageInlineScripts ?? [];
                 }
             },
             series: [{
-                name: 'Sales',
-                data: [35, 50, 45, 60, 70, 55, 75, 90, 80, 95, 85, 100]
+                name: 'Properties',
+                data: monthlyReport.data
             }],
             xaxis: {
-                categories: [
-                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                ],
+                categories: monthlyReport.labels,
                 title: {
                     text: 'Month'
                 }
             },
             yaxis: {
                 title: {
-                    text: 'Sales (in AED Thousands)'
-                }
+                    text: 'Number of Properties'
+                },
+                labels: {
+                    formatter: function(value) {
+                        return Math.round(value);
+                    }
+                },
+                forceNiceScale: true
             },
             colors: ['#004a44'],
             plotOptions: {
@@ -274,88 +279,122 @@ $pageInlineScripts = $pageInlineScripts ?? [];
             },
             grid: {
                 borderColor: '#e0e0e0'
+            },
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value + ' property' + (value === 1 ? '' : 'ies');
+                    }
+                }
             }
         };
 
-        var chart = new ApexCharts(document.querySelector("#barChart"), options);
-        chart.render();
+        var propertyChartContainer = document.querySelector("#barChart");
+
+        if (propertyChartContainer) {
+            var propertyChart = new ApexCharts(propertyChartContainer, propertyChartOptions);
+            propertyChart.render();
+        }
     });
 </script>
 
 <script>
-    var options = {
-        series: [{
-                name: "High - 2013",
-                data: [28, 29, 33, 36, 32, 32, 33]
+    (function() {
+        var activeLeadChartData = <?php echo json_encode($activeLeadChartData ?? ['labels' => [], 'scores' => [], 'details' => []], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
+        var activeLeadChartOptions = {
+            series: [{
+                name: 'Rating Score',
+                data: activeLeadChartData.scores
+            }],
+            chart: {
+                height: 350,
+                type: 'line',
+                dropShadow: {
+                    enabled: true,
+                    color: '#000',
+                    top: 10,
+                    left: 5,
+                    blur: 6,
+                    opacity: 0.25
+                },
+                zoom: {
+                    enabled: false
+                },
+                toolbar: {
+                    show: false
+                }
             },
-            {
-                name: "Low - 2013",
-                data: [12, 11, 14, 18, 17, 13, 13]
-            }
-        ],
-        chart: {
-            height: 350,
-            type: 'line',
-            dropShadow: {
+            colors: ['#ff7f50'],
+            dataLabels: {
                 enabled: true,
-                color: '#000',
-                top: 18,
-                left: 7,
-                blur: 10,
-                opacity: 0.5
             },
-            zoom: {
-                enabled: false
+            stroke: {
+                curve: 'smooth'
             },
-            toolbar: {
+            title: {
+                text: 'Active Leads (High to Low)',
+                align: 'left'
+            },
+            grid: {
+                borderColor: '#e7e7e7',
+                row: {
+                    colors: ['#f3f3f3', 'transparent'],
+                    opacity: 0.5
+                },
+            },
+            markers: {
+                size: 4
+            },
+            xaxis: {
+                categories: activeLeadChartData.labels,
+                title: {
+                    text: 'Active Leads'
+                },
+                labels: {
+                    rotate: -45,
+                    trim: true
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'Rating Score'
+                },
+                min: 0,
+                max: 5,
+                tickAmount: 5,
+                labels: {
+                    formatter: function(value) {
+                        return Math.round(value);
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(value, opts) {
+                        var index = opts.dataPointIndex;
+                        var detail = activeLeadChartData.details[index];
+
+                        if (!detail) {
+                            return value;
+                        }
+
+                        return detail.name + '\nRating: ' + detail.rating + '\nStage: ' + detail.stage;
+                    }
+                }
+            },
+            legend: {
                 show: false
             }
-        },
-        colors: ['#77B6EA', '#545454'],
-        dataLabels: {
-            enabled: true,
-        },
-        stroke: {
-            curve: 'smooth'
-        },
-        title: {
-            text: 'Average High & Low Temperature',
-            align: 'left'
-        },
-        grid: {
-            borderColor: '#e7e7e7',
-            row: {
-                colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
-                opacity: 0.5
-            },
-        },
-        markers: {
-            size: 1
-        },
-        xaxis: {
-            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-            title: {
-                text: 'Month'
-            }
-        },
-        yaxis: {
-            title: {
-                text: 'Temperature'
-            },
-            min: 5,
-            max: 40
-        },
-        legend: {
-            position: 'top',
-            horizontalAlign: 'right',
-            floating: true,
-            offsetY: -25,
-            offsetX: -5
-        }
-    };
+        };
 
-    var chart = new ApexCharts(document.querySelector("#chart"), options);
-    chart.render();
+        var activeLeadChartContainer = document.querySelector("#chart");
+
+        if (activeLeadChartContainer) {
+            var activeLeadChart = new ApexCharts(activeLeadChartContainer, activeLeadChartOptions);
+            activeLeadChart.render();
+        }
+    })();
 </script>
 
 

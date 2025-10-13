@@ -99,6 +99,7 @@ include __DIR__ . '/includes/common-header.php';
                         <th scope="col">Location</th>
                         <th scope="col">Property Type</th>
                         <th scope="col">Price</th>
+                        <th scope="col">PBrochure Download</th>
                         <th scope="col" class="text-end">Actions</th>
                     </tr>
                 </thead>

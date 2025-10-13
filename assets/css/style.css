@@ -2139,3 +2139,47 @@ button:focus:not(:focus-visible) {
     border-radius: 12px;
 }
 
+.gallery-preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.gallery-preview-link {
+    display: inline-block;
+}
+
+.existing-gallery-preview {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    position: absolute;
+    left: 35%;
+    top: 30%;
+}
+
+.gallery-preview-img {
+    width: 133px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.existing-media-preview {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    display: inline-block;
+    padding: 12px;
+}
+
+.existing-media-preview-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.15);
+}

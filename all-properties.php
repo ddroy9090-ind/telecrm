@@ -8,6 +8,62 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 require_once __DIR__ . '/includes/config.php';
+
+$pdo = hh_db();
+
+// Handle flash messages
+$flash = $_SESSION['all_properties_flash'] ?? ['success' => null, 'error' => null];
+unset($_SESSION['all_properties_flash']);
+
+// Handle delete request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_property_id'])) {
+    $propertyId = (int) ($_POST['delete_property_id'] ?? 0);
+
+    if ($propertyId > 0) {
+        try {
+            $stmt = $pdo->prepare('DELETE FROM properties_list WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $propertyId]);
+
+            if ($stmt->rowCount() > 0) {
+                $_SESSION['all_properties_flash'] = [
+                    'success' => 'Property deleted successfully.',
+                    'error'   => null,
+                ];
+            } else {
+                $_SESSION['all_properties_flash'] = [
+                    'success' => null,
+                    'error'   => 'Property not found or already deleted.',
+                ];
+            }
+        } catch (Throwable $e) {
+            $_SESSION['all_properties_flash'] = [
+                'success' => null,
+                'error'   => 'Failed to delete property. Please try again later.',
+            ];
+        }
+    } else {
+        $_SESSION['all_properties_flash'] = [
+            'success' => null,
+            'error'   => 'Invalid property selected.',
+        ];
+    }
+
+    header('Location: all-properties.php');
+    exit;
+}
+
+try {
+    $propertiesStmt = $pdo->query(
+        'SELECT id, project_name, property_title, property_location, property_type, starting_price, created_at
+         FROM properties_list
+         ORDER BY created_at DESC, id DESC'
+    );
+    $properties = $propertiesStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    $properties = [];
+    $flash['error'] = $flash['error'] ?? 'Failed to load properties. Please try again later.';
+}
+
 include __DIR__ . '/includes/common-header.php';
 ?>
 
@@ -23,6 +79,16 @@ include __DIR__ . '/includes/common-header.php';
                 <p class="subheading">Manage and track all your real estate leads</p>
             </div>
         </div>
+        <?php if (!empty($flash['success'])): ?>
+            <div class="alert alert-success" role="alert">
+                <?php echo htmlspecialchars($flash['success'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+        <?php endif; ?>
+        <?php if (!empty($flash['error'])): ?>
+            <div class="alert alert-danger" role="alert">
+                <?php echo htmlspecialchars($flash['error'], ENT_QUOTES, 'UTF-8'); ?>
+            </div>
+        <?php endif; ?>
         <div class="card lead-table-card">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -37,87 +103,80 @@ include __DIR__ . '/includes/common-header.php';
                     </tr>
                 </thead>
                 <tbody>
+                <?php if (!$properties): ?>
                     <tr>
-                        <td>
-                            <div class="fw-semibold text-dark">Marina Heights Tower</div>
-                        </td>
-                        <td>
-                            <i class="bx bx-map me-1"></i> Dubai Marina
-                        </td>
-                        <td>
-                            <span class="badge bg-light text-dark">Apartment</span>
-                        </td>
-                        <td>
-                            <span class="fw-semibold text-success">$1,250,000</span>
-                        </td>
-                        <td class="text-end">
-                            <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                    <i class="bx bx-edit-alt"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary" title="View">
-                                    <i class="bx bx-show-alt"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </div>
+                        <td colspan="5" class="text-center py-4">
+                            No properties found.
                         </td>
                     </tr>
-                    <tr>
-                        <td>
-                            <div class="fw-semibold text-dark">Palm Residences</div>
-                        </td>
-                        <td>
-                            <i class="bx bx-map me-1"></i> Palm Jumeirah
-                        </td>
-                        <td>
-                            <span class="badge bg-light text-dark">Villa</span>
-                        </td>
-                        <td>
-                            <span class="fw-semibold text-success">$3,450,000</span>
-                        </td>
-                        <td class="text-end">
-                            <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                    <i class="bx bx-edit-alt"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary" title="View">
-                                    <i class="bx bx-show-alt"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="fw-semibold text-dark">Downtown Views</div>
-                        </td>
-                        <td>
-                            <i class="bx bx-map me-1"></i> Downtown Dubai
-                        </td>
-                        <td>
-                            <span class="badge bg-light text-dark">Penthouse</span>
-                        </td>
-                        <td>
-                            <span class="fw-semibold text-success">$5,200,000</span>
-                        </td>
-                        <td class="text-end">
-                            <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                    <i class="bx bx-edit-alt"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary" title="View">
-                                    <i class="bx bx-show-alt"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                <?php else: ?>
+                    <?php foreach ($properties as $property): ?>
+                        <?php
+                        $propertyId = (int) ($property['id'] ?? 0);
+                        $projectName = $property['project_name'] ?? '';
+                        $propertyTitle = $property['property_title'] ?? '';
+                        $displayName = $projectName !== '' ? $projectName : $propertyTitle;
+                        $displayName = $displayName !== '' ? $displayName : 'Untitled Property';
+                        $location = trim((string) ($property['property_location'] ?? ''));
+                        $propertyType = trim((string) ($property['property_type'] ?? ''));
+                        $startingPrice = trim((string) ($property['starting_price'] ?? ''));
+                        ?>
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-dark">
+                                    <?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?>
+                                </div>
+                            </td>
+                            <td>
+                                <?php if ($location !== ''): ?>
+                                    <i class="bx bx-map me-1"></i>
+                                    <?php echo htmlspecialchars($location, ENT_QUOTES, 'UTF-8'); ?>
+                                <?php else: ?>
+                                    <span class="text-muted">N/A</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($propertyType !== ''): ?>
+                                    <span class="badge bg-light text-dark">
+                                        <?php echo htmlspecialchars($propertyType, ENT_QUOTES, 'UTF-8'); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-muted">N/A</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($startingPrice !== ''): ?>
+                                    <span class="fw-semibold text-success">
+                                        <?php echo htmlspecialchars($startingPrice, ENT_QUOTES, 'UTF-8'); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-muted">N/A</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a
+                                        href="<?php echo htmlspecialchars('property-details.php?id=' . $propertyId, ENT_QUOTES, 'UTF-8'); ?>"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="View"
+                                    >
+                                        <i class="bx bx-show-alt"></i>
+                                    </a>
+                                    <form
+                                        method="post"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Are you sure you want to delete this property?');"
+                                    >
+                                        <input type="hidden" name="delete_property_id" value="<?php echo $propertyId; ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
                 </tbody>
             </table>
         </div>

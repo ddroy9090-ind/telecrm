@@ -42,6 +42,13 @@ body.lead-sidebar-open {
     margin: 4px 0;
 }
 
+span.badge.bg-light.text-dark {
+    font-size: 14px;
+    background-color: #02796f !important;
+    color: #fff !important;
+    border-radius: 50px;
+}
+
 button:focus:not(:focus-visible) {
     outline: 0;
     box-shadow: none;

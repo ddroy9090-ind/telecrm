@@ -68,6 +68,12 @@
                             <span class="sidebar-text">Property Listing</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="all-properties.php" class="sidebar-link">
+                            <span class="sidebar-icon"><i class="bi bi-list-task"></i></span>
+                            <span class="sidebar-text">All Property List</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
             <li class="sidebar-logout mt-auto">

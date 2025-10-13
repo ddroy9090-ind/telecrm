@@ -318,6 +318,22 @@ input[type="checkbox"]:checked::after {
 .chart-canvas {
   width: 100%;
   min-height: 260px;
+  position: relative;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  border-radius: 14px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .chart-summary {

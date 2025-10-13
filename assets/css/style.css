@@ -2124,3 +2124,8 @@ button:focus:not(:focus-visible) {
     border-color: #00a693;
     box-shadow: 0 0 0 0.15rem rgba(0, 166, 147, 0.15);
 }
+
+#chart {
+  max-width: 650px;
+  margin: 35px auto;
+}

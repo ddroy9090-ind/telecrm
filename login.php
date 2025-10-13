@@ -60,13 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
         .login-wrapper {
-            /* background-color: #0d2d2b; */
-            background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
+            background: url("assets/images/banner/login.png") no-repeat center center;
+            background-size: cover;
             color: #d1d1c9;
             min-height: 100vh;
             display: flex;
             align-items: center;
         }
+
 
         span.whiteYellow {
             color: #fff;
@@ -87,9 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } */
 
         .login-logo {
-            width: 200px;
+            width: 240px;
             position: relative;
-            right: 20px;
+            right: 10px;
             margin-bottom: 20px;
         }
 
@@ -216,12 +217,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row justify-content-between">
                 <!-- Left Section -->
                 <div class="col-lg-7 d-flex flex-column justify-content-center">
-                    <a href="index.php"><img src="assets/images/logo/houzz-hun-golden-logo.png" alt="" class="login-logo"></a>
-                    <p>REAL ESTATE CRM</p>
-                    <div class="line"></div>
-                    <h2><span class="whiteYellow">HouzzHunt CRM Portal</span></h2>
+                    <a href="index.php"><img src="assets/images/logo/crm-logo.svg" alt="" class="login-logo"></a>
+                    <!-- <p>REAL ESTATE CRM</p> -->
+                    <!-- <div class="line"></div> -->
+                    <h2><span class="whiteYellow">REAL ESTATE CRM Portal</span></h2>
                     <p>Your all-in-one platform for managing Dubai’s real estate operations.</p>
-                    <p class="mt-4">Log in to manage your leads, track client journeys, monitor listings, and drive sales performance with real-time insights.</p>
+                    <p class="">Log in to manage your leads, track client journeys, monitor listings, and drive sales performance with real-time insights.</p>
 
                     <div class="row mt-5">
                         <div class="col-4">

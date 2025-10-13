@@ -457,29 +457,29 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: {$propertyStatusLabelsJson},
                 colors: ['#0f766e', '#2dd4bf', '#134e4a', '#5eead4', '#99f6e4', '#0f172a'],
                 legend: {
-                position: 'bottom',
-                labels: { colors: '#475569' }
-            },
-            stroke: { width: 0 },
-            dataLabels: { enabled: true, formatter: function (val) { return val.toFixed(1) + '%'; } },
-            plotOptions: {
-                pie: {
-                    donut: { size: '58%' }
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: function (val) {
-                        return val + ' properties';
+                    position: 'bottom',
+                    labels: { colors: '#475569' }
+                },
+                stroke: { width: 0 },
+                dataLabels: { enabled: true, formatter: function (val) { return val.toFixed(1) + '%'; } },
+                plotOptions: {
+                    pie: {
+                        donut: { size: '58%' }
                     }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return val + ' properties';
+                        }
+                    }
+                },
+                noData: {
+                    text: 'No status data yet',
+                    align: 'center',
+                    style: { color: '#94a3b8', fontWeight: 600 }
                 }
-            },
-            noData: {
-                text: 'No status data yet',
-                align: 'center',
-                style: { color: '#94a3b8', fontWeight: 600 }
-            }
-        });
+            });
         }
 
         const leadStageChartEl = document.querySelector('#lead-stage-chart');
@@ -490,27 +490,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: {$leadStageLabelsJson},
                 colors: ['#2563eb', '#0ea5e9', '#38bdf8', '#7dd3fc', '#1e293b', '#94a3b8'],
                 legend: {
-                position: 'bottom',
-                labels: { colors: '#475569' }
-            },
-            stroke: { width: 0 },
-            dataLabels: { enabled: true, formatter: function (val) { return val.toFixed(1) + '%'; } },
-            plotOptions: {
-                pie: { donut: { size: '58%' } }
-            },
-            tooltip: {
-                y: {
-                    formatter: function (val) {
-                        return val + ' leads';
+                    position: 'bottom',
+                    labels: { colors: '#475569' }
+                },
+                stroke: { width: 0 },
+                dataLabels: { enabled: true, formatter: function (val) { return val.toFixed(1) + '%'; } },
+                plotOptions: {
+                    pie: { donut: { size: '58%' } }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return val + ' leads';
+                        }
                     }
+                },
+                noData: {
+                    text: 'No lead data yet',
+                    align: 'center',
+                    style: { color: '#94a3b8', fontWeight: 600 }
                 }
-            },
-            noData: {
-                text: 'No lead data yet',
-                align: 'center',
-                style: { color: '#94a3b8', fontWeight: 600 }
-            }
-        });
+            });
         }
 
         const leadMonthlyChartEl = document.querySelector('#lead-monthly-chart');
@@ -521,34 +521,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 xaxis: {
                     categories: {$leadMonthlyLabelsJson},
                     axisBorder: { color: '#d7e4de' },
-                axisTicks: { color: '#d7e4de' },
-                labels: { style: { colors: '#475569' } }
-            },
-            yaxis: {
-                labels: { style: { colors: '#475569' } }
-            },
-            colors: ['#0ea5e9'],
-            stroke: { curve: 'smooth', width: 3 },
-            markers: { size: 4, colors: '#0ea5e9', strokeColors: '#fff', strokeWidth: 2 },
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.45,
-                    opacityTo: 0.05,
-                    stops: [0, 95, 100]
+                    axisTicks: { color: '#d7e4de' },
+                    labels: { style: { colors: '#475569' } }
+                },
+                yaxis: {
+                    labels: { style: { colors: '#475569' } }
+                },
+                colors: ['#0ea5e9'],
+                stroke: { curve: 'smooth', width: 3 },
+                markers: { size: 4, colors: '#0ea5e9', strokeColors: '#fff', strokeWidth: 2 },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.45,
+                        opacityTo: 0.05,
+                        stops: [0, 95, 100]
+                    }
+                },
+                grid: {
+                    borderColor: '#d7e4de',
+                    strokeDashArray: 4
+                },
+                noData: {
+                    text: 'No lead history yet',
+                    align: 'center',
+                    style: { color: '#94a3b8', fontWeight: 600 }
                 }
-            },
-            grid: {
-                borderColor: '#d7e4de',
-                strokeDashArray: 4
-            },
-            noData: {
-                text: 'No lead history yet',
-                align: 'center',
-                style: { color: '#94a3b8', fontWeight: 600 }
-            }
-        });
+            });
         }
 
         const userRoleChartEl = document.querySelector('#user-role-chart');
@@ -559,27 +559,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 labels: {$usersByRoleLabelsJson},
                 colors: ['#4ade80', '#22c55e', '#16a34a', '#14532d', '#bbf7d0'],
                 legend: {
-                position: 'bottom',
-                labels: { colors: '#475569' }
-            },
-            stroke: { width: 0 },
-            dataLabels: { enabled: true, formatter: function (val) { return val.toFixed(1) + '%'; } },
-            plotOptions: {
-                pie: { donut: { size: '58%' } }
-            },
-            tooltip: {
-                y: {
-                    formatter: function (val) {
-                        return val + ' users';
+                    position: 'bottom',
+                    labels: { colors: '#475569' }
+                },
+                stroke: { width: 0 },
+                dataLabels: { enabled: true, formatter: function (val) { return val.toFixed(1) + '%'; } },
+                plotOptions: {
+                    pie: { donut: { size: '58%' } }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return val + ' users';
+                        }
                     }
+                },
+                noData: {
+                    text: 'No user data yet',
+                    align: 'center',
+                    style: { color: '#94a3b8', fontWeight: 600 }
                 }
-            },
-            noData: {
-                text: 'No user data yet',
-                align: 'center',
-                style: { color: '#94a3b8', fontWeight: 600 }
-            }
-        });
+            });
         }
     }
 
@@ -591,6 +591,8 @@ document.addEventListener('DOMContentLoaded', function () {
         bootstrapCharts();
         return true;
     }
+
+    document.addEventListener('apexcharts:ready', attemptBootstrap);
 
     if (attemptBootstrap()) {
         return;

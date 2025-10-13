@@ -1800,11 +1800,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                             <div class="lead-sidebar-tabpanels">
                                 <div class="lead-sidebar-panel is-active" data-tab-panel="remarks" role="tabpanel">
                                     <div class="lead-remarks" data-lead-remarks role="log" aria-live="polite" aria-label="Lead remarks"></div>
-                                    <form class="lead-remark-form" action="#" method="post" onsubmit="return false;">
+                                    <form class="lead-remark-form" action="#" method="post" onsubmit="return false;" data-remark-endpoint="all-leads.php?action=add-remark">
                                         <label for="leadRemarkInput" class="form-label">Add Remark</label>
                                         <textarea id="leadRemarkInput" class="form-control" rows="3" placeholder="Add a note about this lead..."></textarea>
                                         <div class="lead-remark-form__actions text-end">
-                                            <button type="submit" class="btn btn-primary">Save Remarkes</button>
+                                            <button type="submit" class="btn btn-primary">Save Remarks</button>
                                         </div>
                                     </form>
                                 </div>
@@ -1814,7 +1814,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                                     </div>
                                     <div class="lead-files__actions">
                                         <label class="lead-file-upload">
-                                            <input type="file" class="lead-file-upload__input" multiple>
+                                            <input type="file" class="lead-file-upload__input" multiple data-upload-endpoint="all-leads.php?action=upload-files">
                                             <span class="lead-file-upload__btn"><i class="bi bi-upload"></i> Upload files</span>
                                         </label>
                                     </div>

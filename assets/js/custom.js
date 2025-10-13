@@ -270,8 +270,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const remarkForm = leadSidebar.querySelector('.lead-remark-form');
   const remarkInput = remarkForm ? remarkForm.querySelector('textarea') : null;
   const remarkFileInput = remarkForm ? remarkForm.querySelector('.lead-file-upload__input') : null;
+  const remarkEndpoint = remarkForm?.dataset?.remarkEndpoint || 'all-leads.php?action=add-remark';
   let highlightNextRemark = false;
   const filesUploadInput = leadSidebar.querySelector('[data-tab-panel="files"] .lead-file-upload__input');
+  const fileUploadEndpoint = filesUploadInput?.dataset?.uploadEndpoint || 'all-leads.php?action=upload-files';
   const tabs = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-tab"));
   const panels = Array.from(leadSidebar.querySelectorAll(".lead-sidebar-panel"));
   const closeButton = leadSidebar.querySelector('[data-action="close"]');
@@ -1387,7 +1389,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       setRemarkFormSubmitting(true);
-      fetch('all-leads.php?action=add-remark', {
+      fetch(remarkEndpoint, {
         method: 'POST',
         body: formData,
       })
@@ -1434,7 +1436,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       setFilesUploading(true);
-      fetch('all-leads.php?action=upload-files', {
+      fetch(fileUploadEndpoint, {
         method: 'POST',
         body: formData,
       })

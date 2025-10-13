@@ -165,6 +165,41 @@ SQL,
     return $isReady;
 }
 
+function log_lead_activity(mysqli $mysqli, int $leadId, string $type, string $description, array $metadata = [], ?int $userId = null, string $userName = ''): bool
+{
+    if ($leadId <= 0 || trim($type) === '') {
+        return false;
+    }
+
+    if (!ensure_lead_activity_table($mysqli)) {
+        return false;
+    }
+
+    $metadataJson = null;
+    if (!empty($metadata)) {
+        $metadataJson = json_encode($metadata, JSON_UNESCAPED_UNICODE);
+        if ($metadataJson === false) {
+            $metadataJson = null;
+        }
+    }
+
+    $typeValue = trim($type);
+    $descriptionValue = trim($description) !== '' ? trim($description) : 'Lead activity recorded';
+    $userIdValue = $userId !== null ? $userId : null;
+    $userNameValue = trim($userName) !== '' ? trim($userName) : null;
+
+    $statement = $mysqli->prepare('INSERT INTO lead_activity_log (lead_id, activity_type, description, metadata, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?)');
+    if (!$statement instanceof mysqli_stmt) {
+        return false;
+    }
+
+    $statement->bind_param('isssis', $leadId, $typeValue, $descriptionValue, $metadataJson, $userIdValue, $userNameValue);
+    $result = $statement->execute();
+    $statement->close();
+
+    return $result;
+}
+
 function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
 {
     if (empty($leadIds) || !ensure_lead_activity_table($mysqli)) {
@@ -236,11 +271,19 @@ function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
             ];
 
             if ($activityType === 'remark') {
-                $remarkText = trim((string) ($metadata['remark'] ?? $description));
+                $remarkText = '';
+                if (isset($metadata['remark_text'])) {
+                    $remarkText = trim((string) $metadata['remark_text']);
+                } elseif (isset($metadata['remark'])) {
+                    $remarkText = trim((string) $metadata['remark']);
+                }
+                if ($remarkText === '') {
+                    $remarkText = $description;
+                }
                 $attachments = [];
                 if (isset($metadata['attachments']) && is_array($metadata['attachments'])) {
                     $attachments = array_values(array_filter($metadata['attachments'], static function ($item) {
-                        return is_array($item) && isset($item['url']);
+                        return is_array($item) && (isset($item['url']) || isset($item['path']));
                     }));
                 }
 
@@ -290,6 +333,106 @@ function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
     $statement->close();
 
     return $activities;
+}
+
+function reformat_uploaded_files_array(array $files): array
+{
+    if (!isset($files['name'])) {
+        return [];
+    }
+
+    if (is_array($files['name'])) {
+        $normalized = [];
+        foreach ($files['name'] as $index => $name) {
+            $normalized[] = [
+                'name' => $name,
+                'type' => $files['type'][$index] ?? null,
+                'tmp_name' => $files['tmp_name'][$index] ?? null,
+                'error' => $files['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+                'size' => $files['size'][$index] ?? 0,
+            ];
+        }
+        return $normalized;
+    }
+
+    return [$files];
+}
+
+function save_lead_attachments(array $files, int $leadId): array
+{
+    if ($leadId <= 0) {
+        return [];
+    }
+
+    $saved = [];
+    $baseDirectory = __DIR__ . '/uploads/leads/' . $leadId;
+    if (!is_dir($baseDirectory) && !mkdir($baseDirectory, 0775, true) && !is_dir($baseDirectory)) {
+        return [];
+    }
+
+    foreach ($files as $file) {
+        if (!is_array($file)) {
+            continue;
+        }
+
+        $errorCode = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+        if ($errorCode !== UPLOAD_ERR_OK || empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            continue;
+        }
+
+        $originalName = trim((string) ($file['name'] ?? 'document'));
+        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+        $cleanExtension = $extension !== '' ? preg_replace('/[^a-z0-9]/i', '', $extension) : '';
+
+        $uniqueName = uniqid('lead_' . $leadId . '_', true);
+        if ($cleanExtension !== '') {
+            $uniqueName .= '.' . strtolower($cleanExtension);
+        }
+
+        $targetPath = rtrim($baseDirectory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $uniqueName;
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            continue;
+        }
+
+        $relativePath = 'uploads/leads/' . $leadId . '/' . $uniqueName;
+
+        $saved[] = [
+            'name' => $originalName !== '' ? $originalName : 'Document',
+            'path' => $relativePath,
+            'url' => $relativePath,
+        ];
+    }
+
+    return $saved;
+}
+
+function fetch_lead_by_id(mysqli $mysqli, int $leadId): ?array
+{
+    if ($leadId <= 0) {
+        return null;
+    }
+
+    $statement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+    if (!$statement instanceof mysqli_stmt) {
+        return null;
+    }
+
+    $statement->bind_param('i', $leadId);
+    if (!$statement->execute()) {
+        $statement->close();
+        return null;
+    }
+
+    $result = $statement->get_result();
+    $lead = null;
+    if ($result instanceof mysqli_result) {
+        $lead = $result->fetch_assoc() ?: null;
+        $result->free();
+    }
+
+    $statement->close();
+
+    return $lead ?: null;
 }
 
 function lead_avatar_initial(string $name): string
@@ -459,6 +602,159 @@ $currentUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null
 $currentUserName = trim((string) ($_SESSION['username'] ?? ''));
 $currentUserEmail = trim((string) ($_SESSION['email'] ?? ''));
 $currentUserRole = trim((string) ($_SESSION['role'] ?? ''));
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
+    $action = (string) $_GET['action'];
+
+    if ($action === 'add-remark') {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $leadId = isset($_POST['lead_id']) ? (int) $_POST['lead_id'] : 0;
+        if ($leadId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+            exit;
+        }
+
+        $remarkText = isset($_POST['remark']) ? trim((string) $_POST['remark']) : '';
+        $uploadedFiles = isset($_FILES['attachments']) ? reformat_uploaded_files_array($_FILES['attachments']) : [];
+        $savedFiles = !empty($uploadedFiles) ? save_lead_attachments($uploadedFiles, $leadId) : [];
+
+        if ($remarkText === '' && empty($savedFiles)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Please add a remark or attach at least one file.']);
+            exit;
+        }
+
+        $actorId = $currentUserId !== null ? (int) $currentUserId : null;
+        $actorName = $currentUserName !== '' ? $currentUserName : 'System';
+
+        $remarkSnippet = $remarkText;
+        if (function_exists('mb_strlen')) {
+            if (mb_strlen($remarkSnippet) > 80) {
+                $remarkSnippet = mb_substr($remarkSnippet, 0, 77) . '…';
+            }
+        } elseif (strlen($remarkSnippet) > 80) {
+            $remarkSnippet = substr($remarkSnippet, 0, 77) . '…';
+        }
+        $remarkSnippet = trim(preg_replace('/\s+/u', ' ', $remarkSnippet));
+
+        $historyDescription = $remarkSnippet !== ''
+            ? sprintf('%s added a remark: "%s"', $actorName, $remarkSnippet)
+            : sprintf('%s added a remark', $actorName);
+
+        $remarkMetadata = [
+            'remark_text' => $remarkText,
+            'attachments' => $savedFiles,
+        ];
+
+        log_lead_activity($mysqli, $leadId, 'remark', $historyDescription, $remarkMetadata, $actorId, $actorName);
+
+        foreach ($savedFiles as $file) {
+            $fileDescription = sprintf('%s uploaded %s', $actorName, $file['name']);
+            $fileMetadata = [
+                'file_name' => $file['name'],
+                'file_path' => $file['path'],
+                'file_url' => $file['url'],
+            ];
+            log_lead_activity($mysqli, $leadId, 'file_upload', $fileDescription, $fileMetadata, $actorId, $actorName);
+        }
+
+        $updatedLeadRow = fetch_lead_by_id($mysqli, $leadId);
+        if (!$updatedLeadRow) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+            exit;
+        }
+
+        $activitySnapshot = fetch_lead_activities($mysqli, [$leadId]);
+        $relatedActivities = $activitySnapshot[$leadId] ?? [];
+        $updatedPayload = build_lead_payload($updatedLeadRow, $relatedActivities);
+        $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
+        if ($encodedPayload === false) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to encode the updated lead payload.']);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Remark saved successfully.',
+            'lead' => [
+                'payload' => $updatedPayload,
+                'json' => $encodedPayload,
+            ],
+        ]);
+        exit;
+    }
+
+    if ($action === 'upload-files') {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $leadId = isset($_POST['lead_id']) ? (int) $_POST['lead_id'] : 0;
+        if ($leadId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+            exit;
+        }
+
+        $uploadedFiles = isset($_FILES['attachments']) ? reformat_uploaded_files_array($_FILES['attachments']) : [];
+        $savedFiles = !empty($uploadedFiles) ? save_lead_attachments($uploadedFiles, $leadId) : [];
+
+        if (empty($savedFiles)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Please choose at least one file to upload.']);
+            exit;
+        }
+
+        $actorId = $currentUserId !== null ? (int) $currentUserId : null;
+        $actorName = $currentUserName !== '' ? $currentUserName : 'System';
+
+        foreach ($savedFiles as $file) {
+            $fileDescription = sprintf('%s uploaded %s', $actorName, $file['name']);
+            $fileMetadata = [
+                'file_name' => $file['name'],
+                'file_path' => $file['path'],
+                'file_url' => $file['url'],
+            ];
+            log_lead_activity($mysqli, $leadId, 'file_upload', $fileDescription, $fileMetadata, $actorId, $actorName);
+        }
+
+        $updatedLeadRow = fetch_lead_by_id($mysqli, $leadId);
+        if (!$updatedLeadRow) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+            exit;
+        }
+
+        $activitySnapshot = fetch_lead_activities($mysqli, [$leadId]);
+        $relatedActivities = $activitySnapshot[$leadId] ?? [];
+        $updatedPayload = build_lead_payload($updatedLeadRow, $relatedActivities);
+        $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
+        if ($encodedPayload === false) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to encode the updated lead payload.']);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Files uploaded successfully.',
+            'lead' => [
+                'payload' => $updatedPayload,
+                'json' => $encodedPayload,
+            ],
+        ]);
+        exit;
+    }
+
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Unsupported action requested.']);
+    exit;
+}
 
 $normalizedIdentifierSet = [];
 $primaryIdentifiers = [];
@@ -1050,11 +1346,11 @@ include __DIR__ . '/includes/common-header.php';
                             <div class="lead-sidebar-tabpanels">
                                 <div class="lead-sidebar-panel is-active" data-tab-panel="remarks" role="tabpanel">
                                     <div class="lead-remarks" data-lead-remarks role="log" aria-live="polite" aria-label="Lead remarks"></div>
-                                    <form class="lead-remark-form" action="#" method="post" onsubmit="return false;">
+                                    <form class="lead-remark-form" action="#" method="post" onsubmit="return false;" data-remark-endpoint="my-leads.php?action=add-remark">
                                         <label for="leadRemarkInput" class="form-label">Add Remark</label>
                                         <textarea id="leadRemarkInput" class="form-control" rows="3" placeholder="Add a note about this lead..."></textarea>
                                         <div class="lead-remark-form__actions text-end">
-                                            <button type="submit" class="btn btn-primary">Save Remarkes</button>
+                                            <button type="submit" class="btn btn-primary">Save Remarks</button>
                                         </div>
                                     </form>
                                 </div>
@@ -1064,7 +1360,7 @@ include __DIR__ . '/includes/common-header.php';
                                     </div>
                                     <div class="lead-files__actions">
                                         <label class="lead-file-upload">
-                                            <input type="file" class="lead-file-upload__input" multiple>
+                                            <input type="file" class="lead-file-upload__input" multiple data-upload-endpoint="my-leads.php?action=upload-files">
                                             <span class="lead-file-upload__btn"><i class="bi bi-upload"></i> Upload files</span>
                                         </label>
                                     </div>

@@ -332,14 +332,71 @@ $usersByRoleLabelsJson = json_encode($usersByRoleLabels, $jsonOptions) ?: '[]';
 $usersByRoleSeriesJson = json_encode($usersByRoleSeries, $jsonOptions) ?: '[]';
 
 $pageScriptFiles = $pageScriptFiles ?? [];
-$pageScriptFiles[] = 'https://cdn.jsdelivr.net/npm/apexcharts';
+$pageScriptFiles[] = [
+    'src' => 'https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js',
+    'attributes' => [
+        'data-apexcharts-primary' => 'true',
+    ],
+];
+
+$apexchartsFallbackScript = <<<JS
+<script>
+(function ensureApexChartsReady() {
+    if (window.ApexCharts) {
+        return;
+    }
+
+    const primaryTag = document.querySelector('script[data-apexcharts-primary="true"]');
+    if (primaryTag && !primaryTag.dataset.apexchartsMonitored) {
+        primaryTag.dataset.apexchartsMonitored = 'true';
+        primaryTag.addEventListener('load', function () {
+            if (window.ApexCharts) {
+                document.dispatchEvent(new Event('apexcharts:ready'));
+            }
+        });
+        primaryTag.addEventListener('error', function () {
+            document.dispatchEvent(new CustomEvent('apexcharts:failed', { detail: { src: primaryTag.src } }));
+        });
+    }
+
+    document.addEventListener('apexcharts:failed', function handleApexchartsFailure() {
+        document.removeEventListener('apexcharts:failed', handleApexchartsFailure);
+
+        if (window.ApexCharts) {
+            document.dispatchEvent(new Event('apexcharts:ready'));
+            return;
+        }
+
+        const fallbackUrl = 'https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.49.1/apexcharts.min.js';
+        if (document.querySelector('script[data-apexcharts-fallback="true"]')) {
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = fallbackUrl;
+        script.async = true;
+        script.dataset.apexchartsFallback = 'true';
+        script.addEventListener('load', function () {
+            if (window.ApexCharts) {
+                document.dispatchEvent(new Event('apexcharts:ready'));
+            }
+        });
+        script.addEventListener('error', function () {
+            console.error('ApexCharts failed to load from both primary and fallback CDNs.');
+        });
+        document.head.appendChild(script);
+    });
+})();
+</script>
+JS;
+
+$pageInlineScripts = $pageInlineScripts ?? [];
+$pageInlineScripts[] = $apexchartsFallbackScript;
 
 $dashboardScript = <<<JS
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    if (!window.ApexCharts) {
-        return;
-    }
+    let chartsRendered = false;
 
     function renderChart(el, options) {
         const placeholder = el.querySelector('.chart-empty');
@@ -353,43 +410,53 @@ document.addEventListener('DOMContentLoaded', function () {
         return chart;
     }
 
-    const propertyTypeChartEl = document.querySelector('#property-type-chart');
-    if (propertyTypeChartEl) {
-        renderChart(propertyTypeChartEl, {
-            chart: { type: 'bar', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
-            series: [{ name: 'Projects', data: {$propertyTypeSeriesJson} }],
-            xaxis: {
-                categories: {$propertyTypeLabelsJson},
-                labels: { style: { colors: '#475569' } }
-            },
-            yaxis: {
-                labels: { style: { colors: '#475569' } }
-            },
-            colors: ['#0d9488'],
-            dataLabels: { enabled: false },
-            plotOptions: {
-                bar: { borderRadius: 8, columnWidth: '55%' }
-            },
-            grid: {
-                borderColor: '#d7e4de',
-                strokeDashArray: 4
-            },
-            noData: {
-                text: 'No property data yet',
-                align: 'center',
-                style: { color: '#94a3b8', fontWeight: 600 }
-            }
-        });
-    }
+    function bootstrapCharts() {
+        if (!window.ApexCharts) {
+            return;
+        }
 
-    const propertyStatusChartEl = document.querySelector('#property-status-chart');
-    if (propertyStatusChartEl) {
-        renderChart(propertyStatusChartEl, {
-            chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
-            series: {$propertyStatusSeriesJson},
-            labels: {$propertyStatusLabelsJson},
-            colors: ['#0f766e', '#2dd4bf', '#134e4a', '#5eead4', '#99f6e4', '#0f172a'],
-            legend: {
+        if (chartsRendered) {
+            return;
+        }
+        chartsRendered = true;
+
+        const propertyTypeChartEl = document.querySelector('#property-type-chart');
+        if (propertyTypeChartEl) {
+            renderChart(propertyTypeChartEl, {
+                chart: { type: 'bar', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
+                series: [{ name: 'Projects', data: {$propertyTypeSeriesJson} }],
+                xaxis: {
+                    categories: {$propertyTypeLabelsJson},
+                    labels: { style: { colors: '#475569' } }
+                },
+                yaxis: {
+                    labels: { style: { colors: '#475569' } }
+                },
+                colors: ['#0d9488'],
+                dataLabels: { enabled: false },
+                plotOptions: {
+                    bar: { borderRadius: 8, columnWidth: '55%' }
+                },
+                grid: {
+                    borderColor: '#d7e4de',
+                    strokeDashArray: 4
+                },
+                noData: {
+                    text: 'No property data yet',
+                    align: 'center',
+                    style: { color: '#94a3b8', fontWeight: 600 }
+                }
+            });
+        }
+
+        const propertyStatusChartEl = document.querySelector('#property-status-chart');
+        if (propertyStatusChartEl) {
+            renderChart(propertyStatusChartEl, {
+                chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
+                series: {$propertyStatusSeriesJson},
+                labels: {$propertyStatusLabelsJson},
+                colors: ['#0f766e', '#2dd4bf', '#134e4a', '#5eead4', '#99f6e4', '#0f172a'],
+                legend: {
                 position: 'bottom',
                 labels: { colors: '#475569' }
             },
@@ -413,16 +480,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-    }
+        }
 
-    const leadStageChartEl = document.querySelector('#lead-stage-chart');
-    if (leadStageChartEl) {
-        renderChart(leadStageChartEl, {
-            chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
-            series: {$leadStageSeriesJson},
-            labels: {$leadStageLabelsJson},
-            colors: ['#2563eb', '#0ea5e9', '#38bdf8', '#7dd3fc', '#1e293b', '#94a3b8'],
-            legend: {
+        const leadStageChartEl = document.querySelector('#lead-stage-chart');
+        if (leadStageChartEl) {
+            renderChart(leadStageChartEl, {
+                chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
+                series: {$leadStageSeriesJson},
+                labels: {$leadStageLabelsJson},
+                colors: ['#2563eb', '#0ea5e9', '#38bdf8', '#7dd3fc', '#1e293b', '#94a3b8'],
+                legend: {
                 position: 'bottom',
                 labels: { colors: '#475569' }
             },
@@ -444,16 +511,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-    }
+        }
 
-    const leadMonthlyChartEl = document.querySelector('#lead-monthly-chart');
-    if (leadMonthlyChartEl) {
-        renderChart(leadMonthlyChartEl, {
-            chart: { type: 'area', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
-            series: [{ name: 'Leads', data: {$leadMonthlySeriesJson} }],
-            xaxis: {
-                categories: {$leadMonthlyLabelsJson},
-                axisBorder: { color: '#d7e4de' },
+        const leadMonthlyChartEl = document.querySelector('#lead-monthly-chart');
+        if (leadMonthlyChartEl) {
+            renderChart(leadMonthlyChartEl, {
+                chart: { type: 'area', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
+                series: [{ name: 'Leads', data: {$leadMonthlySeriesJson} }],
+                xaxis: {
+                    categories: {$leadMonthlyLabelsJson},
+                    axisBorder: { color: '#d7e4de' },
                 axisTicks: { color: '#d7e4de' },
                 labels: { style: { colors: '#475569' } }
             },
@@ -482,16 +549,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-    }
+        }
 
-    const userRoleChartEl = document.querySelector('#user-role-chart');
-    if (userRoleChartEl) {
-        renderChart(userRoleChartEl, {
-            chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
-            series: {$usersByRoleSeriesJson},
-            labels: {$usersByRoleLabelsJson},
-            colors: ['#4ade80', '#22c55e', '#16a34a', '#14532d', '#bbf7d0'],
-            legend: {
+        const userRoleChartEl = document.querySelector('#user-role-chart');
+        if (userRoleChartEl) {
+            renderChart(userRoleChartEl, {
+                chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
+                series: {$usersByRoleSeriesJson},
+                labels: {$usersByRoleLabelsJson},
+                colors: ['#4ade80', '#22c55e', '#16a34a', '#14532d', '#bbf7d0'],
+                legend: {
                 position: 'bottom',
                 labels: { colors: '#475569' }
             },
@@ -513,12 +580,57 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
+        }
     }
+
+    function attemptBootstrap() {
+        if (!window.ApexCharts) {
+            return false;
+        }
+
+        bootstrapCharts();
+        return true;
+    }
+
+    if (attemptBootstrap()) {
+        return;
+    }
+
+    const fallbackTimer = window.setTimeout(function () {
+        if (window.ApexCharts) {
+            return;
+        }
+        if (document.querySelector('script[data-apexcharts-fallback="true"]')) {
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.49.1/apexcharts.min.js';
+        script.async = true;
+        script.dataset.apexchartsFallback = 'true';
+        script.addEventListener('load', attemptBootstrap);
+        script.addEventListener('error', function () {
+            console.error('Unable to load ApexCharts from both configured CDNs.');
+        });
+        document.head.appendChild(script);
+    }, 1000);
+
+    let attempts = 0;
+    const maxAttempts = 50;
+    const waitTimer = window.setInterval(function () {
+        attempts += 1;
+        if (attemptBootstrap()) {
+            window.clearInterval(waitTimer);
+            window.clearTimeout(fallbackTimer);
+        } else if (attempts >= maxAttempts) {
+            window.clearInterval(waitTimer);
+            window.clearTimeout(fallbackTimer);
+            console.warn('ApexCharts library did not become available. Charts were not rendered.');
+        }
+    }, 100);
 });
 </script>
 JS;
 
-$pageInlineScripts = $pageInlineScripts ?? [];
 $pageInlineScripts[] = $dashboardScript;
 
 include __DIR__ . '/includes/common-header.php';

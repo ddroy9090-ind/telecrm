@@ -186,7 +186,7 @@ include __DIR__ . '/includes/common-header.php';
                                         class="btn btn-sm btn-outline-secondary"
                                         title="Edit"
                                     >
-                                        <i class="bx bx-edit"></i>
+                                        <i class="bx bx-edit-alt"></i>
                                     </a>
                                     <a
                                         href="<?php echo htmlspecialchars('property-details.php?id=' . $propertyId, ENT_QUOTES, 'UTF-8'); ?>"

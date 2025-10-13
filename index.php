@@ -269,7 +269,7 @@ $recentLeads = [];
 
 if (hh_table_exists($mysqli, 'all_leads')) {
     $recentLeadResult = $mysqli->query(
-        'SELECT id, name, phone, email, stage, rating, created_at '
+        'SELECT id, name, phone, email, stage, assigned_to, source '
         . 'FROM `all_leads` '
         . 'ORDER BY COALESCE(created_at, "1970-01-01 00:00:00") DESC, id DESC '
         . 'LIMIT 3'
@@ -282,9 +282,9 @@ if (hh_table_exists($mysqli, 'all_leads')) {
                 'name'      => trim((string) ($lead['name'] ?? '')),
                 'phone'     => trim((string) ($lead['phone'] ?? '')),
                 'email'     => trim((string) ($lead['email'] ?? '')),
-                'stage'     => hh_format_stage($lead['stage'] ?? ''),
-                'rating'    => trim((string) ($lead['rating'] ?? '')),
-                'createdAt' => $lead['created_at'] ?? null,
+                'stage'      => hh_format_stage($lead['stage'] ?? ''),
+                'assignedTo' => trim((string) ($lead['assigned_to'] ?? '')),
+                'source'     => trim((string) ($lead['source'] ?? '')),
             ];
         }
 
@@ -356,11 +356,11 @@ if (hh_table_exists($mysqli, 'all_leads')) {
                                 <table class="table table-hover align-middle mb-0 lead-table">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Lead</th>
+                                            <th scope="col">Name</th>
                                             <th scope="col">Contact</th>
                                             <th scope="col">Stage</th>
-                                            <th scope="col">Rating</th>
-                                            <th scope="col">Created</th>
+                                            <th scope="col">Assigned To</th>
+                                            <th scope="col">Source</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -393,13 +393,14 @@ if (hh_table_exists($mysqli, 'all_leads')) {
                                                     $lead['email'] !== '' ? hh_escape($lead['email']) : null,
                                                 ]));
 
-                                                $stageBadgeClass = 'badge bg-light text-dark';
-                                                $ratingBadgeClass = 'badge bg-light text-dark';
-
-                                                $ratingLabel = $lead['rating'] !== ''
-                                                    ? hh_escape(ucfirst(hh_strtolower($lead['rating'])))
-                                                    : 'Unrated';
-                                                ?>
+                                                $stageBadgeClass    = 'badge bg-light text-dark';
+                                                $assignedLabel      = $lead['assignedTo'] !== ''
+                                                    ? hh_escape($lead['assignedTo'])
+                                                    : 'Unassigned';
+                                                $sourceLabel        = $lead['source'] !== ''
+                                                    ? hh_escape($lead['source'])
+                                                    : '—';
+                                            ?>
                                                 <tr>
                                                     <td>
                                                         <div class="d-flex align-items-center gap-2">
@@ -425,10 +426,8 @@ if (hh_table_exists($mysqli, 'all_leads')) {
                                                     <td>
                                                         <span class="<?= $stageBadgeClass; ?>"><?= hh_escape($lead['stage']); ?></span>
                                                     </td>
-                                                    <td>
-                                                        <span class="<?= $ratingBadgeClass; ?>"><?= $ratingLabel; ?></span>
-                                                    </td>
-                                                    <td><?= hh_escape(hh_format_datetime($lead['createdAt'])); ?></td>
+                                                    <td><?= $assignedLabel; ?></td>
+                                                    <td><?= $sourceLabel; ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>

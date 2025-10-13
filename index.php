@@ -50,7 +50,12 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row mt-5">
+                <div class="col-lg-6">
+                    <div class="chart-section">
+                        <div id="barChart"></div>
+                    </div>
+                </div>
                 <div class="col-lg-6">
                     <div class="chart-section">
                         <div id="chart"></div>

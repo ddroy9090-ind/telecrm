@@ -32,6 +32,57 @@ if (!function_exists('chat_current_user_name')) {
     }
 }
 
+if (!function_exists('chat_websocket_port')) {
+    function chat_websocket_port(): int
+    {
+        $envPort = getenv('TELECRM_CHAT_WS_PORT');
+        if ($envPort !== false && $envPort !== '') {
+            return (int) $envPort;
+        }
+
+        return 8081;
+    }
+}
+
+if (!function_exists('chat_websocket_host')) {
+    function chat_websocket_host(): string
+    {
+        $envHost = getenv('TELECRM_CHAT_WS_HOST');
+        if ($envHost !== false && $envHost !== '') {
+            return $envHost;
+        }
+
+        $httpHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        if (strpos($httpHost, ':') !== false) {
+            [$httpHost] = explode(':', $httpHost, 2);
+        }
+
+        return $httpHost;
+    }
+}
+
+if (!function_exists('chat_websocket_scheme')) {
+    function chat_websocket_scheme(): string
+    {
+        $https = $_SERVER['HTTPS'] ?? '';
+        $serverPort = isset($_SERVER['SERVER_PORT']) ? (int) $_SERVER['SERVER_PORT'] : 0;
+        $isHttps = ($https && strtolower($https) !== 'off') || $serverPort === 443;
+
+        return $isHttps ? 'wss' : 'ws';
+    }
+}
+
+if (!function_exists('chat_websocket_url')) {
+    function chat_websocket_url(): string
+    {
+        $scheme = chat_websocket_scheme();
+        $host = chat_websocket_host();
+        $port = chat_websocket_port();
+
+        return sprintf('%s://%s:%d', $scheme, $host, $port);
+    }
+}
+
 if (!function_exists('chat_json_response')) {
     function chat_json_response(array $payload, int $statusCode = 200): void
     {
@@ -158,6 +209,102 @@ if (!function_exists('chat_assert_participant')) {
         if (!$stmt->fetchColumn()) {
             chat_json_response(['error' => 'Access denied.'], 403);
         }
+    }
+}
+
+if (!function_exists('chat_conversation_participant_ids')) {
+    function chat_conversation_participant_ids(PDO $pdo, int $conversationId): array
+    {
+        $stmt = $pdo->prepare('SELECT user_id FROM chat_participants WHERE conversation_id = :conversation');
+        $stmt->execute(['conversation' => $conversationId]);
+        $participants = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $participants[] = (int) $row['user_id'];
+        }
+
+        return $participants;
+    }
+}
+
+if (!function_exists('chat_queue_event')) {
+    function chat_queue_event(PDO $pdo, string $eventType, array $payload, array $recipients, ?int $conversationId = null): void
+    {
+        $recipients = array_values(array_unique(array_map('intval', $recipients)));
+        if (count($recipients) === 0) {
+            return;
+        }
+
+        if (!isset($payload['type'])) {
+            $payload['type'] = $eventType;
+        }
+
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        $recipientsJson = json_encode($recipients);
+
+        if ($payloadJson === false || $recipientsJson === false) {
+            throw new RuntimeException('Unable to encode WebSocket event payload.');
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO chat_ws_events (event_type, conversation_id, recipients, payload) VALUES (:event, :conversation, :recipients, :payload)');
+        $stmt->execute([
+            'event'        => $eventType,
+            'conversation' => $conversationId,
+            'recipients'   => $recipientsJson,
+            'payload'      => $payloadJson,
+        ]);
+    }
+}
+
+if (!function_exists('chat_issue_websocket_token')) {
+    function chat_issue_websocket_token(PDO $pdo, int $userId): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = (new DateTimeImmutable('+30 minutes'))->format('Y-m-d H:i:s');
+
+        $cleanup = $pdo->prepare('DELETE FROM chat_ws_tokens WHERE expires_at < DATE_SUB(NOW(), INTERVAL 1 DAY)');
+        $cleanup->execute();
+
+        $stmt = $pdo->prepare('INSERT INTO chat_ws_tokens (user_id, token, expires_at) VALUES (:user, :token, :expires)');
+        $stmt->execute([
+            'user'    => $userId,
+            'token'   => $token,
+            'expires' => $expiresAt,
+        ]);
+
+        return $token;
+    }
+}
+
+if (!function_exists('chat_validate_websocket_token')) {
+    function chat_validate_websocket_token(PDO $pdo, string $token): ?array
+    {
+        if ($token === '') {
+            return null;
+        }
+
+        $stmt = $pdo->prepare('SELECT t.user_id, t.expires_at, u.full_name, u.email FROM chat_ws_tokens t JOIN users u ON u.id = t.user_id WHERE t.token = :token LIMIT 1');
+        $stmt->execute(['token' => $token]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        try {
+            $expiresAt = new DateTimeImmutable($row['expires_at']);
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        if ($expiresAt < new DateTimeImmutable('now')) {
+            return null;
+        }
+
+        return [
+            'user_id' => (int) $row['user_id'],
+            'name'    => $row['full_name'] !== '' ? $row['full_name'] : $row['email'],
+            'email'   => $row['email'],
+        ];
     }
 }
 

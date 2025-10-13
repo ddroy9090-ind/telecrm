@@ -31,6 +31,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Determine active item based on current page
   const currentPath = window.location.pathname.split("/").pop() || "index.php";
+  const routeAliasMap = {
+    "property-details.php": "property-listing.php",
+  };
+  const normalizedPath = routeAliasMap[currentPath] || currentPath;
   let activeItem = null;
 
   menuLinks.forEach((link) => {
@@ -46,7 +50,7 @@ document.addEventListener("DOMContentLoaded", function () {
       dropdownParent.classList.remove("active");
     }
 
-    if (linkPath === currentPath && parentItem) {
+    if (linkPath === normalizedPath && parentItem) {
       activeItem = parentItem;
     }
   });

@@ -32,6 +32,18 @@ try {
         'user'         => $userId,
     ]);
 
+    try {
+        $participants = chat_conversation_participant_ids($pdo, $conversationId);
+        chat_queue_event($pdo, 'typing', [
+            'conversation_id' => $conversationId,
+            'user_id'         => $userId,
+            'name'            => chat_current_user_name(),
+            'is_typing'       => $isTyping,
+        ], $participants, $conversationId);
+    } catch (Throwable $eventError) {
+        // Silently ignore event queue failures.
+    }
+
     chat_json_response(['status' => 'ok']);
 } catch (Throwable $e) {
     chat_json_response([

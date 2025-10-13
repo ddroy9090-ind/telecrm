@@ -32,6 +32,14 @@
         headerAvatar: document.getElementById('chatHeaderAvatar'),
         headerButtons: Array.from(document.querySelectorAll('.chat-header-actions .chat-action-btn')),
         typingNames: [],
+        socket: null,
+        socketReady: false,
+        socketToken: null,
+        socketReconnectTimer: null,
+        websocketUrl: app.dataset.websocketUrl || '',
+        websocketTokenUrl: app.dataset.wsTokenUrl || '',
+        reconnectDelay: 1000,
+        useWebSocket: false,
     };
 
     const endpoints = {
@@ -43,6 +51,7 @@
         markRead: app.dataset['markReadUrl'],
         poll: app.dataset.pollUrl,
         heartbeat: app.dataset.heartbeatUrl,
+        wsToken: app.dataset.wsTokenUrl,
     };
 
     const currentUserId = parseInt(app.dataset.currentUserId, 10);
@@ -305,12 +314,23 @@
         }
     }
 
+    function decodeDatasetValue(value) {
+        if (!value || typeof value !== 'string') {
+            return '';
+        }
+        const parser = new DOMParser();
+        const parsedDocument = parser.parseFromString(`<span>${value}</span>`, 'text/html');
+        const span = parsedDocument.querySelector('span');
+        return span ? span.textContent || '' : value;
+    }
+
     function parseDatasetJSON(value) {
         if (!value) {
             return [];
         }
         try {
-            const parsed = JSON.parse(value);
+            const decoded = decodeDatasetValue(value);
+            const parsed = JSON.parse(decoded);
             return Array.isArray(parsed) ? parsed : [];
         } catch (error) {
             console.warn('Failed to parse chat dataset payload.', error);
@@ -620,7 +640,11 @@
             if (state.lastMessageId) {
                 scheduleMarkRead(state.lastMessageId);
             }
-            startPolling();
+            if (!state.useWebSocket) {
+                startPolling();
+            } else {
+                stopPolling();
+            }
         });
     }
 
@@ -654,6 +678,215 @@
             clearInterval(state.heartbeatTimer);
         }
         state.heartbeatTimer = setInterval(beat, 30000);
+    }
+
+    function requestWebSocketToken() {
+        if (!endpoints.wsToken) {
+            return Promise.reject(new Error('WebSocket token endpoint not configured.'));
+        }
+        return httpPost(endpoints.wsToken, {}).then((response) => {
+            if (!response || response.error || !response.token) {
+                const message = response && response.error ? response.error : 'Unable to obtain WebSocket token.';
+                throw new Error(message);
+            }
+            return response.token;
+        });
+    }
+
+    function handleSocketReady() {
+        state.socketReady = true;
+        state.useWebSocket = true;
+        state.reconnectDelay = 1000;
+        if (state.currentConversationId) {
+            stopPolling();
+        }
+    }
+
+    function handleSocketError() {
+        // We intentionally keep this silent to avoid noisy consoles for transient disconnects.
+    }
+
+    function handleSocketClose() {
+        state.socketReady = false;
+        state.socket = null;
+        if (state.useWebSocket) {
+            state.useWebSocket = false;
+            if (state.currentConversationId) {
+                startPolling();
+            }
+        }
+        scheduleSocketReconnect();
+    }
+
+    function scheduleSocketReconnect() {
+        if (state.socketReconnectTimer) {
+            return;
+        }
+        const delay = Math.min(state.reconnectDelay, 15000);
+        state.socketReconnectTimer = setTimeout(() => {
+            state.socketReconnectTimer = null;
+            state.reconnectDelay = Math.min(delay * 2, 15000);
+            connectWebSocket();
+        }, delay);
+    }
+
+    function applySidebarUpdate(update) {
+        if (!update) {
+            return;
+        }
+        if (Array.isArray(update.users)) {
+            state.sidebarData.users = update.users;
+        }
+        if (Array.isArray(update.groups)) {
+            state.sidebarData.groups = update.groups;
+        }
+        renderSidebar();
+    }
+
+    function handleIncomingMessageEvent(payload) {
+        if (!payload || !payload.message || !payload.conversation_id) {
+            return;
+        }
+        const conversationId = payload.conversation_id;
+        const message = payload.message;
+        if (message.sender_id === currentUserId) {
+            return;
+        }
+        message.is_mine = false;
+        if (state.currentConversationId === conversationId) {
+            appendMessages([message]);
+            state.lastMessageId = Math.max(state.lastMessageId, message.id || 0);
+            scheduleMarkRead(state.lastMessageId);
+        }
+        if (payload.sidebar) {
+            applySidebarUpdate(payload.sidebar);
+        } else {
+            loadSidebar();
+        }
+    }
+
+    function handleIncomingTypingEvent(payload) {
+        if (!payload || payload.user_id === currentUserId) {
+            return;
+        }
+        if (payload.conversation_id !== state.currentConversationId) {
+            return;
+        }
+        const name = payload.name || 'Someone';
+        if (payload.is_typing) {
+            if (!state.typingNames.includes(name)) {
+                state.typingNames.push(name);
+            }
+        } else {
+            state.typingNames = state.typingNames.filter((item) => item !== name);
+        }
+        updateTypingIndicator();
+    }
+
+    function handleIncomingReadEvent(payload) {
+        if (!payload || payload.user_id === currentUserId) {
+            return;
+        }
+        if (payload.conversation_id !== state.currentConversationId) {
+            return;
+        }
+        if (Array.isArray(payload.reads)) {
+            updateReadReceipts(payload.reads);
+        }
+    }
+
+    function handleSocketMessage(event) {
+        if (!event || typeof event.data !== 'string') {
+            return;
+        }
+        let data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (error) {
+            return;
+        }
+        if (!data || !data.type) {
+            return;
+        }
+        switch (data.type) {
+            case 'ready':
+                handleSocketReady();
+                break;
+            case 'message':
+                handleIncomingMessageEvent(data);
+                break;
+            case 'typing':
+                handleIncomingTypingEvent(data);
+                break;
+            case 'read':
+                handleIncomingReadEvent(data);
+                break;
+            case 'sidebar':
+                applySidebarUpdate(data.sidebar);
+                break;
+            case 'ping':
+                if (state.socket && state.socket.readyState === WebSocket.OPEN) {
+                    state.socket.send(JSON.stringify({ type: 'pong' }));
+                }
+                break;
+            case 'error':
+                if (data.code === 'auth_failed') {
+                    state.socketToken = null;
+                    if (state.socket) {
+                        state.socket.close();
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    function connectWebSocket() {
+        if (!state.websocketUrl) {
+            return;
+        }
+        if (state.socket && (state.socket.readyState === WebSocket.OPEN || state.socket.readyState === WebSocket.CONNECTING)) {
+            return;
+        }
+        const tokenPromise = state.socketToken
+            ? Promise.resolve(state.socketToken)
+            : requestWebSocketToken().then((token) => {
+                state.socketToken = token;
+                return token;
+            });
+        tokenPromise.then((token) => {
+            if (!token) {
+                throw new Error('Missing WebSocket token.');
+            }
+            if (state.socketReconnectTimer) {
+                clearTimeout(state.socketReconnectTimer);
+                state.socketReconnectTimer = null;
+            }
+            const separator = state.websocketUrl.includes('?') ? '&' : '?';
+            const url = `${state.websocketUrl}${separator}token=${encodeURIComponent(token)}`;
+            try {
+                const socket = new WebSocket(url);
+                state.socket = socket;
+                socket.addEventListener('open', () => {
+                    state.socketReady = true;
+                });
+                socket.addEventListener('message', handleSocketMessage);
+                socket.addEventListener('close', handleSocketClose);
+                socket.addEventListener('error', handleSocketError);
+            } catch (error) {
+                scheduleSocketReconnect();
+            }
+        }).catch(() => {
+            scheduleSocketReconnect();
+        });
+    }
+
+    function setupWebSocket() {
+        if (!state.websocketUrl || !state.websocketTokenUrl) {
+            return;
+        }
+        connectWebSocket();
     }
 
     function handleSend(event) {
@@ -822,6 +1055,7 @@
         hydrateSidebarFromDataset();
         startSidebarRefresh();
         startHeartbeat();
+        setupWebSocket();
     }
 
     init();

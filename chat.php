@@ -193,6 +193,8 @@ include __DIR__ . '/includes/common-header.php';
             data-mark-read-url="<?= htmlspecialchars(hh_url('api/chat/mark_read.php'), ENT_QUOTES, 'UTF-8') ?>"
             data-poll-url="<?= htmlspecialchars(hh_url('api/chat/poll.php'), ENT_QUOTES, 'UTF-8') ?>"
             data-heartbeat-url="<?= htmlspecialchars(hh_url('api/chat/heartbeat.php'), ENT_QUOTES, 'UTF-8') ?>"
+            data-websocket-url="<?= htmlspecialchars(chat_websocket_url(), ENT_QUOTES, 'UTF-8') ?>"
+            data-ws-token-url="<?= htmlspecialchars(hh_url('api/chat/ws_token.php'), ENT_QUOTES, 'UTF-8') ?>"
             data-initial-users="<?= $initialUsersJson ?>"
             data-initial-groups="<?= $initialGroupsJson ?>"
         >

@@ -315,3 +315,38 @@ SQL;
 if (!$mysqli->query($createUserPresenceTable)) {
     die('Failed to ensure user_presence table exists: ' . $mysqli->error);
 }
+
+$createChatTokensTable = <<<SQL
+CREATE TABLE IF NOT EXISTS chat_ws_tokens (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    token CHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX chat_ws_tokens_user_idx (user_id),
+    INDEX chat_ws_tokens_expiry_idx (expires_at),
+    CONSTRAINT chat_ws_tokens_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createChatTokensTable)) {
+    die('Failed to ensure chat_ws_tokens table exists: ' . $mysqli->error);
+}
+
+$createChatEventsTable = <<<SQL
+CREATE TABLE IF NOT EXISTS chat_ws_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    event_type VARCHAR(50) NOT NULL,
+    conversation_id INT UNSIGNED DEFAULT NULL,
+    recipients TEXT NOT NULL,
+    payload MEDIUMTEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX chat_ws_events_type_idx (event_type),
+    INDEX chat_ws_events_created_idx (created_at),
+    INDEX chat_ws_events_conversation_idx (conversation_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createChatEventsTable)) {
+    die('Failed to ensure chat_ws_events table exists: ' . $mysqli->error);
+}

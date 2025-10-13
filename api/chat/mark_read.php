@@ -47,6 +47,48 @@ try {
 
     $pdo->commit();
 
+    $readsStmt = $pdo->prepare(<<<SQL
+        SELECT
+            r.message_id,
+            r.user_id,
+            r.read_at,
+            u.full_name,
+            u.email
+        FROM chat_message_reads r
+        JOIN chat_messages m ON m.id = r.message_id
+        JOIN users u ON u.id = r.user_id
+        WHERE m.conversation_id = :conversation
+          AND r.user_id = :user
+          AND r.message_id <= :last_message
+        ORDER BY r.message_id ASC
+    SQL);
+    $readsStmt->execute([
+        'conversation' => $conversationId,
+        'user'         => $userId,
+        'last_message' => $lastMessageId,
+    ]);
+
+    $reads = [];
+    while ($row = $readsStmt->fetch()) {
+        $reads[] = [
+            'message_id' => (int) $row['message_id'],
+            'user_id'    => (int) $row['user_id'],
+            'name'       => $row['full_name'] !== '' ? $row['full_name'] : $row['email'],
+            'read_at'    => $row['read_at'],
+        ];
+    }
+
+    try {
+        $participants = chat_conversation_participant_ids($pdo, $conversationId);
+        chat_queue_event($pdo, 'read', [
+            'conversation_id' => $conversationId,
+            'user_id'         => $userId,
+            'reads'           => $reads,
+        ], $participants, $conversationId);
+    } catch (Throwable $eventError) {
+        // Ignore queue failures.
+    }
+
     chat_json_response(['status' => 'ok']);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {

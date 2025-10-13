@@ -55,22 +55,34 @@ try {
         chat_json_response(['error' => 'Message not found after creation.'], 404);
     }
 
-    chat_json_response([
-        'message' => [
-            'id'         => (int) $message['id'],
-            'sender_id'  => (int) $message['sender_id'],
-            'sender'     => $message['full_name'] !== '' ? $message['full_name'] : $message['email'],
-            'body'       => $message['body'],
-            'created_at' => $message['created_at'],
-            'is_mine'    => true,
-            'read_by'    => [
-                [
-                    'user_id' => $userId,
-                    'name'    => chat_current_user_name(),
-                    'read_at' => $message['created_at'],
-                ],
+    $participants = chat_conversation_participant_ids($pdo, $conversationId);
+    $messagePayload = [
+        'id'         => (int) $message['id'],
+        'sender_id'  => (int) $message['sender_id'],
+        'sender'     => $message['full_name'] !== '' ? $message['full_name'] : $message['email'],
+        'body'       => $message['body'],
+        'created_at' => $message['created_at'],
+        'is_mine'    => true,
+        'read_by'    => [
+            [
+                'user_id' => $userId,
+                'name'    => chat_current_user_name(),
+                'read_at' => $message['created_at'],
             ],
         ],
+    ];
+
+    try {
+        chat_queue_event($pdo, 'message', [
+            'conversation_id' => $conversationId,
+            'message'         => array_merge($messagePayload, ['is_mine' => false]),
+        ], $participants, $conversationId);
+    } catch (Throwable $eventError) {
+        // Ignore queuing failures to avoid interrupting the user experience.
+    }
+
+    chat_json_response([
+        'message' => $messagePayload,
     ]);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {

@@ -156,6 +156,13 @@ include __DIR__ . '/includes/common-header.php';
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-2">
                                     <a
+                                        href="<?php echo htmlspecialchars('add-property.php?edit=' . $propertyId, ENT_QUOTES, 'UTF-8'); ?>"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        title="Edit"
+                                    >
+                                        <i class="bx bx-edit"></i>
+                                    </a>
+                                    <a
                                         href="<?php echo htmlspecialchars('property-details.php?id=' . $propertyId, ENT_QUOTES, 'UTF-8'); ?>"
                                         class="btn btn-sm btn-outline-primary"
                                         title="View"

@@ -341,9 +341,21 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
+    function renderChart(el, options) {
+        const placeholder = el.querySelector('.chart-empty');
+        const chart = new ApexCharts(el, options);
+        chart.render().then(function () {
+            if (placeholder) {
+                placeholder.remove();
+            }
+        });
+
+        return chart;
+    }
+
     const propertyTypeChartEl = document.querySelector('#property-type-chart');
     if (propertyTypeChartEl) {
-        const propertyTypeChart = new ApexCharts(propertyTypeChartEl, {
+        renderChart(propertyTypeChartEl, {
             chart: { type: 'bar', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
             series: [{ name: 'Projects', data: {$propertyTypeSeriesJson} }],
             xaxis: {
@@ -368,12 +380,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-        propertyTypeChart.render();
     }
 
     const propertyStatusChartEl = document.querySelector('#property-status-chart');
     if (propertyStatusChartEl) {
-        const propertyStatusChart = new ApexCharts(propertyStatusChartEl, {
+        renderChart(propertyStatusChartEl, {
             chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
             series: {$propertyStatusSeriesJson},
             labels: {$propertyStatusLabelsJson},
@@ -402,12 +413,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-        propertyStatusChart.render();
     }
 
     const leadStageChartEl = document.querySelector('#lead-stage-chart');
     if (leadStageChartEl) {
-        const leadStageChart = new ApexCharts(leadStageChartEl, {
+        renderChart(leadStageChartEl, {
             chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
             series: {$leadStageSeriesJson},
             labels: {$leadStageLabelsJson},
@@ -434,12 +444,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-        leadStageChart.render();
     }
 
     const leadMonthlyChartEl = document.querySelector('#lead-monthly-chart');
     if (leadMonthlyChartEl) {
-        const leadMonthlyChart = new ApexCharts(leadMonthlyChartEl, {
+        renderChart(leadMonthlyChartEl, {
             chart: { type: 'area', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
             series: [{ name: 'Leads', data: {$leadMonthlySeriesJson} }],
             xaxis: {
@@ -473,12 +482,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-        leadMonthlyChart.render();
     }
 
     const userRoleChartEl = document.querySelector('#user-role-chart');
     if (userRoleChartEl) {
-        const userRoleChart = new ApexCharts(userRoleChartEl, {
+        renderChart(userRoleChartEl, {
             chart: { type: 'donut', height: 320, fontFamily: 'inherit' },
             series: {$usersByRoleSeriesJson},
             labels: {$usersByRoleLabelsJson},
@@ -505,7 +513,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 style: { color: '#94a3b8', fontWeight: 600 }
             }
         });
-        userRoleChart.render();
     }
 });
 </script>
@@ -549,11 +556,19 @@ include __DIR__ . '/includes/common-header.php';
                 <div class="insight-grid">
                     <div class="chart-card">
                         <div class="chart-card__title">Inventory by Property Type</div>
-                        <div class="chart-canvas" id="property-type-chart"></div>
+                        <div class="chart-canvas" id="property-type-chart">
+                            <?php if (empty($propertyTypeSeries)): ?>
+                                <div class="chart-empty">Add property details to visualise inventory by type.</div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <div class="chart-card">
                         <div class="chart-card__title">Project Status Mix</div>
-                        <div class="chart-canvas" id="property-status-chart"></div>
+                        <div class="chart-canvas" id="property-status-chart">
+                            <?php if (empty($propertyStatusSeries)): ?>
+                                <div class="chart-empty">Add property stages to compare project statuses.</div>
+                            <?php endif; ?>
+                        </div>
                         <ul class="chart-summary">
                             <?php if (!empty($propertyStatusDisplay)): ?>
                                 <?php foreach ($propertyStatusDisplay as $statusRow): ?>
@@ -589,7 +604,11 @@ include __DIR__ . '/includes/common-header.php';
                 <div class="insight-grid">
                     <div class="chart-card">
                         <div class="chart-card__title">Lead Stage Distribution</div>
-                        <div class="chart-canvas" id="lead-stage-chart"></div>
+                        <div class="chart-canvas" id="lead-stage-chart">
+                            <?php if (empty($leadStageSeries)): ?>
+                                <div class="chart-empty">Capture leads to see how they are progressing.</div>
+                            <?php endif; ?>
+                        </div>
                         <ul class="chart-summary">
                             <?php if (!empty($leadStageDisplay)): ?>
                                 <?php foreach ($leadStageDisplay as $stageRow): ?>
@@ -605,7 +624,11 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
                     <div class="chart-card">
                         <div class="chart-card__title">Monthly Lead Flow</div>
-                        <div class="chart-canvas" id="lead-monthly-chart"></div>
+                        <div class="chart-canvas" id="lead-monthly-chart">
+                            <?php if (empty($leadMonthlySeries) || (count(array_filter($leadMonthlySeries)) === 0)): ?>
+                                <div class="chart-empty">Lead history will appear once you start logging leads.</div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <div class="metric-card">
                         <div class="chart-card__title">Lead Snapshot</div>
@@ -637,7 +660,11 @@ include __DIR__ . '/includes/common-header.php';
                 <div class="insight-grid">
                     <div class="chart-card">
                         <div class="chart-card__title">Users by Role</div>
-                        <div class="chart-canvas" id="user-role-chart"></div>
+                        <div class="chart-canvas" id="user-role-chart">
+                            <?php if (empty($usersByRoleSeries)): ?>
+                                <div class="chart-empty">Invite teammates to track how your team is structured.</div>
+                            <?php endif; ?>
+                        </div>
                         <ul class="chart-summary">
                             <?php if (!empty($usersRoleDisplay)): ?>
                                 <?php foreach ($usersRoleDisplay as $roleRow): ?>

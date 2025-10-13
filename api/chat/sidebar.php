@@ -11,14 +11,18 @@ $pdo = hh_db();
 $userId = chat_current_user_id();
 
 try {
-    chat_record_presence($pdo, $userId);
-
     $currentUserStmt = $pdo->prepare('SELECT id, full_name, email, role FROM users WHERE id = :id LIMIT 1');
     $currentUserStmt->execute(['id' => $userId]);
     $currentUser = $currentUserStmt->fetch();
 
     if (!$currentUser) {
         chat_json_response(['error' => 'User not found.'], 404);
+    }
+
+    try {
+        chat_record_presence($pdo, $userId);
+    } catch (Throwable $presenceError) {
+        error_log(sprintf('Failed to record presence for user %d: %s', $userId, $presenceError->getMessage()));
     }
 
     $usersStmt = $pdo->prepare(<<<SQL

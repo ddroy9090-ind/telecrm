@@ -3,13 +3,12 @@
   <defs>
     <style>
       .cls-1 {
-        fill: #7ede88;
         font-family: Poppins-Bold, Poppins;
         font-size: 7.95px;
         font-weight: 700;
       }
 
-      .cls-2 {
+      .cls-1, .cls-2 {
         fill: #fff;
       }
     </style>

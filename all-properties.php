@@ -79,6 +79,34 @@ include __DIR__ . '/includes/common-header.php';
                 <p class="subheading">Manage and track all your real estate leads</p>
             </div>
         </div>
+        <div class="row g-3 lead-stats">
+            <div class="col-md-3">
+                <div class="stat-card total-leads">
+                    <h6>Offplan Projects</h6>
+                    <h2>0</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card active-leads">
+                    <h6>Buy Property</h6>
+                    <h2>0</h2>
+                    
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card closed-leads">
+                    <h6>Rent Property</h6>
+                    <h2>0</h2>
+                    
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card lost-leads">
+                    <h6>Active Projects</h6>
+                    <h2>0</h2>
+                </div>
+            </div>
+        </div>
         <?php if (!empty($flash['success'])): ?>
             <div class="alert alert-success" role="alert">
                 <?php echo htmlspecialchars($flash['success'], ENT_QUOTES, 'UTF-8'); ?>

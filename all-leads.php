@@ -147,6 +147,23 @@ function format_activity_timestamp(?string $rawTimestamp): string
     return date('M d, Y g:i A', $timestamp);
 }
 
+/**
+ * Build a pagination URL while preserving the active filters.
+ */
+function build_pagination_url(array $baseParams, int $page): string
+{
+    if ($page < 1) {
+        $page = 1;
+    }
+
+    $params = $baseParams;
+    $params['page'] = $page;
+
+    $queryString = http_build_query($params);
+
+    return 'all-leads.php' . ($queryString !== '' ? '?' . $queryString : '');
+}
+
 function ensure_lead_activity_table(mysqli $mysqli): bool
 {
     static $isReady = null;
@@ -812,6 +829,29 @@ if (strlen($filterSearch) > 255) {
     $filterSearch = function_exists('mb_substr') ? mb_substr($filterSearch, 0, 255, 'UTF-8') : substr($filterSearch, 0, 255);
 }
 
+$perPage = 10;
+$currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+if ($currentPage < 1) {
+    $currentPage = 1;
+}
+
+$paginationBaseParams = [];
+if ($filterStage !== '') {
+    $paginationBaseParams['stage'] = $filterStage;
+}
+if ($filterAssignedTo !== '') {
+    $paginationBaseParams['assigned_to'] = $filterAssignedTo;
+}
+if ($filterSource !== '') {
+    $paginationBaseParams['source'] = $filterSource;
+}
+if ($filterNationality !== '') {
+    $paginationBaseParams['nationality'] = $filterNationality;
+}
+if ($filterSearch !== '') {
+    $paginationBaseParams['search'] = $filterSearch;
+}
+
 $whereClauses = [];
 $queryParams = [];
 $paramTypes = '';
@@ -853,17 +893,72 @@ if ($filterSearch !== '') {
     $paramTypes .= 'sss';
 }
 
-$querySql = 'SELECT * FROM all_leads';
+$baseQuery = 'FROM all_leads';
 if (!empty($whereClauses)) {
-    $querySql .= ' WHERE ' . implode(' AND ', $whereClauses);
+    $baseQuery .= ' WHERE ' . implode(' AND ', $whereClauses);
 }
-$querySql .= ' ORDER BY created_at DESC';
+
+$countSql = 'SELECT COUNT(*) AS total ' . $baseQuery;
+$totalLeads = 0;
+
+if (!empty($queryParams)) {
+    $countStatement = $mysqli->prepare($countSql);
+    if ($countStatement instanceof mysqli_stmt) {
+        $countBindParams = array_merge([$paramTypes], $queryParams);
+        $countBindReferences = [];
+        foreach ($countBindParams as $key => &$value) {
+            $countBindReferences[$key] = &$value;
+        }
+        unset($value);
+
+        $countBindResult = $countStatement->bind_param(...$countBindReferences);
+        if ($countBindResult && $countStatement->execute()) {
+            $countResult = $countStatement->get_result();
+            if ($countResult instanceof mysqli_result) {
+                $countRow = $countResult->fetch_assoc();
+                if ($countRow) {
+                    $totalLeads = (int) ($countRow['total'] ?? 0);
+                }
+                $countResult->free();
+            }
+        }
+        $countStatement->close();
+    }
+} else {
+    $countQuery = $mysqli->query($countSql);
+    if ($countQuery instanceof mysqli_result) {
+        $countRow = $countQuery->fetch_assoc();
+        if ($countRow) {
+            $totalLeads = (int) ($countRow['total'] ?? 0);
+        }
+        $countQuery->free();
+    }
+}
+
+$totalPages = $totalLeads > 0 ? (int) ceil($totalLeads / $perPage) : 1;
+if ($totalPages < 1) {
+    $totalPages = 1;
+}
+if ($currentPage > $totalPages) {
+    $currentPage = $totalPages;
+}
+$offset = ($currentPage - 1) * $perPage;
+if ($offset < 0) {
+    $offset = 0;
+}
+
+$prevPage = $currentPage > 1 ? $currentPage - 1 : 1;
+$nextPage = $currentPage < $totalPages ? $currentPage + 1 : $totalPages;
+
+$dataSql = 'SELECT * ' . $baseQuery . ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
 
 $leads = [];
 if (!empty($queryParams)) {
-    $statement = $mysqli->prepare($querySql);
+    $statement = $mysqli->prepare($dataSql);
     if ($statement instanceof mysqli_stmt) {
-        $bindParams = array_merge([$paramTypes], $queryParams);
+        $paramTypesWithPagination = $paramTypes . 'ii';
+        $queryParamsWithPagination = array_merge($queryParams, [$perPage, $offset]);
+        $bindParams = array_merge([$paramTypesWithPagination], $queryParamsWithPagination);
         $bindReferences = [];
         foreach ($bindParams as $key => &$value) {
             $bindReferences[$key] = &$value;
@@ -883,7 +978,8 @@ if (!empty($queryParams)) {
         $statement->close();
     }
 } else {
-    $leadsQuery = $mysqli->query($querySql);
+    $dataSqlDirect = sprintf('SELECT * %s ORDER BY created_at DESC LIMIT %d OFFSET %d', $baseQuery, $perPage, $offset);
+    $leadsQuery = $mysqli->query($dataSqlDirect);
     if ($leadsQuery instanceof mysqli_result) {
         while ($row = $leadsQuery->fetch_assoc()) {
             $leads[] = $row;
@@ -1571,6 +1667,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                     </table>
 
                 </div>
+                <?php if ($totalPages > 1): ?>
+                    <nav class="p-3" aria-label="Lead pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item <?php echo $currentPage <= 1 ? 'disabled' : ''; ?>">
+                                <?php if ($currentPage <= 1): ?>
+                                    <span class="page-link" aria-hidden="true">&laquo;</span>
+                                <?php else: ?>
+                                    <a class="page-link" href="<?php echo htmlspecialchars(build_pagination_url($paginationBaseParams, $prevPage)); ?>" aria-label="Previous">&laquo;</a>
+                                <?php endif; ?>
+                            </li>
+                            <?php for ($page = 1; $page <= $totalPages; $page++): ?>
+                                <li class="page-item <?php echo $page === $currentPage ? 'active' : ''; ?>">
+                                    <?php if ($page === $currentPage): ?>
+                                        <span class="page-link" aria-current="page"><?php echo $page; ?></span>
+                                    <?php else: ?>
+                                        <a class="page-link" href="<?php echo htmlspecialchars(build_pagination_url($paginationBaseParams, $page)); ?>"><?php echo $page; ?></a>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item <?php echo $currentPage >= $totalPages ? 'disabled' : ''; ?>">
+                                <?php if ($currentPage >= $totalPages): ?>
+                                    <span class="page-link" aria-hidden="true">&raquo;</span>
+                                <?php else: ?>
+                                    <a class="page-link" href="<?php echo htmlspecialchars(build_pagination_url($paginationBaseParams, $nextPage)); ?>" aria-label="Next">&raquo;</a>
+                                <?php endif; ?>
+                            </li>
+                        </ul>
+                    </nav>
+                <?php endif; ?>
             </div>
         </div>
 

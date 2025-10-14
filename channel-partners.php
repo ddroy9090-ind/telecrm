@@ -517,6 +517,7 @@ include __DIR__ . '/includes/common-header.php';
                                     $email = $partner['email'] ?? '';
                                     $phone = $partner['phone'] ?? '';
                                     $country = $partner['country'] ?? '';
+                                    $city = $partner['city'] ?? '';
                                     $status = $partner['status'] ?? '';
                                     $commission = $partner['commission_structure'] ?? '';
                                     $whatsapp = $partner['whatsapp'] ?? '';
@@ -542,25 +543,51 @@ include __DIR__ . '/includes/common-header.php';
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="contact-info">
-                                                <span><i class="bi bi-person"></i> <?= htmlspecialchars($contactPerson, ENT_QUOTES, 'UTF-8') ?></span><br>
-                                                <?php if ($email !== ''): ?>
-                                                    <span><i class="bi bi-envelope"></i> <?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></span><br>
-                                                <?php endif; ?>
-                                                <span><i class="bi bi-telephone"></i> <?= htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php if ($contactPerson !== ''): ?>
+                                                <span class="d-block fw-semibold"><?= htmlspecialchars($contactPerson, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not provided</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($email !== ''): ?>
+                                                <a class="text-decoration-none" href="mailto:<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>">
+                                                    <i class="bi bi-envelope me-1"></i><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not provided</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <span><i class="bi bi-telephone me-1"></i><?= htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ?></span>
                                                 <?php if ($whatsapp !== ''): ?>
-                                                    <br><span><i class="bi bi-whatsapp"></i> <?= htmlspecialchars($whatsapp, ENT_QUOTES, 'UTF-8') ?></span>
+                                                    <span><i class="bi bi-whatsapp me-1 text-success"></i><?= htmlspecialchars($whatsapp, ENT_QUOTES, 'UTF-8') ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
                                         <td>
-                                            <?= htmlspecialchars($country, ENT_QUOTES, 'UTF-8') ?>
+                                            <?php
+                                            $locationParts = array_filter([$country, $city], static function ($value) {
+                                                return $value !== null && $value !== '';
+                                            });
+                                            $location = implode(', ', $locationParts);
+                                            ?>
+                                            <?php if ($location !== ''): ?>
+                                                <?= htmlspecialchars($location, ENT_QUOTES, 'UTF-8') ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not provided</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <span class="badge <?= $statusClass ?>"><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></span>
                                         </td>
                                         <td>
-                                            <?= htmlspecialchars($commission, ENT_QUOTES, 'UTF-8') ?>
+                                            <?php if ($commission !== ''): ?>
+                                                <?= htmlspecialchars($commission, ENT_QUOTES, 'UTF-8') ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not set</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <div class="dropdown" data-prevent-lead-open>
@@ -568,16 +595,19 @@ include __DIR__ . '/includes/common-header.php';
                                                     <i class="bi bi-three-dots-vertical fs-5"></i>
                                                 </button>
                                                 <ul class="dropdown-menu">
-                                                    <?php if ($email !== ''): ?>
-                                                        <li>
-                                                            <a class="dropdown-item" href="mailto:<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>">
-                                                                <i class="bi bi-envelope me-2"></i> Email Partner
-                                                            </a>
-                                                        </li>
-                                                    <?php endif; ?>
                                                     <li>
-                                                        <button class="dropdown-item" type="button" disabled>
-                                                            <i class="bi bi-info-circle me-2"></i> More actions coming soon
+                                                        <button class="dropdown-item" type="button" data-action="view" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                            <i class="bi bi-eye me-2"></i> View
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button class="dropdown-item" type="button" data-action="edit" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                            <i class="bi bi-pencil me-2"></i> Edit
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button class="dropdown-item text-danger" type="button" data-action="delete" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                            <i class="bi bi-trash me-2"></i> Delete
                                                         </button>
                                                     </li>
                                                 </ul>
@@ -587,7 +617,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
+                                    <td colspan="9" class="text-center py-4">
                                         No partners found. Use the "Add Partner" button to create one.
                                     </td>
                                 </tr>

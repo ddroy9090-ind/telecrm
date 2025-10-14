@@ -66,6 +66,8 @@ body.lead-sidebar-open {
 .text-decoration-none {
     text-decoration: none !important;
     color: #0f172a;
+    display: flex;
+    gap: 2px;
 }
 
 .badge {
@@ -1180,7 +1182,7 @@ button:focus:not(:focus-visible) {
     top: 0;
     left: 0;
     height: 100vh;
-    width: 270px;
+    width: 230px;
     background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
     color: #ffffff;
     border-right: 1px solid rgba(255, 255, 255, 0.12);
@@ -1505,7 +1507,7 @@ button:focus:not(:focus-visible) {
 
 /* Main Content Styles */
 .main-content {
-    margin-left: 270px;
+    margin-left: 230px;
     margin-top: 60px;
     padding: 20px;
     min-height: calc(100vh - 60px);
@@ -1790,7 +1792,7 @@ button:focus:not(:focus-visible) {
     font-weight: 600;
     padding: 14px 18px;
     border: none;
-    font-size: 17px;
+    font-size: 14px;
 }
 
 /* Table rows */
@@ -1800,8 +1802,8 @@ button:focus:not(:focus-visible) {
 }
 
 .lead-table tbody tr td {
-    font-size: 16px;
-    padding: 15px 20px;
+    font-size: 14px;
+    padding: 15px 10px;
 }
 
 /* 

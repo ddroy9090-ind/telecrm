@@ -496,11 +496,11 @@ include __DIR__ . '/includes/common-header.php';
                     <table class="table table-hover align-middle mb-0 lead-table">
                         <thead>
                             <tr>
-                                <th scope="col">Partner Code</th>
+                                <th scope="col">P Code</th>
                                 <th scope="col">Company Name</th>
-                                <th scope="col">Contact Person</th>
+                                <th scope="col">Name</th>
                                 <th scope="col">Email</th>
-                                <th scope="col">Phone/WhatsApp</th>
+                                <th scope="col">WhatsApp</th>
                                 <th scope="col">Country</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Commission</th>
@@ -551,7 +551,7 @@ include __DIR__ . '/includes/common-header.php';
                                         </td>
                                         <td>
                                             <?php if ($email !== ''): ?>
-                                                <a class="text-decoration-none" href="mailto:<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>">
+                                                <a class="text-decoration-none" href="javascript:void(0)">
                                                     <i class="bi bi-envelope me-1"></i><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>
                                                 </a>
                                             <?php else: ?>
@@ -580,7 +580,7 @@ include __DIR__ . '/includes/common-header.php';
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <span class="badge <?= $statusClass ?>"><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="badge badge-role-manager"><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></span>
                                         </td>
                                         <td>
                                             <?php if ($commission !== ''): ?>

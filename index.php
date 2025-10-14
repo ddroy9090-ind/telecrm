@@ -26,7 +26,14 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
                     <div class="col-lg-6">
                         <div class="right-search">
-                            <input type="text" class="form-control" placeholder="Search leads, projects, clients" />
+                            <div class="form-group mb-0">
+                                <input type="text" class="form-control" placeholder="Search leads, projects, clients" />
+                                <span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.3-4.3"></path>
+                                    </svg>
+                                </span>
+                            </div>
                             <select class="form-control select-dropDownClass" name="">
                                 <option>Last 30 Days</option>
                                 <option>Last 7 Days</option>
@@ -50,7 +57,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <h6>Total Leads</h6>
                                 <h2>1,847</h2>
                                 <p>Qualified, Site Visit, Offer stages</p>
-                                <div class="lead-metric-growth">
+                                <div class="lead-metric-growth blue">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+12.5%</span> <small>vs last month</small>
                                 </div>
@@ -67,7 +74,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <h6>Hot / Active Leads</h6>
                                 <h2>456</h2>
                                 <p>Ready for conversion</p>
-                                <div class="lead-metric-growth">
+                                <div class="lead-metric-growth green">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+8.2%</span> <small>vs last month</small>
                                 </div>
@@ -84,7 +91,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <h6>Closed Deals</h6>
                                 <h2>89</h2>
                                 <p>AED 124.5M total value</p>
-                                <div class="lead-metric-growth">
+                                <div class="lead-metric-growth red">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+15.8%</span> <small>vs last month</small>
                                 </div>
@@ -101,7 +108,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <h6>Channel Partners</h6>
                                 <h2>234</h2>
                                 <p>+18 new this month</p>
-                                <div class="lead-metric-growth">
+                                <div class="lead-metric-growth yellow">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+7.7%</span> <small>vs last month</small>
                                 </div>
@@ -115,7 +122,7 @@ include __DIR__ . '/includes/common-header.php';
             <div class="container-fluid">
                 <div class="row">
                     <!-- Lead Source Analytics -->
-                    <div class="col-lg-4">
+                    <div class="col-lg-5">
                         <div class="chart-section">
                             <h5 class="chart-title">Lead Source Analytics</h5>
                             <p class="chart-subtitle">Distribution by channel</p>
@@ -133,7 +140,7 @@ include __DIR__ . '/includes/common-header.php';
                         </div>
                     </div>
 
-                    <div class="col-lg-4">
+                    <div class="col-lg-3">
                         <div class="top-agents-card">
                             <div class="top-agents-header">
                                 <i class="bi bi-trophy"></i>
@@ -214,7 +221,7 @@ include __DIR__ . '/includes/common-header.php';
 
                                 <div class="agent-item">
                                     <div class="agent-info">
-                                        <div class="agent-avatar">AH</div>
+                                        <div class="agent-avatar">R</div>
                                         <div class="agent-details">
                                             <h6>Rahul</h6>
                                             <div class="agent-stats">
@@ -228,6 +235,7 @@ include __DIR__ . '/includes/common-header.php';
                                         <span>Total Value</span>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -426,8 +434,8 @@ include __DIR__ . '/includes/common-header.php';
                 </div>
             </div>
         </section>
-        <section class=" card lead-table-card">
-            <div class="container-fluid p-0">
+        <div class="container-fluid">
+            <section class="card lead-table-card">
                 <div class="card-body p-0">
                     <div class="inventory-header">
                         <div class="left">
@@ -532,8 +540,8 @@ include __DIR__ . '/includes/common-header.php';
                         </table>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </div>
 
 
     </main>

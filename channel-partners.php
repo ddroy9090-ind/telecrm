@@ -256,7 +256,7 @@ include __DIR__ . '/includes/common-header.php';
                     <div class="lead-sidebar__header-content">
                         <div class="lead-sidebar__header-text">
                             <p class="lead-sidebar__header-title mb-1">Add New Partner</p>
-                            <p class="text-muted small">Enter partner details to add them to your network</p>
+                            <p class="text-white small">Enter partner details to add them to your network</p>
                         </div>
                     </div>
                 </header>
@@ -288,12 +288,20 @@ include __DIR__ . '/includes/common-header.php';
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Country <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="country" required>
+                                    <select class="select-dropDownClass" name="country" required>
                                         <option value="">Select country</option>
-                                        <option value="UAE">UAE</option>
                                         <option value="India">India</option>
+                                        <option value="United Arab Emirates">United Arab Emirates (UAE)</option>
+                                        <option value="United Kingdom">United Kingdom (UK)</option>
+                                        <option value="United States">United States (USA)</option>
                                         <option value="Saudi Arabia">Saudi Arabia</option>
+                                        <option value="Canada">Canada</option>
+                                        <option value="Australia">Australia</option>
+                                        <option value="Qatar">Qatar</option>
+                                        <option value="Singapore">Singapore</option>
+                                        <option value="Germany">Germany</option>
                                     </select>
+
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">City</label>
@@ -323,7 +331,7 @@ include __DIR__ . '/includes/common-header.php';
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Status <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="status" required>
+                                    <select class="select-dropDownClass" name="status" required>
                                         <option value="Pending">Pending</option>
                                         <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>

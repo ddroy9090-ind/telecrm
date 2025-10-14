@@ -77,6 +77,12 @@
                 </ul>
             </li>
             <li>
+                <a href="channel-partners.php" class="sidebar-link">
+                    <span class="sidebar-icon"><i class="bx bx-network-chart"></i></span>
+                    <span class="sidebar-text">Channel Partners</span>
+                </a>
+            </li>
+            <li>
                 <a href="activity-log.php" class="sidebar-link">
                     <span class="sidebar-icon"><i class="bx bx-history"></i></span>
                     <span class="sidebar-text">Activity Log</span>

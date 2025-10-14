@@ -146,6 +146,16 @@
     background: rgba(34, 163, 111, 0.08);
 }
 
+.chat-list-item.is-self {
+    cursor: default;
+    background: rgba(34, 163, 111, 0.05);
+}
+
+.chat-list-item.is-self:hover {
+    background: rgba(34, 163, 111, 0.05);
+    transform: none;
+}
+
 .chat-list-item.active {
     background: linear-gradient(135deg, #22a36f, #15803d);
     color: #ffffff;
@@ -196,6 +206,26 @@
     color: rgba(15, 118, 110, 0.65);
     margin-left: 0.35rem;
     font-size: 0.75rem;
+}
+
+.chat-self-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(34, 163, 111, 0.15);
+    color: #166534;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.chat-list-item.active .chat-self-tag {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
 }
 
 .chat-list-item.active .chat-list-name small {

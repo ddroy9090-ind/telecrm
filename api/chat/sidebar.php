@@ -36,6 +36,7 @@ try {
                 WHEN up.last_seen IS NOT NULL AND up.last_seen >= (NOW() - INTERVAL 90 SECOND) THEN 1
                 ELSE 0
             END AS is_online,
+            CASE WHEN u.id = :me THEN 1 ELSE 0 END AS is_self,
             dc.id AS conversation_id,
             COALESCE(unread.unread_count, 0) AS unread_count
         FROM users u
@@ -51,8 +52,7 @@ try {
               AND (cp.last_read_message_id IS NULL OR m.id > cp.last_read_message_id)
             GROUP BY m.conversation_id
         ) unread ON unread.conversation_id = dc.id
-        WHERE u.id <> :me
-        ORDER BY u.full_name ASC
+        ORDER BY CASE WHEN u.id = :me THEN 0 ELSE 1 END, u.full_name ASC
     SQL);
 
     $usersStmt->execute(['me' => $userId]);
@@ -64,6 +64,7 @@ try {
             'email'           => $row['email'],
             'role'            => $row['role'],
             'is_online'       => (bool) $row['is_online'],
+            'is_self'         => (bool) $row['is_self'],
             'last_seen'       => $row['last_seen'],
             'conversation_id' => $row['conversation_id'] !== null ? (int) $row['conversation_id'] : null,
             'unread_count'    => (int) ($row['unread_count'] ?? 0),

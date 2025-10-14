@@ -384,8 +384,9 @@
                 return;
             }
             visibleCount += 1;
+            const isSelf = Boolean(user.is_self) || user.id === currentUserId;
             const item = createElement('div', {
-                className: 'chat-list-item',
+                className: `chat-list-item${isSelf ? ' is-self' : ''}`,
                 attrs: {
                     'data-user-id': user.id,
                     'data-name': name.toLowerCase(),
@@ -399,7 +400,12 @@
             const avatar = createElement('div', { className: 'chat-avatar', text: name.slice(0, 2).toUpperCase() });
             const body = createElement('div', { className: 'chat-list-body' });
             const title = createElement('div', { className: 'chat-list-name' });
-            title.textContent = name;
+            const nameSpan = createElement('span', { text: name });
+            title.appendChild(nameSpan);
+            if (isSelf) {
+                const selfTag = createElement('span', { className: 'chat-self-tag', text: 'You' });
+                title.appendChild(selfTag);
+            }
             if (user.role) {
                 const roleTag = createElement('small', { text: user.role });
                 title.appendChild(roleTag);
@@ -411,7 +417,8 @@
             const status = createElement('div', {
                 className: `chat-status ${user.is_online ? 'online' : 'offline'}`,
             });
-            status.innerHTML = `<span><span class="status-dot"></span>${user.is_online ? 'Online' : 'Offline'}</span>`;
+            const statusLabel = isSelf ? 'You' : (user.is_online ? 'Online' : 'Offline');
+            status.innerHTML = `<span><span class="status-dot"></span>${statusLabel}</span>`;
 
             item.appendChild(avatar);
             item.appendChild(body);
@@ -422,9 +429,13 @@
                 item.appendChild(badge);
             }
 
-            item.addEventListener('click', () => {
-                handleDirectSelection(user);
-            });
+            if (!isSelf) {
+                item.addEventListener('click', () => {
+                    handleDirectSelection(user);
+                });
+            } else {
+                item.setAttribute('aria-disabled', 'true');
+            }
 
             list.appendChild(item);
         });
@@ -498,6 +509,9 @@
     }
 
     function handleDirectSelection(user) {
+        if (Boolean(user.is_self) || user.id === currentUserId) {
+            return;
+        }
         state.currentPartnerId = user.id;
         if (user.conversation_id) {
             openConversation(user.conversation_id, {
@@ -968,6 +982,9 @@
         }
         container.innerHTML = '';
         state.sidebarData.users.forEach((user) => {
+            if (Boolean(user.is_self) || user.id === currentUserId) {
+                return;
+            }
             const option = createElement('div', { className: 'group-user-option' });
             const checkbox = createElement('input', {
                 attrs: {

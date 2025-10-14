@@ -499,8 +499,8 @@ include __DIR__ . '/includes/common-header.php';
                                 <th scope="col">Partner Code</th>
                                 <th scope="col">Company Name</th>
                                 <th scope="col">Contact Person</th>
-                                <!-- <th scope="col">Email</th>
-                                <th scope="col">Phone/WhatsApp</th> -->
+                                <th scope="col">Email</th>
+                                <th scope="col">Phone/WhatsApp</th>
                                 <th scope="col">Country</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Commission</th>

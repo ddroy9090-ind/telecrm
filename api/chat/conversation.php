@@ -57,9 +57,12 @@ try {
 
     $messageLimit = isset($_GET['limit']) ? max(10, min(500, (int) $_GET['limit'])) : 200;
 
-    $messageStmt = $pdo->prepare('SELECT m.id, m.sender_id, m.body, m.created_at, u.full_name, u.email FROM chat_messages m JOIN users u ON u.id = m.sender_id WHERE m.conversation_id = :conversation ORDER BY m.id DESC LIMIT :limit');
+    $messageSql = sprintf(
+        'SELECT m.id, m.sender_id, m.body, m.created_at, u.full_name, u.email FROM chat_messages m JOIN users u ON u.id = m.sender_id WHERE m.conversation_id = :conversation ORDER BY m.id DESC LIMIT %d',
+        $messageLimit
+    );
+    $messageStmt = $pdo->prepare($messageSql);
     $messageStmt->bindValue(':conversation', $conversationId, PDO::PARAM_INT);
-    $messageStmt->bindValue(':limit', $messageLimit, PDO::PARAM_INT);
     $messageStmt->execute();
     $messages = array_reverse($messageStmt->fetchAll());
 

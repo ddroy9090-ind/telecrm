@@ -324,6 +324,8 @@
         url.searchParams.set('conversation_id', String(conversationId));
         url.searchParams.set('limit', '200');
 
+        const requestedConversationId = conversationId;
+
         fetch(url.toString(), {
             credentials: 'same-origin',
             headers: {
@@ -332,6 +334,9 @@
         })
             .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
             .then((data) => {
+                if (state.currentConversationId !== requestedConversationId) {
+                    return;
+                }
                 if (!data || data.error) {
                     throw new Error(data && data.error ? data.error : 'Unable to load conversation.');
                 }
@@ -343,6 +348,9 @@
                 }
             })
             .catch((error) => {
+                if (state.currentConversationId !== requestedConversationId) {
+                    return;
+                }
                 showErrorState(error.message || 'Unable to load conversation.');
             });
     }
@@ -577,8 +585,9 @@
         if (!state.currentConversationId) {
             return;
         }
+        const currentConversationId = state.currentConversationId;
         const url = new URL(endpoints.conversation, window.location.origin);
-        url.searchParams.set('conversation_id', String(state.currentConversationId));
+        url.searchParams.set('conversation_id', String(currentConversationId));
         url.searchParams.set('limit', '200');
 
         fetch(url.toString(), {
@@ -587,6 +596,9 @@
         })
             .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
             .then((data) => {
+                if (state.currentConversationId !== currentConversationId) {
+                    return;
+                }
                 if (!data || data.error) {
                     return;
                 }

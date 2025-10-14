@@ -30,6 +30,9 @@ a {
     border-color: #02796f;
     color: #02796f;
 }
+ul.pagination.justify-content-center.mb-0 {
+    justify-content: end !important;
+}
 span.profile {
     display: inline-block;
     width: 30px;
@@ -1951,6 +1954,12 @@ button:focus:not(:focus-visible) {
     color: #fff;
 }
 
+.stage-badge.follow-up {
+    background-color: #008000 !important;
+    border-color: #008000;
+    color: #fff;
+}
+
 /* Contacted */
 .stage-badge.contacted {
     background-color: #008000 !important;
@@ -2227,7 +2236,7 @@ button:focus:not(:focus-visible) {
 .right-search {
     display: flex;
     width: 100%;
-    align-items: center;
+    /* align-items: center; */
     gap: 10px;
 }
 

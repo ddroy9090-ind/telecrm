@@ -241,7 +241,130 @@ include __DIR__ . '/includes/common-header.php';
         </div>
 
 
+        <div class="lead-sidebar-overlay" id="leadSidebarOverlay" hidden></div>
+        <aside class="lead-sidebar" id="leadSidebar" aria-hidden="true">
+            <div class="lead-sidebar__inner">
+                <header class="lead-sidebar__header">
+                    <div class="lead-sidebar__header-background"></div>
+                    <div class="lead-sidebar__header-actions">
+                        <button type="button" class="lead-sidebar__action-btn lead-sidebar__close" data-action="close" aria-label="Close sidebar">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="lead-sidebar__header-content">
+                        <div class="lead-sidebar__header-text">
+                            <p class="lead-sidebar__header-title mb-1">Add New Partner</p>
+                            <p class="text-muted small">Enter partner details to add them to your network</p>
+                        </div>
+                    </div>
+                </header>
 
+                <div class="lead-sidebar__body">
+                    <form id="addPartnerForm" class="lead-sidebar__form" novalidate>
+                        <section class="lead-sidebar__section">
+                            <h3 class="lead-sidebar__section-title">Basic Details</h3>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="company_name" placeholder="Enter company name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Contact Person <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="contact_person" placeholder="Full name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" name="email" placeholder="email@example.com" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" name="phone" placeholder="+971-50-123-4567" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">WhatsApp</label>
+                                    <input type="tel" class="form-control" name="whatsapp" placeholder="+971-50-123-4567">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Country <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="country" required>
+                                        <option value="">Select country</option>
+                                        <option value="UAE">UAE</option>
+                                        <option value="India">India</option>
+                                        <option value="Saudi Arabia">Saudi Arabia</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">City</label>
+                                    <input type="text" class="form-control" name="city" placeholder="Enter city">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Address</label>
+                                    <textarea class="form-control" name="address" placeholder="Full address" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="lead-sidebar__section mt-4">
+                            <h3 class="lead-sidebar__section-title">Compliance & Business</h3>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">RERA Number</label>
+                                    <input type="text" class="form-control" name="rera_number" placeholder="RERA-12345">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">License Number</label>
+                                    <input type="text" class="form-control" name="license_number" placeholder="LIC-67890">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Website</label>
+                                    <input type="url" class="form-control" name="website" placeholder="https://example.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="status" required>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Commission Structure <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="commission_structure" placeholder="e.g., 3% or 3000" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Remarks</label>
+                                    <textarea class="form-control" name="remarks" placeholder="Additional notes..." rows="2"></textarea>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="lead-sidebar__section mt-4">
+                            <h3 class="lead-sidebar__section-title">Documents Upload</h3>
+                            <div class="mb-3">
+                                <label class="form-label">RERA Certificate</label>
+                                <input type="file" class="form-control" name="rera_certificate" accept=".pdf,.jpg,.jpeg,.png">
+                                <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Trade License</label>
+                                <input type="file" class="form-control" name="trade_license" accept=".pdf,.jpg,.jpeg,.png">
+                                <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Agreement/MOU</label>
+                                <input type="file" class="form-control" name="agreement" accept=".pdf,.jpg,.jpeg,.png">
+                                <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
+                            </div>
+                        </section>
+
+                        <div class="text-end mt-4">
+                            <button type="submit" class="btn btn-primary me-2">Save Partner</button>
+                            <button type="button" class="btn btn-outline-secondary" data-action="close">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </aside>
     </main>
 </div>
 

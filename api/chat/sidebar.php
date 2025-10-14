@@ -36,26 +36,33 @@ try {
                 WHEN up.last_seen IS NOT NULL AND up.last_seen >= (NOW() - INTERVAL 90 SECOND) THEN 1
                 ELSE 0
             END AS is_online,
-            CASE WHEN u.id = :me THEN 1 ELSE 0 END AS is_self,
+            CASE WHEN u.id = :me_self THEN 1 ELSE 0 END AS is_self,
             dc.id AS conversation_id,
             COALESCE(unread.unread_count, 0) AS unread_count
         FROM users u
         LEFT JOIN user_presence up ON up.user_id = u.id
-        LEFT JOIN chat_conversations dc ON dc.direct_key = SHA2(CONCAT(LEAST(u.id, :me), ':', GREATEST(u.id, :me)), 256)
+        LEFT JOIN chat_conversations dc ON dc.direct_key = SHA2(CONCAT(LEAST(u.id, :me_direct_least), ':', GREATEST(u.id, :me_direct_greatest)), 256)
         LEFT JOIN (
             SELECT
                 m.conversation_id,
                 COUNT(*) AS unread_count
             FROM chat_messages m
-            INNER JOIN chat_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = :me
-            WHERE m.sender_id <> :me
+            INNER JOIN chat_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = :me_unread_participant
+            WHERE m.sender_id <> :me_unread_sender
               AND (cp.last_read_message_id IS NULL OR m.id > cp.last_read_message_id)
             GROUP BY m.conversation_id
         ) unread ON unread.conversation_id = dc.id
-        ORDER BY CASE WHEN u.id = :me THEN 0 ELSE 1 END, u.full_name ASC
+        ORDER BY CASE WHEN u.id = :me_order THEN 0 ELSE 1 END, u.full_name ASC
     SQL);
 
-    $usersStmt->execute(['me' => $userId]);
+    $usersStmt->execute([
+        'me_self'              => $userId,
+        'me_direct_least'      => $userId,
+        'me_direct_greatest'   => $userId,
+        'me_unread_participant' => $userId,
+        'me_unread_sender'     => $userId,
+        'me_order'             => $userId,
+    ]);
     $users = [];
     while ($row = $usersStmt->fetch()) {
         $users[] = [
@@ -82,7 +89,7 @@ try {
             lm.created_at AS last_message_at,
             sender.full_name AS last_message_sender
         FROM chat_conversations c
-        INNER JOIN chat_participants me_participant ON me_participant.conversation_id = c.id AND me_participant.user_id = :me
+        INNER JOIN chat_participants me_participant ON me_participant.conversation_id = c.id AND me_participant.user_id = :me_group_membership
         LEFT JOIN (
             SELECT
                 inner_m.conversation_id,
@@ -103,8 +110,8 @@ try {
                 m.conversation_id,
                 COUNT(*) AS unread_count
             FROM chat_messages m
-            INNER JOIN chat_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = :me
-            WHERE m.sender_id <> :me
+            INNER JOIN chat_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = :me_group_unread_participant
+            WHERE m.sender_id <> :me_group_unread_sender
               AND (cp.last_read_message_id IS NULL OR m.id > cp.last_read_message_id)
             GROUP BY m.conversation_id
         ) unread ON unread.conversation_id = c.id
@@ -112,7 +119,11 @@ try {
         ORDER BY COALESCE(lm.created_at, c.created_at) DESC, c.id DESC
     SQL);
 
-    $groupsStmt->execute(['me' => $userId]);
+    $groupsStmt->execute([
+        'me_group_membership'         => $userId,
+        'me_group_unread_participant' => $userId,
+        'me_group_unread_sender'      => $userId,
+    ]);
     $groups = $groupsStmt->fetchAll();
 
     $groupIds = array_map(static fn ($g) => (int) $g['id'], $groups);

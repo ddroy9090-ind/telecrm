@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use HouzzHunt\Controllers\SearchController;
 use HouzzHunt\Support\JsonResponder;
-use RuntimeException;
-use Throwable;
 
 try {
     [$container, $auth] = require __DIR__ . '/../bootstrap.php';

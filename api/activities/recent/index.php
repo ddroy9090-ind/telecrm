@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use HouzzHunt\Controllers\ActivitiesController;
 use HouzzHunt\Support\JsonResponder;
-use Throwable;
 
 try {
     [$container, $auth] = require __DIR__ . '/../../bootstrap.php';

@@ -16,9 +16,9 @@ final class InventoryController
         $this->inventoryService = $inventoryService;
     }
 
-    public function projects(string $rangeParam): array
+    public function projects(string $rangeParam, ?string $startDate = null, ?string $endDate = null): array
     {
-        $range = DateRange::fromPreset($rangeParam);
+        $range = DateRange::fromInput($rangeParam, $startDate, $endDate);
         $summary = $this->inventoryService->summary($range);
 
         return [

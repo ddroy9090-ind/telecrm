@@ -9,9 +9,33 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 require_once __DIR__ . '/includes/config.php';
 
-$allowedRanges = ['last_30_days', 'last_7_days', 'last_month', 'last_quarter', 'this_month'];
-$selectedRange = strtolower((string) ($_GET['range'] ?? 'last_30_days'));
-if (!in_array($selectedRange, $allowedRanges, true)) {
+$allowedRanges = ['last_30_days', 'last_7_days', 'last_month', 'last_quarter', 'this_month', 'custom'];
+$requestedRange = strtolower((string) ($_GET['range'] ?? 'last_30_days'));
+if (!in_array($requestedRange, $allowedRanges, true)) {
+    $requestedRange = 'last_30_days';
+}
+
+$rawStartDate = trim((string) ($_GET['start_date'] ?? ''));
+$rawEndDate = trim((string) ($_GET['end_date'] ?? ''));
+
+$startDate = null;
+if ($rawStartDate !== '') {
+    $startDateCandidate = \DateTimeImmutable::createFromFormat('Y-m-d', $rawStartDate);
+    if ($startDateCandidate instanceof \DateTimeImmutable) {
+        $startDate = $startDateCandidate->format('Y-m-d');
+    }
+}
+
+$endDate = null;
+if ($rawEndDate !== '') {
+    $endDateCandidate = \DateTimeImmutable::createFromFormat('Y-m-d', $rawEndDate);
+    if ($endDateCandidate instanceof \DateTimeImmutable) {
+        $endDate = $endDateCandidate->format('Y-m-d');
+    }
+}
+
+$selectedRange = $startDate !== null && $endDate !== null ? 'custom' : $requestedRange;
+if ($selectedRange === 'custom' && ($startDate === null || $endDate === null)) {
     $selectedRange = 'last_30_days';
 }
 
@@ -34,6 +58,8 @@ $dashboardConfig = [
     'defaultRange' => $selectedRange,
     'agentId' => $selectedAgentId,
     'source' => $selectedSource,
+    'startDate' => $startDate,
+    'endDate' => $endDate,
     'endpoints' => [
         'leadCounters' => hh_url('api/stats/lead-counters/index.php'),
         'leadSources' => hh_url('api/charts/lead-sources/index.php'),
@@ -87,7 +113,27 @@ include __DIR__ . '/includes/common-header.php';
                                 <option value="last_month" <?= $selectedRange === 'last_month' ? 'selected' : '' ?>>Last Month</option>
                                 <option value="last_quarter" <?= $selectedRange === 'last_quarter' ? 'selected' : '' ?>>Last Quarter</option>
                                 <option value="this_month" <?= $selectedRange === 'this_month' ? 'selected' : '' ?>>This Month</option>
+                                <option value="custom" <?= $selectedRange === 'custom' ? 'selected' : '' ?>>Custom Range</option>
                             </select>
+                            <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    name="start_date"
+                                    value="<?= $startDate !== null ? htmlspecialchars($startDate, ENT_QUOTES, 'UTF-8') : '' ?>"
+                                    placeholder="Start date"
+                                    data-dashboard-start
+                                />
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    name="end_date"
+                                    value="<?= $endDate !== null ? htmlspecialchars($endDate, ENT_QUOTES, 'UTF-8') : '' ?>"
+                                    placeholder="End date"
+                                    data-dashboard-end
+                                />
+                                <button type="button" class="btn btn-primary" data-dashboard-apply-range>Apply</button>
+                            </div>
                         </div>
                     </div>
                 </div>

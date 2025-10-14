@@ -40,12 +40,29 @@ try {
         $container->performanceService()
     );
 
+    $startDate = trim((string) ($_GET['start_date'] ?? ''));
+    $endDate = trim((string) ($_GET['end_date'] ?? ''));
+
     $result = $controller->performance(
         (string) ($_GET['range'] ?? 'last_30_days'),
-        $context
+        $context,
+        $startDate !== '' ? $startDate : null,
+        $endDate !== '' ? $endDate : null
     );
 
     JsonResponder::send($result);
+} catch (InvalidArgumentException $e) {
+    if (!headers_sent()) {
+        http_response_code(400);
+        header('Content-Type: application/json');
+    }
+
+    echo json_encode([
+        'error' => $e->getMessage(),
+        'meta' => [
+            'generated_at' => gmdate(DATE_ATOM),
+        ],
+    ], JSON_THROW_ON_ERROR);
 } catch (RuntimeException $e) {
     if (!headers_sent()) {
         http_response_code(400);

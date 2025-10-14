@@ -22,9 +22,9 @@ final class StatsController
     /**
      * @param array{role:string,user_id:int,user_name:?string,agent_filter_id?:int,agent_filter_name?:?string} $context
      */
-    public function leadCounters(string $rangeParam, array $context): array
+    public function leadCounters(string $rangeParam, array $context, ?string $startDate = null, ?string $endDate = null): array
     {
-        $range = DateRange::fromPreset($rangeParam);
+        $range = DateRange::fromInput($rangeParam, $startDate, $endDate);
         $counters = $this->leadStatsService->leadCounters($range, $context);
 
         return [
@@ -40,9 +40,9 @@ final class StatsController
     /**
      * @param array{role:string,user_id:int,user_name:?string,agent_filter_id?:int,agent_filter_name?:?string} $context
      */
-    public function performance(string $rangeParam, array $context): array
+    public function performance(string $rangeParam, array $context, ?string $startDate = null, ?string $endDate = null): array
     {
-        $range = DateRange::fromPreset($rangeParam);
+        $range = DateRange::fromInput($rangeParam, $startDate, $endDate);
         $stats = $this->performanceService->performance($range, $context);
 
         return [

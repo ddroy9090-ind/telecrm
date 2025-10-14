@@ -94,6 +94,30 @@ final class DateRange
         return new self($start, $end, $prevStart, $prevEnd, $label);
     }
 
+    public static function fromInput(?string $preset, ?string $startDate = null, ?string $endDate = null): self
+    {
+        $start = self::parseDateInput($startDate);
+        $end = self::parseDateInput($endDate);
+
+        if ($start !== null && $end !== null) {
+            $rangeStart = $start->setTime(0, 0, 0);
+            $rangeEnd = $end->setTime(23, 59, 59);
+
+            if ($rangeStart > $rangeEnd) {
+                throw new InvalidArgumentException('Start date must be on or before the end date.');
+            }
+
+            $length = (int) $rangeEnd->diff($rangeStart)->format('%a') + 1;
+            $previousEnd = $rangeStart->modify('-1 day')->setTime(23, 59, 59);
+            $daysToSubtract = max($length - 1, 0);
+            $previousStart = $previousEnd->modify(sprintf('-%d days', $daysToSubtract))->setTime(0, 0, 0);
+
+            return new self($rangeStart, $rangeEnd, $previousStart, $previousEnd, 'custom');
+        }
+
+        return self::fromPreset($preset);
+    }
+
     public function getStart(): DateTimeImmutable
     {
         return $this->start;
@@ -164,5 +188,24 @@ final class DateRange
         }
 
         return sprintf('%s - %s', $start->format('M j, Y'), $end->format('M j, Y'));
+    }
+
+    private static function parseDateInput(?string $value): ?DateTimeImmutable
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        $date = DateTimeImmutable::createFromFormat('Y-m-d', $trimmed);
+        if ($date === false) {
+            return null;
+        }
+
+        return $date;
     }
 }

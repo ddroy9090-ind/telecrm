@@ -26,7 +26,9 @@ include __DIR__ . '/includes/common-header.php';
                 </div>
                 <div class="col-lg-6">
                     <div class="text-end">
-                        <button class="btn btn-primary"><i class="bx bx-user-plus me-1"></i> Add Partner</button>
+                        <button type="button" class="btn btn-primary" data-open-lead-sidebar aria-controls="leadSidebar">
+                            <i class="bx bx-user-plus me-1"></i> Add Partner
+                        </button>
                     </div>
                 </div>
             </div>
@@ -266,7 +268,7 @@ include __DIR__ . '/includes/common-header.php';
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label class="form-label">Company Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="company_name" placeholder="Enter company name" required>
+                                    <input type="text" class="form-control" name="company_name" placeholder="Enter company name" required data-sidebar-focus>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Contact Person <span class="text-danger">*</span></label>

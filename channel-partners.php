@@ -8,6 +8,349 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 require_once __DIR__ . '/includes/config.php';
 
+try {
+    $pdo = hh_db();
+} catch (Throwable $exception) {
+    die('Unable to connect to the database.');
+}
+
+$createPartnersTableSql = <<<SQL
+    CREATE TABLE IF NOT EXISTS all_partners (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        partner_code VARCHAR(32) UNIQUE,
+        company_name VARCHAR(255) NOT NULL,
+        contact_person VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(64) NOT NULL,
+        whatsapp VARCHAR(64) DEFAULT NULL,
+        country VARCHAR(100) NOT NULL,
+        city VARCHAR(100) DEFAULT NULL,
+        address TEXT,
+        rera_number VARCHAR(100) DEFAULT NULL,
+        license_number VARCHAR(100) DEFAULT NULL,
+        website VARCHAR(255) DEFAULT NULL,
+        status ENUM('Pending', 'Active', 'Inactive') NOT NULL DEFAULT 'Pending',
+        commission_structure VARCHAR(100) NOT NULL,
+        remarks TEXT,
+        rera_certificate VARCHAR(255) DEFAULT NULL,
+        trade_license VARCHAR(255) DEFAULT NULL,
+        agreement VARCHAR(255) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+SQL;
+
+$pdo->exec($createPartnersTableSql);
+
+$uploadDirectory = __DIR__ . '/uploads/partners';
+$formErrors = [];
+$formValues = [
+    'company_name' => '',
+    'contact_person' => '',
+    'email' => '',
+    'phone' => '',
+    'whatsapp' => '',
+    'country' => '',
+    'city' => '',
+    'address' => '',
+    'rera_number' => '',
+    'license_number' => '',
+    'website' => '',
+    'status' => 'Pending',
+    'commission_structure' => '',
+    'remarks' => '',
+];
+
+$successMessage = '';
+
+$allowedStatuses = ['Pending', 'Active', 'Inactive'];
+
+$uploadedFilePaths = [];
+
+$sanitize = static function (?string $value): string {
+    return trim((string) $value);
+};
+
+$handleUpload = static function (string $fieldName) use (&$formErrors, &$uploadedFilePaths, $uploadDirectory): ?string {
+    if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
+        return null;
+    }
+
+    $file = $_FILES[$fieldName];
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        $formErrors[$fieldName] = 'Unable to upload the selected file. Please try again.';
+        return null;
+    }
+
+    $fileSize = (int) ($file['size'] ?? 0);
+    $maxSize = 5 * 1024 * 1024; // 5 MB limit.
+    if ($fileSize > $maxSize) {
+        $formErrors[$fieldName] = 'The uploaded file exceeds the 5MB size limit.';
+        return null;
+    }
+
+    $originalName = (string) ($file['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+    if (!in_array($extension, $allowedExtensions, true)) {
+        $formErrors[$fieldName] = 'Please upload a PDF, JPG, or PNG file.';
+        return null;
+    }
+
+    if (!is_dir($uploadDirectory)) {
+        if (!mkdir($uploadDirectory, 0775, true) && !is_dir($uploadDirectory)) {
+            $formErrors[$fieldName] = 'Unable to prepare the upload directory.';
+            return null;
+        }
+    }
+
+    $filename = sprintf(
+        '%s_%s.%s',
+        $fieldName,
+        bin2hex(random_bytes(8)),
+        $extension
+    );
+
+    $destinationPath = $uploadDirectory . DIRECTORY_SEPARATOR . $filename;
+
+    if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $destinationPath)) {
+        $formErrors[$fieldName] = 'Unable to move the uploaded file. Please try again.';
+        return null;
+    }
+
+    $uploadedFilePaths[] = $destinationPath;
+
+    return 'uploads/partners/' . $filename;
+};
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $formValues['company_name'] = $sanitize($_POST['company_name'] ?? '');
+    $formValues['contact_person'] = $sanitize($_POST['contact_person'] ?? '');
+    $formValues['email'] = $sanitize($_POST['email'] ?? '');
+    $formValues['phone'] = $sanitize($_POST['phone'] ?? '');
+    $formValues['whatsapp'] = $sanitize($_POST['whatsapp'] ?? '');
+    $formValues['country'] = $sanitize($_POST['country'] ?? '');
+    $formValues['city'] = $sanitize($_POST['city'] ?? '');
+    $formValues['address'] = $sanitize($_POST['address'] ?? '');
+    $formValues['rera_number'] = $sanitize($_POST['rera_number'] ?? '');
+    $formValues['license_number'] = $sanitize($_POST['license_number'] ?? '');
+    $formValues['website'] = $sanitize($_POST['website'] ?? '');
+    $formValues['status'] = $sanitize($_POST['status'] ?? 'Pending');
+    $formValues['commission_structure'] = $sanitize($_POST['commission_structure'] ?? '');
+    $formValues['remarks'] = $sanitize($_POST['remarks'] ?? '');
+
+    if ($formValues['company_name'] === '') {
+        $formErrors['company_name'] = 'Company name is required.';
+    }
+
+    if ($formValues['contact_person'] === '') {
+        $formErrors['contact_person'] = 'Contact person is required.';
+    }
+
+    if ($formValues['email'] === '' || !filter_var($formValues['email'], FILTER_VALIDATE_EMAIL)) {
+        $formErrors['email'] = 'A valid email address is required.';
+    }
+
+    if ($formValues['phone'] === '') {
+        $formErrors['phone'] = 'Phone number is required.';
+    }
+
+    if ($formValues['country'] === '') {
+        $formErrors['country'] = 'Country is required.';
+    }
+
+    if (!in_array($formValues['status'], $allowedStatuses, true)) {
+        $formErrors['status'] = 'Please select a valid status.';
+    }
+
+    if ($formValues['commission_structure'] === '') {
+        $formErrors['commission_structure'] = 'Commission structure is required.';
+    }
+
+    if ($formValues['website'] !== '' && !filter_var($formValues['website'], FILTER_VALIDATE_URL)) {
+        $formErrors['website'] = 'Please provide a valid website URL.';
+    }
+
+    $reraCertificatePath = null;
+    $tradeLicensePath = null;
+    $agreementPath = null;
+
+    if (empty($formErrors)) {
+        try {
+            $reraCertificatePath = $handleUpload('rera_certificate');
+            $tradeLicensePath = $handleUpload('trade_license');
+            $agreementPath = $handleUpload('agreement');
+        } catch (Throwable $uploadException) {
+            $formErrors['general'] = 'An unexpected error occurred while processing uploads.';
+        }
+    }
+
+    if (empty($formErrors)) {
+        try {
+            $pdo->beginTransaction();
+
+            $insertSql = <<<SQL
+                INSERT INTO all_partners (
+                    partner_code,
+                    company_name,
+                    contact_person,
+                    email,
+                    phone,
+                    whatsapp,
+                    country,
+                    city,
+                    address,
+                    rera_number,
+                    license_number,
+                    website,
+                    status,
+                    commission_structure,
+                    remarks,
+                    rera_certificate,
+                    trade_license,
+                    agreement
+                ) VALUES (
+                    NULL,
+                    :company_name,
+                    :contact_person,
+                    :email,
+                    :phone,
+                    :whatsapp,
+                    :country,
+                    :city,
+                    :address,
+                    :rera_number,
+                    :license_number,
+                    :website,
+                    :status,
+                    :commission_structure,
+                    :remarks,
+                    :rera_certificate,
+                    :trade_license,
+                    :agreement
+                )
+            SQL;
+
+            $statement = $pdo->prepare($insertSql);
+            $statement->execute([
+                ':company_name' => $formValues['company_name'],
+                ':contact_person' => $formValues['contact_person'],
+                ':email' => $formValues['email'],
+                ':phone' => $formValues['phone'],
+                ':whatsapp' => $formValues['whatsapp'] !== '' ? $formValues['whatsapp'] : null,
+                ':country' => $formValues['country'],
+                ':city' => $formValues['city'] !== '' ? $formValues['city'] : null,
+                ':address' => $formValues['address'] !== '' ? $formValues['address'] : null,
+                ':rera_number' => $formValues['rera_number'] !== '' ? $formValues['rera_number'] : null,
+                ':license_number' => $formValues['license_number'] !== '' ? $formValues['license_number'] : null,
+                ':website' => $formValues['website'] !== '' ? $formValues['website'] : null,
+                ':status' => $formValues['status'],
+                ':commission_structure' => $formValues['commission_structure'],
+                ':remarks' => $formValues['remarks'] !== '' ? $formValues['remarks'] : null,
+                ':rera_certificate' => $reraCertificatePath,
+                ':trade_license' => $tradeLicensePath,
+                ':agreement' => $agreementPath,
+            ]);
+
+            $newPartnerId = (int) $pdo->lastInsertId();
+            $partnerCode = sprintf('CP-%04d', $newPartnerId);
+
+            $updateStatement = $pdo->prepare('UPDATE all_partners SET partner_code = :partner_code WHERE id = :id');
+            $updateStatement->execute([
+                ':partner_code' => $partnerCode,
+                ':id' => $newPartnerId,
+            ]);
+
+            $pdo->commit();
+
+            header('Location: channel-partners.php?added=1');
+            exit;
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            foreach ($uploadedFilePaths as $path) {
+                if (is_string($path) && $path !== '' && file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+
+            $formErrors['general'] = 'Unable to save the partner at this time. Please try again.';
+        }
+    } else {
+        foreach ($uploadedFilePaths as $path) {
+            if (is_string($path) && $path !== '' && file_exists($path)) {
+                @unlink($path);
+            }
+        }
+    }
+}
+
+if (isset($_GET['added']) && $_GET['added'] === '1') {
+    $successMessage = 'Partner has been added successfully.';
+}
+
+try {
+    $partnersQuery = $pdo->query('SELECT * FROM all_partners ORDER BY created_at DESC');
+    $partners = $partnersQuery ? $partnersQuery->fetchAll(PDO::FETCH_ASSOC) : [];
+} catch (Throwable $exception) {
+    $partners = [];
+    if (!isset($formErrors['general'])) {
+        $formErrors['general'] = 'Unable to load the partner list.';
+    }
+}
+
+$totalPartners = count($partners);
+$activePartners = 0;
+$pendingPartners = 0;
+$inactivePartners = 0;
+
+foreach ($partners as $partnerRow) {
+    $status = $partnerRow['status'] ?? '';
+    if ($status === 'Active') {
+        $activePartners++;
+    } elseif ($status === 'Pending') {
+        $pendingPartners++;
+    } elseif ($status === 'Inactive') {
+        $inactivePartners++;
+    }
+}
+
+if (!isset($pageInlineScripts) || !is_array($pageInlineScripts)) {
+    $pageInlineScripts = [];
+}
+
+$pageInlineScripts[] = <<<HTML
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var addPartnerButton = document.querySelector('[data-open-lead-sidebar]');
+        if (!addPartnerButton) {
+            return;
+        }
+
+        var preventSelector = '[data-prevent-lead-open]';
+        document.querySelectorAll('[data-partner-status]').forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                if (event.target.closest(preventSelector)) {
+                    return;
+                }
+
+                if (row.getAttribute('data-partner-status') !== 'Active') {
+                    return;
+                }
+
+                addPartnerButton.click();
+            });
+        });
+    });
+</script>
+HTML;
+
 $pageTitle = 'Channel Partners';
 
 include __DIR__ . '/includes/common-header.php';
@@ -36,31 +379,51 @@ include __DIR__ . '/includes/common-header.php';
                 <div class="col-md-3">
                     <div class="stat-card total-leads">
                         <h6>Total Partners</h6>
-                        <h2>6</h2>
+                        <h2><?= (int) $totalPartners ?></h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card active-leads">
                         <h6>Active</h6>
-                        <h2>3</h2>
+                        <h2><?= (int) $activePartners ?></h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card closed-leads">
                         <h6>Pending</h6>
-                        <h2>1</h2>
+                        <h2><?= (int) $pendingPartners ?></h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card lost-leads">
                         <h6>Inactive</h6>
-                        <h2>1</h2>
+                        <h2><?= (int) $inactivePartners ?></h2>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="container-fluid">
+            <?php if ($successMessage !== ''): ?>
+                <div class="alert alert-success" role="alert">
+                    <?= htmlspecialchars($successMessage, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($formErrors)): ?>
+                <div class="alert alert-danger" role="alert">
+                    <ul class="mb-0 ps-3">
+                        <?php foreach ($formErrors as $errorKey => $errorMessage): ?>
+                            <?php if ($errorKey === 'general'): ?>
+                                <li><?= htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') ?></li>
+                            <?php elseif (is_string($errorMessage) && $errorMessage !== ''): ?>
+                                <li><?= htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') ?></li>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
             <!-- Bootstrap row used below (BOOTSTRAP class used by .row); note row itself has bootstrap class only -->
             <div class="row">
                 <!-- To respect "no mixing" rule: each column uses Bootstrap col-* classes only -->
@@ -145,78 +508,90 @@ include __DIR__ . '/includes/common-header.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="lead-table-row" data-lead-json='{"id":1,"name":"John Doe","email":"john@example.com","phone":"+971 555 1234","stage":"New Lead","stageClass":"stage-new","source":"Website","assignedTo":"Kasim","avatarInitial":"J"}' data-lead-id="1" data-lead-name="John Doe" tabindex="0" role="button" aria-label="View details for John Doe">
-                                <td>
-                                    #12
-                                </td>
-                                <td>
-                                    <div class="lead-info">
-                                        <div class="avatar" data-lead-avatar>R</div>
-                                        <div><strong data-lead-name>Reliant Surveyors</strong></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="contact-info" data-lead-contact>
-                                        <span data-lead-contact-email><i class="bi bi-envelope"></i> john@example.com</span><br>
-                                        <span data-lead-contact-phone><i class="bi bi-telephone"></i> +971 555 1234</span>
-                                    </div>
-                                </td>
-                                <td data-lead-stage>
-                                    <div class="stage-badge stage-new" data-lead-stage-pill>New Lead</div>
-                                </td>
-                                <td>
-                                    <div class="assigned-dropdown" data-prevent-lead-open>
-                                        <select class="form-select assigned-select" data-lead-assigned-select>
-                                            <option value="">Unassigned</option>
-                                            <option value="Kasim" selected>Kasim</option>
-                                            <option value="Shoaib">Shoaib</option>
-                                            <option value="Ravi">Ravi</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td data-lead-source>30%</td>
-                                <td>
-                                    <div class="dropdown" data-prevent-lead-open>
-                                        <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-three-dots-vertical fs-5"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><button class="dropdown-item" type="button" data-lead-action="view">
-                                                    <i class="bi bi-eye me-2"></i> View Details
-                                                </button></li>
+                            <?php if (!empty($partners)): ?>
+                                <?php foreach ($partners as $partner): ?>
+                                    <?php
+                                    $partnerCode = $partner['partner_code'] ?: sprintf('CP-%04d', (int) $partner['id']);
+                                    $companyName = $partner['company_name'] ?? '';
+                                    $contactPerson = $partner['contact_person'] ?? '';
+                                    $email = $partner['email'] ?? '';
+                                    $phone = $partner['phone'] ?? '';
+                                    $country = $partner['country'] ?? '';
+                                    $status = $partner['status'] ?? '';
+                                    $commission = $partner['commission_structure'] ?? '';
+                                    $whatsapp = $partner['whatsapp'] ?? '';
+                                    $avatarInitial = mb_strtoupper(mb_substr($companyName !== '' ? $companyName : ($contactPerson !== '' ? $contactPerson : 'P'), 0, 1, 'UTF-8'));
+                                    $statusClass = 'bg-secondary';
 
-                                            <li><button class="dropdown-item" type="button" data-lead-action="edit">
-                                                    <i class="bi bi-pencil-square me-2"></i> Edit Partner
-                                                </button></li>
-
-                                            <li><button class="dropdown-item" type="button" data-lead-action="documents">
-                                                    <i class="bi bi-file-earmark-text me-2"></i> Documents
-                                                </button></li>
-
-                                            <li><button class="dropdown-item active-item" type="button" data-lead-action="mark-active">
-                                                    <i class="bi bi-check-circle me-2"></i> Mark as Active
-                                                </button></li>
-
-                                            <li><button class="dropdown-item" type="button" data-lead-action="mark-inactive">
-                                                    <i class="bi bi-x-circle me-2"></i> Mark as Inactive
-                                                </button></li>
-
-                                            <li><button class="dropdown-item" type="button" data-lead-action="duplicate">
-                                                    <i class="bi bi-files me-2"></i> Duplicate
-                                                </button></li>
-
-                                            <li><button class="dropdown-item" type="button" data-lead-action="archive">
-                                                    <i class="bi bi-archive me-2"></i> Archive
-                                                </button></li>
-
-                                            <li><button class="dropdown-item text-danger" type="button" data-lead-action="delete" data-lead-id="1" data-lead-name="John Doe">
-                                                    <i class="bi bi-trash me-2"></i> Delete
-                                                </button></li>
-                                        </ul>
-
-                                    </div>
-                                </td>
-                            </tr>
+                                    if ($status === 'Active') {
+                                        $statusClass = 'bg-success';
+                                    } elseif ($status === 'Pending') {
+                                        $statusClass = 'bg-warning text-dark';
+                                    } elseif ($status === 'Inactive') {
+                                        $statusClass = 'bg-dark';
+                                    }
+                                    ?>
+                                    <tr class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
+                                        <td>
+                                            <?= htmlspecialchars($partnerCode, ENT_QUOTES, 'UTF-8') ?>
+                                        </td>
+                                        <td>
+                                            <div class="lead-info">
+                                                <div class="avatar" data-lead-avatar><?= htmlspecialchars($avatarInitial, ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div><strong><?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="contact-info">
+                                                <span><i class="bi bi-person"></i> <?= htmlspecialchars($contactPerson, ENT_QUOTES, 'UTF-8') ?></span><br>
+                                                <?php if ($email !== ''): ?>
+                                                    <span><i class="bi bi-envelope"></i> <?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?></span><br>
+                                                <?php endif; ?>
+                                                <span><i class="bi bi-telephone"></i> <?= htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <?php if ($whatsapp !== ''): ?>
+                                                    <br><span><i class="bi bi-whatsapp"></i> <?= htmlspecialchars($whatsapp, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <?= htmlspecialchars($country, ENT_QUOTES, 'UTF-8') ?>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?= $statusClass ?>"><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></span>
+                                        </td>
+                                        <td>
+                                            <?= htmlspecialchars($commission, ENT_QUOTES, 'UTF-8') ?>
+                                        </td>
+                                        <td>
+                                            <div class="dropdown" data-prevent-lead-open>
+                                                <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="bi bi-three-dots-vertical fs-5"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <?php if ($email !== ''): ?>
+                                                        <li>
+                                                            <a class="dropdown-item" href="mailto:<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>">
+                                                                <i class="bi bi-envelope me-2"></i> Email Partner
+                                                            </a>
+                                                        </li>
+                                                    <?php endif; ?>
+                                                    <li>
+                                                        <button class="dropdown-item" type="button" disabled>
+                                                            <i class="bi bi-info-circle me-2"></i> More actions coming soon
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        No partners found. Use the "Add Partner" button to create one.
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -262,54 +637,62 @@ include __DIR__ . '/includes/common-header.php';
                 </header>
 
                 <div class="lead-sidebar__body">
-                    <form id="addPartnerForm" class="lead-sidebar__form" novalidate>
+                    <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data" novalidate>
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Basic Details</h3>
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label class="form-label">Company Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="company_name" placeholder="Enter company name" required data-sidebar-focus>
+                                    <input type="text" class="form-control" name="company_name" placeholder="Enter company name" required data-sidebar-focus value="<?= htmlspecialchars($formValues['company_name'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Contact Person <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="contact_person" placeholder="Full name" required>
+                                    <input type="text" class="form-control" name="contact_person" placeholder="Full name" required value="<?= htmlspecialchars($formValues['contact_person'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" name="email" placeholder="email@example.com" required>
+                                    <input type="email" class="form-control" name="email" placeholder="email@example.com" required value="<?= htmlspecialchars($formValues['email'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Phone <span class="text-danger">*</span></label>
-                                    <input type="tel" class="form-control" name="phone" placeholder="+971-50-123-4567" required>
+                                    <input type="tel" class="form-control" name="phone" placeholder="+971-50-123-4567" required value="<?= htmlspecialchars($formValues['phone'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">WhatsApp</label>
-                                    <input type="tel" class="form-control" name="whatsapp" placeholder="+971-50-123-4567">
+                                    <input type="tel" class="form-control" name="whatsapp" placeholder="+971-50-123-4567" value="<?= htmlspecialchars($formValues['whatsapp'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Country <span class="text-danger">*</span></label>
                                     <select class="select-dropDownClass" name="country" required>
                                         <option value="">Select country</option>
-                                        <option value="India">India</option>
-                                        <option value="United Arab Emirates">United Arab Emirates (UAE)</option>
-                                        <option value="United Kingdom">United Kingdom (UK)</option>
-                                        <option value="United States">United States (USA)</option>
-                                        <option value="Saudi Arabia">Saudi Arabia</option>
-                                        <option value="Canada">Canada</option>
-                                        <option value="Australia">Australia</option>
-                                        <option value="Qatar">Qatar</option>
-                                        <option value="Singapore">Singapore</option>
-                                        <option value="Germany">Germany</option>
+                                        <?php
+                                        $countries = [
+                                            'India',
+                                            'United Arab Emirates',
+                                            'United Kingdom',
+                                            'United States',
+                                            'Saudi Arabia',
+                                            'Canada',
+                                            'Australia',
+                                            'Qatar',
+                                            'Singapore',
+                                            'Germany',
+                                        ];
+                                        foreach ($countries as $countryOption):
+                                            $isSelected = $formValues['country'] === $countryOption;
+                                            ?>
+                                            <option value="<?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?>" <?= $isSelected ? 'selected' : '' ?>><?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
                                     </select>
 
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">City</label>
-                                    <input type="text" class="form-control" name="city" placeholder="Enter city">
+                                    <input type="text" class="form-control" name="city" placeholder="Enter city" value="<?= htmlspecialchars($formValues['city'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Address</label>
-                                    <textarea class="form-control" name="address" placeholder="Full address" rows="2"></textarea>
+                                    <textarea class="form-control" name="address" placeholder="Full address" rows="2"><?= htmlspecialchars($formValues['address'], ENT_QUOTES, 'UTF-8') ?></textarea>
                                 </div>
                             </div>
                         </section>
@@ -319,31 +702,31 @@ include __DIR__ . '/includes/common-header.php';
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">RERA Number</label>
-                                    <input type="text" class="form-control" name="rera_number" placeholder="RERA-12345">
+                                    <input type="text" class="form-control" name="rera_number" placeholder="RERA-12345" value="<?= htmlspecialchars($formValues['rera_number'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">License Number</label>
-                                    <input type="text" class="form-control" name="license_number" placeholder="LIC-67890">
+                                    <input type="text" class="form-control" name="license_number" placeholder="LIC-67890" value="<?= htmlspecialchars($formValues['license_number'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Website</label>
-                                    <input type="url" class="form-control" name="website" placeholder="https://example.com">
+                                    <input type="url" class="form-control" name="website" placeholder="https://example.com" value="<?= htmlspecialchars($formValues['website'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Status <span class="text-danger">*</span></label>
                                     <select class="select-dropDownClass" name="status" required>
-                                        <option value="Pending">Pending</option>
-                                        <option value="Active">Active</option>
-                                        <option value="Inactive">Inactive</option>
+                                        <?php foreach ($allowedStatuses as $statusOption): ?>
+                                            <option value="<?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?>" <?= $formValues['status'] === $statusOption ? 'selected' : '' ?>><?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Commission Structure <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="commission_structure" placeholder="e.g., 3% or 3000" required>
+                                    <input type="text" class="form-control" name="commission_structure" placeholder="e.g., 3% or 3000" required value="<?= htmlspecialchars($formValues['commission_structure'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Remarks</label>
-                                    <textarea class="form-control" name="remarks" placeholder="Additional notes..." rows="2"></textarea>
+                                    <textarea class="form-control" name="remarks" placeholder="Additional notes..." rows="2"><?= htmlspecialchars($formValues['remarks'], ENT_QUOTES, 'UTF-8') ?></textarea>
                                 </div>
                             </div>
                         </section>

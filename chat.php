@@ -160,7 +160,6 @@ try {
         ];
     }
 } catch (Throwable $sidebarError) {
-    // If fetching sidebar data fails we fall back to an empty state.
     $initialUsers = [];
     $initialGroups = [];
 }
@@ -182,7 +181,7 @@ include __DIR__ . '/includes/common-header.php';
     <main class="main-content chat-page">
         <div
             id="telecrm-chat-app"
-            class="chat-app"
+            class="chat-shell"
             data-current-user-id="<?= htmlspecialchars((string) $currentUser['id'], ENT_QUOTES, 'UTF-8') ?>"
             data-current-user-name="<?= htmlspecialchars($currentUser['full_name'] !== '' ? $currentUser['full_name'] : $currentUser['email'], ENT_QUOTES, 'UTF-8') ?>"
             data-empty-illustration="<?= htmlspecialchars(hh_asset('assets/images/chat-empty-state.svg'), ENT_QUOTES, 'UTF-8') ?>"
@@ -190,152 +189,143 @@ include __DIR__ . '/includes/common-header.php';
             data-conversation-url="<?= htmlspecialchars(hh_url('api/chat/conversation.php'), ENT_QUOTES, 'UTF-8') ?>"
             data-create-url="<?= htmlspecialchars(hh_url('api/chat/create_conversation.php'), ENT_QUOTES, 'UTF-8') ?>"
             data-send-url="<?= htmlspecialchars(hh_url('api/chat/send_message.php'), ENT_QUOTES, 'UTF-8') ?>"
-            data-typing-url="<?= htmlspecialchars(hh_url('api/chat/typing.php'), ENT_QUOTES, 'UTF-8') ?>"
             data-mark-read-url="<?= htmlspecialchars(hh_url('api/chat/mark_read.php'), ENT_QUOTES, 'UTF-8') ?>"
-            data-poll-url="<?= htmlspecialchars(hh_url('api/chat/poll.php'), ENT_QUOTES, 'UTF-8') ?>"
-            data-heartbeat-url="<?= htmlspecialchars(hh_url('api/chat/heartbeat.php'), ENT_QUOTES, 'UTF-8') ?>"
-            data-websocket-url="<?= htmlspecialchars(chat_websocket_url(), ENT_QUOTES, 'UTF-8') ?>"
-            data-ws-token-url="<?= htmlspecialchars(hh_url('api/chat/ws_token.php'), ENT_QUOTES, 'UTF-8') ?>"
             data-initial-users="<?= $initialUsersJson ?>"
             data-initial-groups="<?= $initialGroupsJson ?>"
         >
             <aside class="chat-sidebar">
-                <div class="chat-sidebar-header">
+                <div class="chat-sidebar__header">
                     <div>
-                        <h2 class="chat-sidebar-title">Team Chat</h2>
-                        <p class="chat-sidebar-subtitle">Connect with your team in real-time</p>
+                        <h2 class="chat-sidebar__title">Team Chat</h2>
+                        <p class="chat-sidebar__subtitle">Connect with your teammates instantly</p>
                     </div>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newGroupModal">
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newGroupModal">
                         <i class="bx bx-user-plus"></i>
                         <span>Create Group</span>
                     </button>
                 </div>
 
-                <div class="chat-sidebar-search">
+                <div class="chat-sidebar__search">
                     <i class="bx bx-search"></i>
-                    <input type="search" id="chatSearchInput" placeholder="Search people or groups" class="form-control" autocomplete="off">
+                    <input type="search" id="chatSearchInput" class="form-control" placeholder="Search conversations" autocomplete="off">
                 </div>
 
-                <div class="chat-sidebar-section" id="chatUsersSection">
-                    <div class="chat-section-heading">Direct Messages</div>
-                    <div class="chat-list" id="chatUserList">
+                <section class="chat-sidebar__section">
+                    <header class="chat-sidebar__section-header">
+                        <span>People</span>
+                    </header>
+                    <div class="chat-entity-list" id="chatUserList">
                         <?php if (!empty($initialUsers)): ?>
                             <?php foreach ($initialUsers as $user): ?>
                                 <?php
                                 $displayName = $user['name'];
                                 $initials = strtoupper(substr($displayName, 0, 2));
-                                $statusClass = $user['is_online'] ? 'online' : 'offline';
-                                $isSelf = !empty($user['is_self']);
-                                $statusLabel = $isSelf ? 'You' : ($user['is_online'] ? 'Online' : 'Offline');
+                                $statusClass = $user['is_online'] ? 'is-online' : 'is-offline';
+                                $statusLabel = $user['is_self'] ? 'You' : ($user['is_online'] ? 'Online' : 'Offline');
                                 ?>
-                                <div class="chat-list-item<?= $isSelf ? ' is-self' : '' ?>" data-user-id="<?= htmlspecialchars((string) $user['id'], ENT_QUOTES, 'UTF-8') ?>" data-name="<?= htmlspecialchars(strtolower($displayName), ENT_QUOTES, 'UTF-8') ?>"<?= $isSelf ? ' aria-disabled="true"' : '' ?>>
-                                    <div class="chat-avatar"><?= htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') ?></div>
-                                    <div class="chat-list-body">
-                                        <div class="chat-list-name">
+                                <div
+                                    class="chat-entity<?= !empty($user['is_self']) ? ' chat-entity--self' : '' ?>"
+                                    data-entity="user"
+                                    data-user-id="<?= htmlspecialchars((string) $user['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                    data-conversation-id="<?= $user['conversation_id'] !== null ? htmlspecialchars((string) $user['conversation_id'], ENT_QUOTES, 'UTF-8') : '' ?>"
+                                    data-search="<?= htmlspecialchars(strtolower($displayName . ' ' . $user['email']), ENT_QUOTES, 'UTF-8') ?>"
+                                >
+                                    <div class="chat-entity__avatar" aria-hidden="true"><?= htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') ?></div>
+                                    <div class="chat-entity__details">
+                                        <div class="chat-entity__name">
                                             <span><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></span>
-                                            <?php if ($isSelf): ?>
-                                                <span class="chat-self-tag">You</span>
-                                            <?php endif; ?>
                                             <?php if (!empty($user['role'])): ?>
                                                 <small><?= htmlspecialchars($user['role'], ENT_QUOTES, 'UTF-8') ?></small>
                                             <?php endif; ?>
                                         </div>
-                                        <div class="chat-list-preview"><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></div>
+                                        <div class="chat-entity__meta">
+                                            <span><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        </div>
                                     </div>
-                                    <div class="chat-status <?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>">
-                                        <span><span class="status-dot"></span><?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                                    <div class="chat-entity__status <?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>">
+                                        <span class="status-dot"></span>
+                                        <span><?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?></span>
                                     </div>
                                     <?php if (!empty($user['unread_count'])): ?>
-                                        <div class="chat-badge"><?= htmlspecialchars((string) $user['unread_count'], ENT_QUOTES, 'UTF-8') ?></div>
+                                        <span class="chat-entity__badge"><?= htmlspecialchars((string) $user['unread_count'], ENT_QUOTES, 'UTF-8') ?></span>
                                     <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <div class="chat-placeholder">No teammates available right now.</div>
+                            <div class="chat-empty">No teammates available yet.</div>
                         <?php endif; ?>
                     </div>
-                </div>
+                </section>
 
-                <div class="chat-sidebar-section" id="chatGroupsSection">
-                    <div class="chat-section-heading">Groups</div>
-                    <div class="chat-list" id="chatGroupList">
+                <section class="chat-sidebar__section">
+                    <header class="chat-sidebar__section-header">
+                        <span>Groups</span>
+                    </header>
+                    <div class="chat-entity-list" id="chatGroupList">
                         <?php if (!empty($initialGroups)): ?>
                             <?php foreach ($initialGroups as $group): ?>
                                 <?php
-                                $groupName = $group['name'];
-                                $groupInitials = strtoupper(substr($groupName, 0, 2));
-                                $previewText = '';
+                                $groupInitials = strtoupper(substr($group['name'], 0, 2));
+                                $preview = '';
                                 if (!empty($group['last_message'])) {
-                                    $from = $group['last_message_from'] ? $group['last_message_from'] . ': ' : '';
-                                    $previewText = $from . $group['last_message'];
+                                    $preview = ($group['last_message_from'] ? $group['last_message_from'] . ': ' : '') . $group['last_message'];
                                 } elseif (!empty($group['participants'])) {
-                                    $previewText = count($group['participants']) . ' members';
+                                    $preview = count($group['participants']) . ' members';
                                 }
                                 ?>
-                                <div class="chat-list-item" data-conversation-id="<?= htmlspecialchars((string) $group['id'], ENT_QUOTES, 'UTF-8') ?>" data-name="<?= htmlspecialchars(strtolower($groupName), ENT_QUOTES, 'UTF-8') ?>">
-                                    <div class="chat-avatar"><?= htmlspecialchars($groupInitials, ENT_QUOTES, 'UTF-8') ?></div>
-                                    <div class="chat-list-body">
-                                        <div class="chat-list-name"><?= htmlspecialchars($groupName, ENT_QUOTES, 'UTF-8') ?></div>
-                                        <div class="chat-list-preview"><?= htmlspecialchars($previewText !== '' ? $previewText : (count($group['participants']) . ' members'), ENT_QUOTES, 'UTF-8') ?></div>
+                                <div
+                                    class="chat-entity"
+                                    data-entity="group"
+                                    data-conversation-id="<?= htmlspecialchars((string) $group['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                    data-search="<?= htmlspecialchars(strtolower($group['name']), ENT_QUOTES, 'UTF-8') ?>"
+                                >
+                                    <div class="chat-entity__avatar" aria-hidden="true"><?= htmlspecialchars($groupInitials, ENT_QUOTES, 'UTF-8') ?></div>
+                                    <div class="chat-entity__details">
+                                        <div class="chat-entity__name">
+                                            <span><?= htmlspecialchars($group['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        </div>
+                                        <div class="chat-entity__meta">
+                                            <span><?= htmlspecialchars($preview !== '' ? $preview : (count($group['participants']) . ' members'), ENT_QUOTES, 'UTF-8') ?></span>
+                                        </div>
                                     </div>
                                     <?php if (!empty($group['unread_count'])): ?>
-                                        <div class="chat-badge"><?= htmlspecialchars((string) $group['unread_count'], ENT_QUOTES, 'UTF-8') ?></div>
+                                        <span class="chat-entity__badge"><?= htmlspecialchars((string) $group['unread_count'], ENT_QUOTES, 'UTF-8') ?></span>
                                     <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <div class="chat-placeholder">No groups yet. Create one to get started!</div>
+                            <div class="chat-empty">No groups yet. Create one to get started!</div>
                         <?php endif; ?>
                     </div>
-                </div>
+                </section>
             </aside>
 
             <section class="chat-main">
-                <header class="chat-main-header">
-                    <div class="chat-header-user">
-                        <div class="chat-avatar" id="chatHeaderAvatar"><?= strtoupper(substr($currentUserName !== '' ? $currentUserName : $currentUserEmail, 0, 1)) ?></div>
-                        <div class="chat-header-text">
+                <header class="chat-main__header">
+                    <div class="chat-main__person">
+                        <div class="chat-main__avatar" id="chatHeaderAvatar"><?= strtoupper(substr($currentUserName !== '' ? $currentUserName : $currentUserEmail, 0, 1)) ?></div>
+                        <div class="chat-main__titles">
                             <h3 id="chatHeaderTitle">Select a conversation</h3>
-                            <p id="chatHeaderSubtitle">Choose a teammate or group to start chatting</p>
+                            <p id="chatHeaderSubtitle">Choose someone from the list to start chatting</p>
                         </div>
-                    </div>
-                    <div class="chat-header-actions">
-                        <button class="chat-action-btn" type="button" title="Start audio call" disabled>
-                            <i class="bx bx-phone"></i>
-                        </button>
-                        <button class="chat-action-btn" type="button" title="Start video call" disabled>
-                            <i class="bx bx-video"></i>
-                        </button>
-                        <button class="chat-action-btn" type="button" title="More options" disabled>
-                            <i class="bx bx-dots-vertical-rounded"></i>
-                        </button>
                     </div>
                 </header>
 
-                <div class="chat-main-body" id="chatMessageList">
-                    <div class="chat-empty-state">
-                        <img src="<?= htmlspecialchars(hh_asset('assets/images/chat-empty-state.svg'), ENT_QUOTES, 'UTF-8') ?>" alt="Start chatting illustration" onerror="this.style.display='none'">
+                <div class="chat-main__body" id="chatMessageList">
+                    <div class="chat-placeholder" id="chatEmptyState">
+                        <img src="<?= htmlspecialchars(hh_asset('assets/images/chat-empty-state.svg'), ENT_QUOTES, 'UTF-8') ?>" alt="Start chatting" onerror="this.style.display='none'">
                         <h4>Start a conversation</h4>
-                        <p>Select any teammate or create a group to begin messaging instantly.</p>
+                        <p>Select a teammate or create a group to begin messaging.</p>
                     </div>
                 </div>
 
-                <div class="chat-typing" id="chatTypingIndicator" hidden>
-                    <span class="chat-typing-dot"></span>
-                    <span class="chat-typing-dot"></span>
-                    <span class="chat-typing-dot"></span>
-                    <span class="chat-typing-text">Someone is typing…</span>
-                </div>
-
-                <form class="chat-input" id="chatMessageForm" autocomplete="off">
+                <form class="chat-composer" id="chatMessageForm" autocomplete="off">
                     <input type="hidden" name="conversation_id" id="chatConversationId" value="">
-                    <textarea id="chatMessageInput" name="message" rows="1" placeholder="Type a message" disabled></textarea>
-                    <div class="chat-input-actions">
-                        <button type="submit" class="btn btn-primary" id="chatSendButton" disabled>
-                            <span>Send</span>
-                            <i class="bx bx-paper-plane"></i>
-                        </button>
-                    </div>
+                    <textarea id="chatMessageInput" name="message" rows="1" placeholder="Type your message" disabled></textarea>
+                    <button type="submit" class="btn btn-success" id="chatSendButton" disabled>
+                        <span>Send</span>
+                        <i class="bx bx-paper-plane"></i>
+                    </button>
                 </form>
             </section>
         </div>
@@ -356,15 +346,15 @@ include __DIR__ . '/includes/common-header.php';
                         <input type="text" class="form-control" id="newGroupName" name="name" placeholder="e.g. Sales Squad" required>
                     </div>
                     <div class="group-select">
-                        <div class="group-select-header">Pick teammates</div>
+                        <div class="group-select__header">Pick teammates</div>
                         <div class="group-user-list" id="groupUserOptions">
-                            <div class="text-muted small">Loading users…</div>
+                            <div class="text-muted small">Loading teammates…</div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create group</button>
+                    <button type="submit" class="btn btn-success">Create group</button>
                 </div>
             </form>
         </div>

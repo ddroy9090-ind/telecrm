@@ -8,6 +8,128 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 require_once __DIR__ . '/includes/config.php';
+
+if (!function_exists('format_lead_stage')) {
+    function format_lead_stage(?string $rawStage): string
+    {
+        if ($rawStage === null || trim($rawStage) === '') {
+            return 'New';
+        }
+
+        $decoded = json_decode($rawStage, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            if (is_array($decoded)) {
+                $first = reset($decoded);
+                if (is_array($first)) {
+                    $first = reset($first);
+                }
+                if (is_string($first) && trim($first) !== '') {
+                    return trim($first);
+                }
+            } elseif (is_string($decoded) && trim($decoded) !== '') {
+                return trim($decoded);
+            }
+        }
+
+        $parts = array_filter(array_map('trim', explode(',', $rawStage)), static function ($part) {
+            return $part !== '';
+        });
+
+        if (!empty($parts)) {
+            $firstPart = (string) array_shift($parts);
+            $firstPart = trim($firstPart, " \t\n\r\0\x0B\"'[]");
+            if ($firstPart !== '') {
+                return $firstPart;
+            }
+        }
+
+        $cleaned = trim($rawStage, " \t\n\r\0\x0B\"[]");
+
+        return $cleaned !== '' ? $cleaned : 'New';
+    }
+}
+
+if (!function_exists('normalize_stage_label')) {
+    function normalize_stage_label(string $label): string
+    {
+        $dashNormalized = str_replace([
+            "\xE2\x80\x93",
+            "\xE2\x80\x94",
+            "\xE2\x88\x92",
+        ], '-', $label);
+
+        $lowered = function_exists('mb_strtolower') ? mb_strtolower($dashNormalized, 'UTF-8') : strtolower($dashNormalized);
+        $singleSpaced = preg_replace('/\s+/u', ' ', $lowered ?? '');
+
+        return trim((string) $singleSpaced);
+    }
+}
+
+$leadStats = [
+    'total' => 0,
+    'hot_active' => 0,
+    'closed' => 0,
+    'channel_partners' => 0,
+];
+
+$stageCategories = [
+    'Active Stage' => [
+        'New',
+        'Contacted',
+        'Follow Up – In Progress',
+        'Qualified',
+        'Meeting Scheduled',
+        'Meeting Done',
+        'Offer Made',
+        'Negotiation',
+        'Site Visit',
+    ],
+    'Closed Stage' => [
+        'Won',
+        'Booking Confirmed',
+    ],
+];
+
+$activeStageSet = [];
+foreach ($stageCategories['Active Stage'] as $label) {
+    $activeStageSet[normalize_stage_label($label)] = true;
+}
+
+$closedStageSet = [];
+foreach ($stageCategories['Closed Stage'] as $label) {
+    $closedStageSet[normalize_stage_label($label)] = true;
+}
+
+$leadQuery = $mysqli->query('SELECT stage, rating FROM all_leads');
+if ($leadQuery instanceof mysqli_result) {
+    while ($leadRow = $leadQuery->fetch_assoc()) {
+        $leadStats['total']++;
+
+        $formattedStage = format_lead_stage($leadRow['stage'] ?? '');
+        $normalizedStage = normalize_stage_label($formattedStage);
+        $normalizedRating = normalize_stage_label((string) ($leadRow['rating'] ?? ''));
+
+        if (isset($activeStageSet[$normalizedStage]) || $normalizedRating === 'hot') {
+            $leadStats['hot_active']++;
+        }
+
+        if (isset($closedStageSet[$normalizedStage])) {
+            $leadStats['closed']++;
+        }
+    }
+
+    $leadQuery->free();
+}
+
+$channelPartnersQuery = $mysqli->query("SELECT COUNT(*) AS total FROM users WHERE role = 'agent'");
+if ($channelPartnersQuery instanceof mysqli_result) {
+    $channelPartnersRow = $channelPartnersQuery->fetch_assoc();
+    if ($channelPartnersRow) {
+        $leadStats['channel_partners'] = (int) ($channelPartnersRow['total'] ?? 0);
+    }
+    $channelPartnersQuery->free();
+}
+
 include __DIR__ . '/includes/common-header.php';
 ?>
 
@@ -55,7 +177,7 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Total Leads</h6>
-                                <h2>1,847</h2>
+                                <h2><?php echo number_format($leadStats['total']); ?></h2>
                                 <p>Qualified, Site Visit, Offer stages</p>
                                 <div class="lead-metric-growth blue">
                                     <i class='bx bx-trending-up'></i>
@@ -72,7 +194,7 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Hot / Active Leads</h6>
-                                <h2>456</h2>
+                                <h2><?php echo number_format($leadStats['hot_active']); ?></h2>
                                 <p>Ready for conversion</p>
                                 <div class="lead-metric-growth green">
                                     <i class='bx bx-trending-up'></i>
@@ -89,7 +211,7 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Closed Leads</h6>
-                                <h2>89</h2>
+                                <h2><?php echo number_format($leadStats['closed']); ?></h2>
                                 <p>AED 124.5M total value</p>
                                 <div class="lead-metric-growth red">
                                     <i class='bx bx-trending-up'></i>
@@ -106,7 +228,7 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Channel Partners</h6>
-                                <h2>234</h2>
+                                <h2><?php echo number_format($leadStats['channel_partners']); ?></h2>
                                 <p>+18 new this month</p>
                                 <div class="lead-metric-growth yellow">
                                     <i class='bx bx-trending-up'></i>

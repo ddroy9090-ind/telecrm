@@ -361,6 +361,29 @@ document.addEventListener("DOMContentLoaded", function () {
     body.classList.add("lead-sidebar-open");
   };
 
+  const focusSidebarInitialField = () => {
+    const focusTarget =
+      leadSidebar.querySelector('[data-sidebar-focus]') ||
+      leadSidebar.querySelector("input, select, textarea, button");
+
+    if (!focusTarget || typeof focusTarget.focus !== "function") {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      focusTarget.focus();
+
+      if (
+        focusTarget instanceof HTMLInputElement ||
+        focusTarget instanceof HTMLTextAreaElement
+      ) {
+        if (typeof focusTarget.select === "function") {
+          focusTarget.select();
+        }
+      }
+    });
+  };
+
   const closeSidebar = () => {
     leadSidebar.classList.remove("is-open");
     leadSidebar.setAttribute("aria-hidden", "true");
@@ -381,6 +404,23 @@ document.addEventListener("DOMContentLoaded", function () {
   if (closeButton) {
     closeButton.addEventListener("click", closeSidebar);
   }
+
+  const addPartnerForm = document.getElementById("addPartnerForm");
+  const manualSidebarTriggers = document.querySelectorAll("[data-open-lead-sidebar]");
+
+  manualSidebarTriggers.forEach((trigger) => {
+    trigger.addEventListener("click", (event) => {
+      event.preventDefault();
+      activeTrigger = trigger;
+
+      if (addPartnerForm) {
+        addPartnerForm.reset();
+      }
+
+      openSidebar();
+      focusSidebarInitialField();
+    });
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && leadSidebar.classList.contains("is-open")) {

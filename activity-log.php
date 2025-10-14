@@ -168,6 +168,30 @@ if (is_string($searchTerm)) {
     $searchTerm = '';
 }
 
+$startDateParam = filter_input(INPUT_GET, 'start_date', FILTER_UNSAFE_RAW);
+$endDateParam = filter_input(INPUT_GET, 'end_date', FILTER_UNSAFE_RAW);
+
+$startDate = null;
+$endDate = null;
+
+if (is_string($startDateParam) && $startDateParam !== '') {
+    $startDateCandidate = DateTime::createFromFormat('Y-m-d', $startDateParam);
+    if ($startDateCandidate instanceof DateTime) {
+        $startDate = $startDateCandidate->setTime(0, 0, 0);
+    }
+}
+
+if (is_string($endDateParam) && $endDateParam !== '') {
+    $endDateCandidate = DateTime::createFromFormat('Y-m-d', $endDateParam);
+    if ($endDateCandidate instanceof DateTime) {
+        $endDate = $endDateCandidate->setTime(23, 59, 59);
+    }
+}
+
+if ($startDate && $endDate && $startDate > $endDate) {
+    [$startDate, $endDate] = [$endDate, $startDate];
+}
+
 $pageParam = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, [
     'options' => ['min_range' => 1],
 ]);
@@ -182,13 +206,13 @@ if ($offset < 0) {
 }
 
 if ($activityTableReady) {
-    $searchConditions = '';
+    $whereClauses = [];
     $searchParams = [];
     $searchParamTypes = '';
 
     if ($searchTerm !== '') {
         $searchWildcard = '%' . $searchTerm . '%';
-        $searchConditions = 'WHERE (
+        $whereClauses[] = '(
             log.activity_type LIKE ?
             OR log.description LIKE ?
             OR leads.name LIKE ?
@@ -201,6 +225,23 @@ if ($activityTableReady) {
 
         $searchParams = array_fill(0, 8, $searchWildcard);
         $searchParamTypes = str_repeat('s', count($searchParams));
+    }
+
+    if ($startDate) {
+        $whereClauses[] = 'log.created_at >= ?';
+        $searchParams[] = $startDate->format('Y-m-d H:i:s');
+        $searchParamTypes .= 's';
+    }
+
+    if ($endDate) {
+        $whereClauses[] = 'log.created_at <= ?';
+        $searchParams[] = $endDate->format('Y-m-d H:i:s');
+        $searchParamTypes .= 's';
+    }
+
+    $searchConditions = '';
+    if (!empty($whereClauses)) {
+        $searchConditions = 'WHERE ' . implode(' AND ', $whereClauses);
     }
 
     $countSql = <<<SQL
@@ -316,7 +357,8 @@ include __DIR__ . '/includes/common-header.php';
                 <h1 class="main-heading mb-1">Activity Log</h1>
                 <p class="subheading mb-0">Review every interaction captured for your leads</p>
             </div>
-            <form method="get" class="d-flex gap-2" role="search" aria-label="Search activity log">
+            <form method="get" class="d-flex flex-column flex-lg-row gap-2" role="search" aria-label="Search activity log">
+                <div class="d-flex gap-2">
                 <input
                     type="search"
                     name="search"
@@ -325,10 +367,27 @@ include __DIR__ . '/includes/common-header.php';
                     placeholder="Search activities"
                     aria-label="Search activities"
                 >
-                <?php if ($searchTerm !== ''): ?>
-                    <a href="activity-log.php" class="btn btn-outline-secondary">Reset</a>
-                <?php endif; ?>
-                <button type="submit" class="btn btn-primary">Search</button>
+                <input
+                    type="date"
+                    name="start_date"
+                    value="<?php echo $startDate ? htmlspecialchars($startDate->format('Y-m-d'), ENT_QUOTES, 'UTF-8') : ''; ?>"
+                    class="form-control"
+                    aria-label="Filter start date"
+                >
+                <input
+                    type="date"
+                    name="end_date"
+                    value="<?php echo $endDate ? htmlspecialchars($endDate->format('Y-m-d'), ENT_QUOTES, 'UTF-8') : ''; ?>"
+                    class="form-control"
+                    aria-label="Filter end date"
+                >
+                </div>
+                <div class="d-flex gap-2">
+                    <?php if ($searchTerm !== '' || $startDate || $endDate): ?>
+                        <a href="activity-log.php" class="btn btn-outline-secondary flex-grow-1 flex-lg-grow-0">Reset</a>
+                    <?php endif; ?>
+                    <button type="submit" class="btn btn-primary flex-grow-1 flex-lg-grow-0">Apply</button>
+                </div>
             </form>
         </div>
 
@@ -460,10 +519,16 @@ include __DIR__ . '/includes/common-header.php';
             <nav aria-label="Activity log pagination" class="mt-4">
                 <ul class="pagination justify-content-center">
                     <?php
-                    $buildPageUrl = function (int $page) use ($searchTerm): string {
+                    $buildPageUrl = function (int $page) use ($searchTerm, $startDate, $endDate): string {
                         $query = ['page' => $page];
                         if ($searchTerm !== '') {
                             $query['search'] = $searchTerm;
+                        }
+                        if ($startDate) {
+                            $query['start_date'] = $startDate->format('Y-m-d');
+                        }
+                        if ($endDate) {
+                            $query['end_date'] = $endDate->format('Y-m-d');
                         }
 
                         return 'activity-log.php?' . http_build_query($query);

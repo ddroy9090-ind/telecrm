@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HouzzHunt\Services;
 
+use HouzzHunt\Repositories\ChannelPartnerRepository;
 use HouzzHunt\Repositories\LeadRepository;
 use HouzzHunt\Repositories\UserRepository;
 use HouzzHunt\Support\DateRange;
@@ -13,11 +14,17 @@ final class LeadStatsService
 {
     private LeadRepository $leadRepository;
     private UserRepository $userRepository;
+    private ChannelPartnerRepository $channelPartnerRepository;
 
-    public function __construct(LeadRepository $leadRepository, UserRepository $userRepository)
+    public function __construct(
+        LeadRepository $leadRepository,
+        UserRepository $userRepository,
+        ChannelPartnerRepository $channelPartnerRepository
+    )
     {
         $this->leadRepository = $leadRepository;
         $this->userRepository = $userRepository;
+        $this->channelPartnerRepository = $channelPartnerRepository;
     }
 
     /**
@@ -37,17 +44,17 @@ final class LeadStatsService
         $currentCounts = $this->countLeadsByCategory($currentLeads);
         $previousCounts = $this->countLeadsByCategory($previousLeads);
 
-        $agents = $this->userRepository->listUsers(['agent']);
+        $currentPartners = $this->channelPartnerRepository->countInRange($range);
+        $previousPartners = $this->channelPartnerRepository->countBetween(
+            $range->getPreviousStart()->format('Y-m-d H:i:s'),
+            $range->getPreviousEnd()->format('Y-m-d H:i:s')
+        );
 
         return [
             'total_leads' => $this->formatCounter($currentCounts['total'], $previousCounts['total']),
             'hot_active' => $this->formatCounter($currentCounts['hot_active'], $previousCounts['hot_active']),
             'closed_leads' => $this->formatCounter($currentCounts['closed'], $previousCounts['closed']),
-            'channel_partners' => [
-                'value' => count($agents),
-                'change_pct' => null,
-                'previous_value' => null,
-            ],
+            'channel_partners' => $this->formatCounter($currentPartners, $previousPartners),
         ];
     }
 

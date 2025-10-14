@@ -30,6 +30,11 @@ try {
         $context['agent_filter_name'] = $agentName;
     }
 
+    $sourceFilter = trim((string) ($_GET['source'] ?? ''));
+    if ($sourceFilter !== '') {
+        $context['source_filter'] = $sourceFilter;
+    }
+
     $controller = new StatsController(
         $container->leadStatsService(),
         $container->performanceService()

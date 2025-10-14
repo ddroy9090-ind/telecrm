@@ -10,12 +10,19 @@ try {
 
     $controller = new ActivitiesController($container->activityService());
 
+    $context = [
+        'role' => $auth['role'],
+        'user_id' => $auth['user_id'],
+        'user_name' => $auth['name'],
+    ];
+
+    $sourceFilter = trim((string) ($_GET['source'] ?? ''));
+    if ($sourceFilter !== '') {
+        $context['source_filter'] = $sourceFilter;
+    }
+
     $result = $controller->recent(
-        [
-            'role' => $auth['role'],
-            'user_id' => $auth['user_id'],
-            'user_name' => $auth['name'],
-        ],
+        $context,
         isset($_GET['limit']) ? max(1, min((int) $_GET['limit'], 100)) : 20
     );
 

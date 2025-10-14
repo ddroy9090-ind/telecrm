@@ -171,15 +171,15 @@ include __DIR__ . '/includes/common-header.php';
             <div class="container-fluid">
                 <div class="row g-3">
                     <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="lead-metric-card">
+                        <div class="lead-metric-card total-leads">
                             <div class="lead-metric-icon">
                                 <i class='bx bx-group'></i>
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Total Leads</h6>
                                 <h2><?php echo number_format($leadStats['total']); ?></h2>
-                                <p>Qualified, Site Visit, Offer stages</p>
-                                <div class="lead-metric-growth blue">
+                                <!-- <p>Qualified, Site Visit, Offer stages</p> -->
+                                <div class="lead-metric-growth green">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+12.5%</span> <small>vs last month</small>
                                 </div>
@@ -188,15 +188,15 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
 
                     <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="lead-metric-card">
+                        <div class="lead-metric-card active-leads">
                             <div class="lead-metric-icon">
                                 <i class='bx bx-trending-up'></i>
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Hot / Active Leads</h6>
                                 <h2><?php echo number_format($leadStats['hot_active']); ?></h2>
-                                <p>Ready for conversion</p>
-                                <div class="lead-metric-growth green">
+                                <!-- <p>Ready for conversion</p> -->
+                                <div class="lead-metric-growth blue">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+8.2%</span> <small>vs last month</small>
                                 </div>
@@ -205,14 +205,14 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
 
                     <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="lead-metric-card">
+                        <div class="lead-metric-card lost-leads">
                             <div class="lead-metric-icon">
                                 <i class='bx bx-dollar'></i>
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Closed Leads</h6>
                                 <h2><?php echo number_format($leadStats['closed']); ?></h2>
-                                <p>AED 124.5M total value</p>
+                                <!-- <p>AED 124.5M total value</p> -->
                                 <div class="lead-metric-growth red">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+15.8%</span> <small>vs last month</small>
@@ -222,14 +222,14 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
 
                     <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="lead-metric-card">
+                        <div class="lead-metric-card closed-leads">
                             <div class="lead-metric-icon">
                                 <i class='bx bx-user-pin'></i>
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Channel Partners</h6>
                                 <h2><?php echo number_format($leadStats['channel_partners']); ?></h2>
-                                <p>+18 new this month</p>
+                                <!-- <p>+18 new this month</p> -->
                                 <div class="lead-metric-growth yellow">
                                     <i class='bx bx-trending-up'></i>
                                     <span>+7.7%</span> <small>vs last month</small>

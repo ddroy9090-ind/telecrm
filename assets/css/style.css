@@ -14,6 +14,22 @@ a {
     text-decoration: none !important;
 }
 
+span.profile {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    background-color: #02796f;
+    border-radius: 50%;
+    position: relative;
+}
+
+span.profile i {
+    position: absolute;
+    top: 5px;
+    left: 7px;
+    color: #fff;
+}
+
 body {
     font-family: "Open Sans", sans-serif;
     /* font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji"; */
@@ -1437,7 +1453,7 @@ button:focus:not(:focus-visible) {
 .user-profile {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
     cursor: pointer;
 }
 
@@ -2240,6 +2256,32 @@ button:focus:not(:focus-visible) {
     align-items: start;
     gap: 16px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    border: 1px transparent solid;
+}
+
+.lead-metric-card.total-leads {
+    background: linear-gradient(135deg, #edfdf9 0%, #d5fbf3 100%);
+    border-color: #a3f4e8;
+    color: #005f52;
+}
+
+.lead-metric-card.active-leads {
+    background: linear-gradient(135deg, #eaf3ff 0%, #e1edfe 100%);
+    border-color: #b4c9ff;
+    color: #0037b3;
+}
+
+.lead-metric-card.lost-leads {
+    background: linear-gradient(135deg, #feeeee 0%, #fee8e8 100%);
+    border-color: #ffbaba;
+    color: #a10000;
+}
+
+.lead-metric-card.closed-leads {
+    background: linear-gradient(135deg, #e6fdf1 0%, #dafbea 100%);
+    border-color: #a3f4be;
+    color: #005f52;
 }
 
 .lead-metric-card:hover {
@@ -2247,8 +2289,8 @@ button:focus:not(:focus-visible) {
 }
 
 .lead-metric-icon {
-    background-color: #02796f;
-    color: #fff;
+    /* background-color: #02796f;
+    color: #fff; */
     border-radius: 10px;
     width: 40px;
     height: 40px;
@@ -2257,6 +2299,9 @@ button:focus:not(:focus-visible) {
     justify-content: center;
     font-size: 20px;
     flex-shrink: 0;
+    position: absolute;
+    right: 14px;
+    display: none;
 }
 
 .lead-metric-content {
@@ -2265,14 +2310,14 @@ button:focus:not(:focus-visible) {
 
 .lead-metric-content h6 {
     font-size: 15px;
-    color: #222;
+    /* color: #222; */
     margin: 0;
 }
 
 .lead-metric-content h2 {
     font-size: 24px;
     font-weight: 500;
-    color: #000;
+    /* color: #000; */
     margin: 6px 0;
 }
 
@@ -2299,7 +2344,7 @@ button:focus:not(:focus-visible) {
 }
 
 .lead-metric-growth.yellow {
-    color: #ea580c;
+    color: #005f52;
 }
 
 .lead-metric-growth i {
@@ -2482,6 +2527,7 @@ section.activity-section {
     font-weight: 600;
     font-size: 14px;
 }
+
 .agent-details h6 {
     margin: 0;
     font-size: 16px;

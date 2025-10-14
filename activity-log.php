@@ -517,7 +517,7 @@ include __DIR__ . '/includes/common-header.php';
 
         <?php if ($totalPages > 1): ?>
             <nav aria-label="Activity log pagination" class="mt-4">
-                <ul class="pagination justify-content-center">
+                <ul class="pagination justify-content-end">
                     <?php
                     $buildPageUrl = function (int $page) use ($searchTerm, $startDate, $endDate): string {
                         $query = ['page' => $page];

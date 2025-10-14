@@ -1,0 +1,18 @@
+{
+    "name": "houzzhunt/telecrm",
+    "description": "HouzzHunt CRM dashboard backend services",
+    "type": "project",
+    "require": {
+        "php": "^8.2",
+        "ext-pdo": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "HouzzHunt\\": "src/"
+        }
+    }
+}

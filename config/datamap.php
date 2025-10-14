@@ -29,6 +29,7 @@ return [
     ],
     'leads' => [
         'table'   => 'all_leads',
+        'sources_table' => 'lead_sources',
         'columns' => [
             'id'               => 'id',
             'stage'            => 'stage',
@@ -50,6 +51,15 @@ return [
             'created_by_name'  => 'created_by_name',
             'created_at'       => 'created_at',
             'payout_received'  => 'payout_received',
+        ],
+    ],
+    'channel_partners' => [
+        'table'   => 'channel_partners',
+        'columns' => [
+            'id'         => 'id',
+            'name'       => 'partner_name',
+            'status'     => 'status',
+            'created_at' => 'created_at',
         ],
     ],
     'lead_activity' => [

@@ -116,6 +116,53 @@ if (!function_exists('hh_url')) {
     }
 }
 
+if (!function_exists('hh_ensure_view')) {
+    /**
+     * Create a lightweight view when a legacy alias is required for new features.
+     */
+    function hh_ensure_view(mysqli $mysqli, string $database, string $viewName, string $selectSql): void
+    {
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $viewName)) {
+            die('Invalid view name: ' . $viewName);
+        }
+
+        $stmt = $mysqli->prepare(
+            'SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? LIMIT 1'
+        );
+
+        if ($stmt === false) {
+            die('Unable to inspect existing views: ' . $mysqli->error);
+        }
+
+        $stmt->bind_param('ss', $database, $viewName);
+
+        if (!$stmt->execute()) {
+            $error = $stmt->error;
+            $stmt->close();
+            die('Unable to inspect existing views: ' . $error);
+        }
+
+        $result = $stmt->get_result();
+        if ($result instanceof mysqli_result) {
+            $row = $result->fetch_assoc();
+            if ($row) {
+                $result->free();
+                $stmt->close();
+                return; // Table or view already exists.
+            }
+            $result->free();
+        }
+
+        $stmt->close();
+
+        $sql = sprintf('CREATE VIEW `%s` AS %s', $viewName, $selectSql);
+
+        if (!$mysqli->query($sql)) {
+            die(sprintf('Unable to create %s view: %s', $viewName, $mysqli->error));
+        }
+    }
+}
+
 // Ensure the required tables exist
 $createUsersTable = <<<SQL
 CREATE TABLE IF NOT EXISTS users (
@@ -177,6 +224,32 @@ if ($createdByColumnCheck) {
 } else {
     die('Failed to inspect all_leads table for created_by column: ' . $mysqli->error);
 }
+
+// Ensure supporting tables exist for partner analytics
+$createChannelPartnersTable = <<<SQL
+CREATE TABLE IF NOT EXISTS channel_partners (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    partner_name VARCHAR(255) NOT NULL,
+    company_name VARCHAR(255) DEFAULT NULL,
+    contact_email VARCHAR(255) DEFAULT NULL,
+    contact_phone VARCHAR(50) DEFAULT NULL,
+    status ENUM('active', 'inactive', 'pending') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX channel_partners_status_idx (status),
+    INDEX channel_partners_created_idx (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+
+if (!$mysqli->query($createChannelPartnersTable)) {
+    die('Failed to ensure channel_partners table exists: ' . $mysqli->error);
+}
+
+// Provide convenient views required by the dashboard services
+hh_ensure_view($mysqli, $database, 'leads', 'SELECT * FROM all_leads');
+hh_ensure_view($mysqli, $database, 'lead_sources', 'SELECT id, source, assigned_to, created_by, created_by_name, created_at FROM all_leads');
+hh_ensure_view($mysqli, $database, 'activity_log', 'SELECT * FROM lead_activity_log');
+hh_ensure_view($mysqli, $database, 'properties', 'SELECT * FROM properties_list');
 
 // Ensure created_by_name column exists for legacy installations
 $createdByNameColumnCheck = $mysqli->query("SHOW COLUMNS FROM all_leads LIKE 'created_by_name'");

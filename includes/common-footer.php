@@ -222,45 +222,6 @@ $pageInlineScripts = $pageInlineScripts ?? [];
     })();
 </script>
 
-<script>
-  var options = {
-    series: [385, 312, 268, 445, 187, 250],
-    chart: {
-      type: 'donut',
-      height: 300
-    },
-    labels: ['Meta Ads', 'Google Ads', 'Website', 'WhatsApp', 'Referral', 'Channel Partner'],
-    colors: ['#4e8ef7', '#00c49f', '#2ecc71', '#00b894', '#9b59b6', '#f39c12'],
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '70%'
-        }
-      }
-    },
-    dataLabels: {
-      enabled: false
-    },
-    legend: {
-      show: false
-    },
-    stroke: {
-      show: false
-    },
-    responsive: [{
-      breakpoint: 480,
-      options: {
-        chart: { height: 250 },
-        legend: { position: 'bottom' }
-      }
-    }]
-  };
-
-  var chart = new ApexCharts(document.querySelector("#chart"), options);
-  chart.render();
-</script>
-
-
 </body>
 
 </html>

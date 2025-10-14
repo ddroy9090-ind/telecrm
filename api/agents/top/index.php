@@ -10,13 +10,20 @@ try {
 
     $controller = new AgentController($container->agentPerformanceService());
 
+    $context = [
+        'role' => $auth['role'],
+        'user_id' => $auth['user_id'],
+        'user_name' => $auth['name'],
+    ];
+
+    $sourceFilter = trim((string) ($_GET['source'] ?? ''));
+    if ($sourceFilter !== '') {
+        $context['source_filter'] = $sourceFilter;
+    }
+
     $result = $controller->topAgents(
         (string) ($_GET['range'] ?? 'last_30_days'),
-        [
-            'role' => $auth['role'],
-            'user_id' => $auth['user_id'],
-            'user_name' => $auth['name'],
-        ],
+        $context,
         isset($_GET['limit']) ? max(1, min((int) $_GET['limit'], 20)) : 5
     );
 

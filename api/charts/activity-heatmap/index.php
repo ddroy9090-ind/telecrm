@@ -13,13 +13,20 @@ try {
         $container->activityService()
     );
 
+    $context = [
+        'role' => $auth['role'],
+        'user_id' => $auth['user_id'],
+        'user_name' => $auth['name'],
+    ];
+
+    $sourceFilter = trim((string) ($_GET['source'] ?? ''));
+    if ($sourceFilter !== '') {
+        $context['source_filter'] = $sourceFilter;
+    }
+
     $result = $controller->activityHeatmap(
         (string) ($_GET['range'] ?? 'last_30_days'),
-        [
-            'role' => $auth['role'],
-            'user_id' => $auth['user_id'],
-            'user_name' => $auth['name'],
-        ]
+        $context
     );
 
     JsonResponder::send($result);

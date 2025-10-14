@@ -69,6 +69,11 @@ final class LeadRepository
             $createdAtColumn
         );
 
+        $sourceFilter = isset($context['source_filter']) ? trim((string) $context['source_filter']) : '';
+        if ($sourceFilter !== '') {
+            $sql .= sprintf(' AND %s = :source_filter', $columns['source'] ?? 'source');
+        }
+
         [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $columns);
 
         if ($visibilityClause !== '') {
@@ -85,6 +90,10 @@ final class LeadRepository
             $visibilityParams
         );
 
+        if ($sourceFilter !== '') {
+            $params[':source_filter'] = $sourceFilter;
+        }
+
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
 
@@ -99,7 +108,7 @@ final class LeadRepository
      */
     public function aggregateSources(DateRange $range, array $context): array
     {
-        $table = $this->table();
+        $table = $this->map['sources_table'] ?? $this->table();
         $columns = $this->map['columns'] ?? [];
         $createdAtColumn = $columns['created_at'] ?? 'created_at';
         $sourceColumn = $columns['source'] ?? 'source';
@@ -116,6 +125,11 @@ final class LeadRepository
             $sql .= ' AND ' . $visibilityClause;
         }
 
+        $sourceFilter = isset($context['source_filter']) ? trim((string) $context['source_filter']) : '';
+        if ($sourceFilter !== '') {
+            $sql .= ' AND ' . $sourceColumn . ' = :source_filter';
+        }
+
         $sql .= sprintf(' GROUP BY %s ORDER BY total DESC', $sourceColumn);
 
         $params = array_merge(
@@ -125,6 +139,10 @@ final class LeadRepository
             ],
             $visibilityParams
         );
+
+        if ($sourceFilter !== '') {
+            $params[':source_filter'] = $sourceFilter;
+        }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

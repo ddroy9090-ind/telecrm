@@ -9,6 +9,8 @@
     const endpoints = config.endpoints || {};
     const state = {
         range: config.defaultRange || 'last_30_days',
+        agentId: config.agentId || null,
+        source: config.source || '',
         pendingSearch: null,
         searchVisible: false,
     };
@@ -18,6 +20,7 @@
         searchInput: document.querySelector('[data-dashboard-search]'),
         statValues: document.querySelectorAll('[data-stat-value]'),
         leadSourceList: document.querySelector('[data-lead-source-list]'),
+        leadSourceChart: document.querySelector('#chart'),
         topAgents: document.querySelector('[data-top-agents]'),
         recentActivities: document.querySelector('[data-recent-activities]'),
         heatmapAverage: document.querySelector('[data-heatmap-average]'),
@@ -31,6 +34,7 @@
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     const leadSourcePalette = ['#00B894', '#0984E3', '#6C5CE7', '#E17055', '#FDCB6E', '#2D3436'];
+    let leadSourceChart = null;
 
     function formatNumber(value) {
         return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
@@ -63,6 +67,35 @@
         });
     }
 
+    function buildQueryParams(extra = {}) {
+        const params = new URLSearchParams();
+        Object.keys(extra).forEach((key) => {
+            const value = extra[key];
+            if (value !== undefined && value !== null && value !== '') {
+                params.set(key, value);
+            }
+        });
+
+        if (state.agentId) {
+            params.set('agent_id', state.agentId);
+        }
+
+        if (state.source) {
+            params.set('source', state.source);
+        }
+
+        return params.toString();
+    }
+
+    function buildUrl(base, extra = {}) {
+        const query = buildQueryParams(extra);
+        if (!query) {
+            return base;
+        }
+
+        return `${base}${base.includes('?') ? '&' : '?'}${query}`;
+    }
+
     function updateLeadCounters(payload) {
         if (!payload || !payload.data) {
             return;
@@ -81,13 +114,51 @@
             if (changeContainer) {
                 const changeValue = changeContainer.querySelector(`[data-stat-change-value="${key.replace(/_/g, '-')}"]`);
                 const changeLabel = changeContainer.querySelector(`[data-stat-change-label="${key.replace(/_/g, '-')}"]`);
-                if (changeValue) {
-                    changeValue.textContent = metric.change_pct !== null && metric.change_pct !== undefined
-                        ? `${metric.change_pct > 0 ? '+' : ''}${metric.change_pct.toFixed(2)}%`
-                        : '--';
+                const changeIcon = changeContainer.querySelector('i');
+                const defaultClass = changeContainer.getAttribute('data-stat-change-default-class') || 'blue';
+                const availableClasses = ['green', 'red', 'blue', 'yellow'];
+                const numericChange = metric.change_pct !== null && metric.change_pct !== undefined
+                    ? Number(metric.change_pct)
+                    : null;
+
+                changeContainer.classList.remove(...availableClasses);
+
+                let appliedClass = defaultClass;
+                if (numericChange === null || Number.isNaN(numericChange)) {
+                    appliedClass = defaultClass || 'blue';
+                } else if (numericChange > 0) {
+                    appliedClass = 'green';
+                } else if (numericChange < 0) {
+                    appliedClass = 'red';
+                } else {
+                    appliedClass = 'blue';
                 }
+
+                changeContainer.classList.add(appliedClass);
+
+                if (changeValue) {
+                    if (numericChange === null || Number.isNaN(numericChange)) {
+                        changeValue.textContent = '--';
+                    } else {
+                        const sign = numericChange > 0 ? '+' : '';
+                        changeValue.textContent = `${sign}${numericChange.toFixed(2)}%`;
+                    }
+                }
+
                 if (changeLabel) {
                     changeLabel.textContent = 'vs previous period';
+                }
+
+                if (changeIcon) {
+                    changeIcon.classList.remove('bx-trending-up', 'bx-trending-down', 'bx-minus');
+                    changeIcon.classList.add('bx');
+                    if (numericChange === null || Number.isNaN(numericChange)) {
+                        changeIcon.classList.add('bx-minus');
+                    } else if (numericChange >= 0) {
+                        changeIcon.classList.add('bx-trending-up');
+                    } else {
+                        changeIcon.classList.add('bx-trending-down');
+                    }
                 }
             }
         });
@@ -106,7 +177,19 @@
             item.className = 'text-muted';
             item.textContent = 'No lead sources in this range.';
             els.leadSourceList.appendChild(item);
+
+            if (leadSourceChart) {
+                leadSourceChart.destroy();
+                leadSourceChart = null;
+            }
+            if (els.leadSourceChart) {
+                els.leadSourceChart.innerHTML = '<div class="text-muted text-center py-4">No data available</div>';
+            }
             return;
+        }
+
+        if (els.leadSourceChart) {
+            els.leadSourceChart.innerHTML = '';
         }
 
         data.forEach((entry, index) => {
@@ -122,6 +205,41 @@
             item.appendChild(strong);
             els.leadSourceList.appendChild(item);
         });
+
+        if (typeof ApexCharts !== 'undefined' && els.leadSourceChart) {
+            const series = data.map((entry) => Number(entry.count) || 0);
+            const labels = data.map((entry) => entry.source || 'Unknown');
+            const colors = labels.map((_, index) => leadSourcePalette[index % leadSourcePalette.length]);
+
+            if (!leadSourceChart) {
+                leadSourceChart = new ApexCharts(els.leadSourceChart, {
+                    series,
+                    labels,
+                    chart: {
+                        type: 'donut',
+                        height: 300,
+                    },
+                    colors,
+                    legend: {
+                        show: false,
+                    },
+                    dataLabels: {
+                        enabled: false,
+                    },
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: '70%',
+                            },
+                        },
+                    },
+                });
+                leadSourceChart.render();
+            } else {
+                leadSourceChart.updateOptions({ labels, colors });
+                leadSourceChart.updateSeries(series);
+            }
+        }
     }
 
     function initialsFromName(name) {
@@ -461,43 +579,43 @@
 
     function refreshDashboard() {
         if (endpoints.leadCounters) {
-            fetchJson(`${endpoints.leadCounters}?range=${encodeURIComponent(state.range)}`)
+            fetchJson(buildUrl(endpoints.leadCounters, { range: state.range }))
                 .then(updateLeadCounters)
                 .catch(() => {});
         }
 
         if (endpoints.leadSources) {
-            fetchJson(`${endpoints.leadSources}?range=${encodeURIComponent(state.range)}`)
+            fetchJson(buildUrl(endpoints.leadSources, { range: state.range }))
                 .then(updateLeadSources)
                 .catch(() => {});
         }
 
         if (endpoints.topAgents) {
-            fetchJson(`${endpoints.topAgents}?range=${encodeURIComponent(state.range)}&limit=5`)
+            fetchJson(buildUrl(endpoints.topAgents, { range: state.range, limit: 5 }))
                 .then(updateTopAgents)
                 .catch(() => {});
         }
 
         if (endpoints.recentActivities) {
-            fetchJson(`${endpoints.recentActivities}?limit=20`)
+            fetchJson(buildUrl(endpoints.recentActivities, { limit: 20 }))
                 .then(updateRecentActivities)
                 .catch(() => {});
         }
 
         if (endpoints.activityHeatmap) {
-            fetchJson(`${endpoints.activityHeatmap}?range=${encodeURIComponent(state.range)}`)
+            fetchJson(buildUrl(endpoints.activityHeatmap, { range: state.range }))
                 .then(renderHeatmap)
                 .catch(() => {});
         }
 
         if (endpoints.performance) {
-            fetchJson(`${endpoints.performance}?range=${encodeURIComponent(state.range)}`)
+            fetchJson(buildUrl(endpoints.performance, { range: state.range }))
                 .then(updatePerformance)
                 .catch(() => {});
         }
 
         if (endpoints.inventory) {
-            fetchJson(`${endpoints.inventory}?range=${encodeURIComponent(state.range)}`)
+            fetchJson(buildUrl(endpoints.inventory, { range: state.range }))
                 .then(updateInventory)
                 .catch(() => {});
         }
@@ -562,7 +680,8 @@
                 hideResults();
                 return;
             }
-            fetchJson(`${endpoints.search}?q=${encodeURIComponent(term)}`)
+            const searchUrl = buildUrl(endpoints.search, { q: term });
+            fetchJson(searchUrl)
                 .then((payload) => {
                     const data = payload && payload.data ? payload.data : {};
                     results.innerHTML = '';

@@ -9,126 +9,49 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 require_once __DIR__ . '/includes/config.php';
 
-if (!function_exists('format_lead_stage')) {
-    function format_lead_stage(?string $rawStage): string
-    {
-        if ($rawStage === null || trim($rawStage) === '') {
-            return 'New';
-        }
-
-        $decoded = json_decode($rawStage, true);
-        if (json_last_error() === JSON_ERROR_NONE) {
-            if (is_array($decoded)) {
-                $first = reset($decoded);
-                if (is_array($first)) {
-                    $first = reset($first);
-                }
-                if (is_string($first) && trim($first) !== '') {
-                    return trim($first);
-                }
-            } elseif (is_string($decoded) && trim($decoded) !== '') {
-                return trim($decoded);
-            }
-        }
-
-        $parts = array_filter(array_map('trim', explode(',', $rawStage)), static function ($part) {
-            return $part !== '';
-        });
-
-        if (!empty($parts)) {
-            $firstPart = (string) array_shift($parts);
-            $firstPart = trim($firstPart, " \t\n\r\0\x0B\"'[]");
-            if ($firstPart !== '') {
-                return $firstPart;
-            }
-        }
-
-        $cleaned = trim($rawStage, " \t\n\r\0\x0B\"[]");
-
-        return $cleaned !== '' ? $cleaned : 'New';
-    }
+$allowedRanges = ['last_30_days', 'last_7_days', 'last_month', 'last_quarter', 'this_month'];
+$selectedRange = strtolower((string) ($_GET['range'] ?? 'last_30_days'));
+if (!in_array($selectedRange, $allowedRanges, true)) {
+    $selectedRange = 'last_30_days';
 }
 
-if (!function_exists('normalize_stage_label')) {
-    function normalize_stage_label(string $label): string
-    {
-        $dashNormalized = str_replace([
-            "\xE2\x80\x93",
-            "\xE2\x80\x94",
-            "\xE2\x88\x92",
-        ], '-', $label);
-
-        $lowered = function_exists('mb_strtolower') ? mb_strtolower($dashNormalized, 'UTF-8') : strtolower($dashNormalized);
-        $singleSpaced = preg_replace('/\s+/u', ' ', $lowered ?? '');
-
-        return trim((string) $singleSpaced);
-    }
+$selectedAgentId = isset($_GET['agent_id']) ? (int) $_GET['agent_id'] : null;
+if ($selectedAgentId !== null && $selectedAgentId <= 0) {
+    $selectedAgentId = null;
 }
 
-$leadStats = [
-    'total' => 0,
-    'hot_active' => 0,
-    'closed' => 0,
-    'channel_partners' => 0,
+$selectedSource = trim((string) ($_GET['source'] ?? ''));
+if ($selectedSource === '') {
+    $selectedSource = null;
+}
+
+$pageScriptFiles[] = [
+    'src' => hh_asset('public/js/dashboard.api.js'),
+    'attributes' => ['defer' => true],
 ];
 
-$stageCategories = [
-    'Active Stage' => [
-        'New',
-        'Contacted',
-        'Follow Up – In Progress',
-        'Qualified',
-        'Meeting Scheduled',
-        'Meeting Done',
-        'Offer Made',
-        'Negotiation',
-        'Site Visit',
-    ],
-    'Closed Stage' => [
-        'Won',
-        'Booking Confirmed',
+$dashboardConfig = [
+    'defaultRange' => $selectedRange,
+    'agentId' => $selectedAgentId,
+    'source' => $selectedSource,
+    'endpoints' => [
+        'leadCounters' => hh_url('api/stats/lead-counters/index.php'),
+        'leadSources' => hh_url('api/charts/lead-sources/index.php'),
+        'topAgents' => hh_url('api/agents/top/index.php'),
+        'recentActivities' => hh_url('api/activities/recent/index.php'),
+        'activityHeatmap' => hh_url('api/charts/activity-heatmap/index.php'),
+        'performance' => hh_url('api/stats/performance/index.php'),
+        'inventory' => hh_url('api/inventory/projects/index.php'),
+        'search' => hh_url('api/search/index.php'),
     ],
 ];
 
-$activeStageSet = [];
-foreach ($stageCategories['Active Stage'] as $label) {
-    $activeStageSet[normalize_stage_label($label)] = true;
-}
+$encodedConfig = json_encode(
+    $dashboardConfig,
+    JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+);
 
-$closedStageSet = [];
-foreach ($stageCategories['Closed Stage'] as $label) {
-    $closedStageSet[normalize_stage_label($label)] = true;
-}
-
-$leadQuery = $mysqli->query('SELECT stage, rating FROM all_leads');
-if ($leadQuery instanceof mysqli_result) {
-    while ($leadRow = $leadQuery->fetch_assoc()) {
-        $leadStats['total']++;
-
-        $formattedStage = format_lead_stage($leadRow['stage'] ?? '');
-        $normalizedStage = normalize_stage_label($formattedStage);
-        $normalizedRating = normalize_stage_label((string) ($leadRow['rating'] ?? ''));
-
-        if (isset($activeStageSet[$normalizedStage]) || $normalizedRating === 'hot') {
-            $leadStats['hot_active']++;
-        }
-
-        if (isset($closedStageSet[$normalizedStage])) {
-            $leadStats['closed']++;
-        }
-    }
-
-    $leadQuery->free();
-}
-
-$channelPartnersQuery = $mysqli->query("SELECT COUNT(*) AS total FROM users WHERE role = 'agent'");
-if ($channelPartnersQuery instanceof mysqli_result) {
-    $channelPartnersRow = $channelPartnersQuery->fetch_assoc();
-    if ($channelPartnersRow) {
-        $leadStats['channel_partners'] = (int) ($channelPartnersRow['total'] ?? 0);
-    }
-    $channelPartnersQuery->free();
-}
+$pageInlineScripts[] = '<script>window.HH_DASHBOARD_BOOT = ' . $encodedConfig . ';</script>';
 
 include __DIR__ . '/includes/common-header.php';
 ?>
@@ -139,7 +62,7 @@ include __DIR__ . '/includes/common-header.php';
 
     <!-- Main Content -->
     <main class="main-content">
-        <form action="">
+        <form action="" method="get">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-lg-6">
@@ -149,18 +72,21 @@ include __DIR__ . '/includes/common-header.php';
                     <div class="col-lg-6">
                         <div class="right-search">
                             <div class="form-group mb-0">
-                                <input type="text" class="form-control" placeholder="Search leads, projects, clients" />
+                                <input type="text" class="form-control" placeholder="Search leads, projects, clients" data-dashboard-search />
                                 <span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5">
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <path d="m21 21-4.3-4.3"></path>
                                     </svg>
                                 </span>
                             </div>
-                            <select class="form-control select-dropDownClass" name="">
-                                <option>Last 30 Days</option>
-                                <option>Last 7 Days</option>
-                                <option>Last Month</option>
-                                <option>Last Quarter</option>
+                            <input type="hidden" name="agent_id" value="<?= $selectedAgentId !== null ? (int) $selectedAgentId : '' ?>">
+                            <input type="hidden" name="source" value="<?= htmlspecialchars($selectedSource ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                            <select class="form-control select-dropDownClass" name="range" data-dashboard-range>
+                                <option value="last_30_days" <?= $selectedRange === 'last_30_days' ? 'selected' : '' ?>>Last 30 Days</option>
+                                <option value="last_7_days" <?= $selectedRange === 'last_7_days' ? 'selected' : '' ?>>Last 7 Days</option>
+                                <option value="last_month" <?= $selectedRange === 'last_month' ? 'selected' : '' ?>>Last Month</option>
+                                <option value="last_quarter" <?= $selectedRange === 'last_quarter' ? 'selected' : '' ?>>Last Quarter</option>
+                                <option value="this_month" <?= $selectedRange === 'this_month' ? 'selected' : '' ?>>This Month</option>
                             </select>
                         </div>
                     </div>
@@ -177,11 +103,10 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Total Leads</h6>
-                                <h2><?php echo number_format($leadStats['total']); ?></h2>
-                                <!-- <p>Qualified, Site Visit, Offer stages</p> -->
-                                <div class="lead-metric-growth green">
-                                    <i class='bx bx-trending-up'></i>
-                                    <span>+12.5%</span> <small>vs last month</small>
+                                <h2 data-stat-value="total-leads">--</h2>
+                                <div class="lead-metric-growth green" data-stat-change="total-leads" data-stat-change-default-class="green">
+                                    <i class='bx bx-minus'></i>
+                                    <span data-stat-change-value="total-leads">--</span> <small data-stat-change-label="total-leads">vs previous period</small>
                                 </div>
                             </div>
                         </div>
@@ -194,11 +119,10 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Hot / Active Leads</h6>
-                                <h2><?php echo number_format($leadStats['hot_active']); ?></h2>
-                                <!-- <p>Ready for conversion</p> -->
-                                <div class="lead-metric-growth blue">
-                                    <i class='bx bx-trending-up'></i>
-                                    <span>+8.2%</span> <small>vs last month</small>
+                                <h2 data-stat-value="hot-active">--</h2>
+                                <div class="lead-metric-growth blue" data-stat-change="hot-active" data-stat-change-default-class="blue">
+                                    <i class='bx bx-minus'></i>
+                                    <span data-stat-change-value="hot-active">--</span> <small data-stat-change-label="hot-active">vs previous period</small>
                                 </div>
                             </div>
                         </div>
@@ -211,11 +135,10 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Closed Leads</h6>
-                                <h2><?php echo number_format($leadStats['closed']); ?></h2>
-                                <!-- <p>AED 124.5M total value</p> -->
-                                <div class="lead-metric-growth red">
-                                    <i class='bx bx-trending-up'></i>
-                                    <span>+15.8%</span> <small>vs last month</small>
+                                <h2 data-stat-value="closed-leads">--</h2>
+                                <div class="lead-metric-growth red" data-stat-change="closed-leads" data-stat-change-default-class="red">
+                                    <i class='bx bx-minus'></i>
+                                    <span data-stat-change-value="closed-leads">--</span> <small data-stat-change-label="closed-leads">vs previous period</small>
                                 </div>
                             </div>
                         </div>
@@ -228,11 +151,10 @@ include __DIR__ . '/includes/common-header.php';
                             </div>
                             <div class="lead-metric-content">
                                 <h6>Channel Partners</h6>
-                                <h2><?php echo number_format($leadStats['channel_partners']); ?></h2>
-                                <!-- <p>+18 new this month</p> -->
-                                <div class="lead-metric-growth yellow">
-                                    <i class='bx bx-trending-up'></i>
-                                    <span>+7.7%</span> <small>vs last month</small>
+                                <h2 data-stat-value="channel-partners">--</h2>
+                                <div class="lead-metric-growth yellow" data-stat-change="channel-partners" data-stat-change-default-class="yellow">
+                                    <i class='bx bx-minus'></i>
+                                    <span data-stat-change-value="channel-partners">--</span> <small data-stat-change-label="channel-partners">vs previous period</small>
                                 </div>
                             </div>
                         </div>
@@ -251,13 +173,8 @@ include __DIR__ . '/includes/common-header.php';
 
                             <div id="chart"></div>
 
-                            <ul class="lead-source-list mt-3">
-                                <li><span class="dot meta"></span> Meta Ads <strong>385 (20.8%)</strong></li>
-                                <li><span class="dot google"></span> Google Ads <strong>312 (16.9%)</strong></li>
-                                <li><span class="dot website"></span> Website <strong>268 (14.5%)</strong></li>
-                                <li><span class="dot whatsapp"></span> WhatsApp <strong>445 (24.1%)</strong></li>
-                                <li><span class="dot referral"></span> Referral <strong>187 (10.1%)</strong></li>
-                                <li><span class="dot channel"></span> Channel Partner <strong>250 (13.5%)</strong></li>
+                            <ul class="lead-source-list mt-3" data-lead-source-list>
+                                <li class="text-muted">Loading lead source analytics…</li>
                             </ul>
                         </div>
                     </div>
@@ -272,92 +189,8 @@ include __DIR__ . '/includes/common-header.php';
                                 </div>
                             </div>
 
-                            <div class="agent-list">
-                                <div class="agent-item">
-                                    <div class="agent-info">
-                                        <div class="agent-avatar">SA</div>
-                                        <div class="agent-details">
-                                            <h6>Sarah Ahmed</h6>
-                                            <div class="agent-stats">
-                                                <span>23 deals</span>
-                                                <span class="growth">+15%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="agent-value">
-                                        <h6>AED 12.5M</h6>
-                                        <span>Total Value</span>
-                                    </div>
-                                </div>
-
-                                <div class="agent-item">
-                                    <div class="agent-info">
-                                        <div class="agent-avatar">MA</div>
-                                        <div class="agent-details">
-                                            <h6>Mohammed Al</h6>
-                                            <div class="agent-stats">
-                                                <span>19 deals</span>
-                                                <span class="growth">+12%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="agent-value">
-                                        <h6>AED 10.2M</h6>
-                                        <span>Total Value</span>
-                                    </div>
-                                </div>
-
-                                <div class="agent-item">
-                                    <div class="agent-info">
-                                        <div class="agent-avatar">FK</div>
-                                        <div class="agent-details">
-                                            <h6>Fatima Khan</h6>
-                                            <div class="agent-stats">
-                                                <span>17 deals</span>
-                                                <span class="growth">+8%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="agent-value">
-                                        <h6>AED 9.8M</h6>
-                                        <span>Total Value</span>
-                                    </div>
-                                </div>
-
-                                <div class="agent-item">
-                                    <div class="agent-info">
-                                        <div class="agent-avatar">AH</div>
-                                        <div class="agent-details">
-                                            <h6>Ahmed Hassan</h6>
-                                            <div class="agent-stats">
-                                                <span>15 deals</span>
-                                                <span class="growth">+5%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="agent-value">
-                                        <h6>AED 8.1M</h6>
-                                        <span>Total Value</span>
-                                    </div>
-                                </div>
-
-                                <div class="agent-item">
-                                    <div class="agent-info">
-                                        <div class="agent-avatar">R</div>
-                                        <div class="agent-details">
-                                            <h6>Rahul</h6>
-                                            <div class="agent-stats">
-                                                <span>15 deals</span>
-                                                <span class="growth">+5%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="agent-value">
-                                        <h6>AED 8.1M</h6>
-                                        <span>Total Value</span>
-                                    </div>
-                                </div>
-
+                            <div class="agent-list" data-top-agents>
+                                <div class="text-muted small">Loading top agents…</div>
                             </div>
                         </div>
                     </div>
@@ -372,58 +205,8 @@ include __DIR__ . '/includes/common-header.php';
                                 </div>
                             </div>
 
-                            <div class="activity-list">
-                                <div class="activity-item">
-                                    <div class="activity-icon"><i class="bi bi-check-circle"></i></div>
-                                    <div class="activity-content">
-                                        <p>Deal closed with Ahmed Hassan for Emaar Beachfront</p>
-                                        <div class="activity-meta">
-                                            <span>5 min ago</span>
-                                            <span class="amount">AED 2.8M</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="activity-item">
-                                    <div class="activity-icon"><i class="bi bi-telephone"></i></div>
-                                    <div class="activity-content">
-                                        <p>Follow-up call scheduled with Sarah Al Mansoori</p>
-                                        <div class="activity-meta">
-                                            <span>12 min ago</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="activity-item">
-                                    <div class="activity-icon"><i class="bi bi-file-earmark-text"></i></div>
-                                    <div class="activity-content">
-                                        <p>MOU signed for Sobha Hartland Villa</p>
-                                        <div class="activity-meta">
-                                            <span>45 min ago</span>
-                                            <span class="amount">AED 3.2M</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="activity-item">
-                                    <div class="activity-icon"><i class="bi bi-person-plus"></i></div>
-                                    <div class="activity-content">
-                                        <p>New lead added from Property Finder</p>
-                                        <div class="activity-meta">
-                                            <span>1 hour ago</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="activity-item">
-                                    <div class="activity-icon"><i class="bi bi-envelope"></i></div>
-                                    <div class="activity-content">
-                                        <p>Proposal sent to Mohammed Abdullah</p>
-                                        <div class="activity-meta">
-                                            <span>2 hours ago</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="activity-list" data-recent-activities>
+                                <div class="text-muted small">Loading recent activity…</div>
                             </div>
                         </div>
                     </div>
@@ -450,14 +233,14 @@ include __DIR__ . '/includes/common-header.php';
                                         </div>
                                     </div>
                                     <div>
-                                        <h5 class="fw-semibold text-success mb-0">44%</h5>
+                                        <h5 class="fw-semibold text-success mb-0" data-heatmap-average>--</h5>
                                         <p class="text-muted small mb-0">Avg Activity</p>
                                     </div>
                                 </div>
 
                                 <!-- Blank Heatmap Grid -->
-                                <div class="heatmap-grid">
-
+                                <div class="heatmap-grid" data-heatmap-grid>
+                                    <div class="text-muted small">Loading heatmap…</div>
                                 </div>
 
                                 <div class="text-center small text-muted">
@@ -483,24 +266,24 @@ include __DIR__ . '/includes/common-header.php';
                                 </div>
 
                                 <!-- Metric 1 -->
-                                <div class="metric-item mb-3">
+                                <div class="metric-item mb-3" data-performance-metric="target_achievement">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-bullseye me-2 text-success"></i>
                                             <div>
-                                                <p class="mb-0 fw-semibold">Target Achievement</p>
-                                                <small class="text-muted">Target: 100%</small>
+                                                <p class="mb-0 fw-semibold">Conversion Rate</p>
+                                                <small class="text-muted">Closed vs. created</small>
                                             </div>
                                         </div>
-                                        <span class="fw-semibold">94%</span>
+                                        <span class="fw-semibold" data-metric-value="target_achievement">--</span>
                                     </div>
                                     <div class="progress mt-2" style="height:6px;">
-                                        <div class="progress-bar bg-success" style="width:94%"></div>
+                                        <div class="progress-bar bg-success" style="width:0%" data-metric-bar="target_achievement"></div>
                                     </div>
                                 </div>
 
                                 <!-- Metric 2 -->
-                                <div class="metric-item mb-3">
+                                <div class="metric-item mb-3" data-performance-metric="avg_response_time_hours">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-stopwatch me-2 text-success"></i>
@@ -509,32 +292,32 @@ include __DIR__ . '/includes/common-header.php';
                                                 <small class="text-muted">Target: &lt; 3h</small>
                                             </div>
                                         </div>
-                                        <span class="fw-semibold">2.4h</span>
+                                        <span class="fw-semibold" data-metric-value="avg_response_time_hours">--</span>
                                     </div>
                                     <div class="progress mt-2" style="height:6px;">
-                                        <div class="progress-bar bg-success" style="width:90%"></div>
+                                        <div class="progress-bar bg-success" style="width:0%" data-metric-bar="avg_response_time_hours"></div>
                                     </div>
                                 </div>
 
                                 <!-- Metric 3 -->
-                                <div class="metric-item mb-3">
+                                <div class="metric-item mb-3" data-performance-metric="lead_engagement_pct">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-people me-2 text-primary"></i>
                                             <div>
-                                                <p class="mb-0 fw-semibold">Lead Engagement</p>
-                                                <small class="text-muted">Target: 85%</small>
+                                                <p class="mb-0 fw-semibold">Closing Ratio</p>
+                                                <small class="text-muted">Closed vs. engaged</small>
                                             </div>
                                         </div>
-                                        <span class="badge bg-success bg-opacity-10 text-success">Met</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-muted" data-metric-status="lead_engagement_pct">Loading</span>
                                     </div>
                                     <div class="progress mt-2" style="height:6px;">
-                                        <div class="progress-bar bg-primary" style="width:87%"></div>
+                                        <div class="progress-bar bg-primary" style="width:0%" data-metric-bar="lead_engagement_pct"></div>
                                     </div>
                                 </div>
 
                                 <!-- Metric 4 -->
-                                <div class="metric-item">
+                                <div class="metric-item" data-performance-metric="deal_velocity_days">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-lightning-charge me-2 text-warning"></i>
@@ -543,10 +326,10 @@ include __DIR__ . '/includes/common-header.php';
                                                 <small class="text-muted">Target: 21 days</small>
                                             </div>
                                         </div>
-                                        <span class="badge bg-success bg-opacity-10 text-success">Met</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-muted" data-metric-status="deal_velocity_days">Loading</span>
                                     </div>
                                     <div class="progress mt-2" style="height:6px;">
-                                        <div class="progress-bar bg-warning" style="width:80%"></div>
+                                        <div class="progress-bar bg-warning" style="width:0%" data-metric-bar="deal_velocity_days"></div>
                                     </div>
                                 </div>
 
@@ -570,11 +353,11 @@ include __DIR__ . '/includes/common-header.php';
                         <div class="right">
                             <div>
                                 <p>Total Inventory Value</p>
-                                <h6>AED 3.8B</h6>
+                                <h6 data-inventory-total-value>--</h6>
                             </div>
                             <div>
                                 <p>Avg. Sold Out</p>
-                                <h6 class="text-success"><i class="bi bi-graph-up-arrow me-1"></i>70%</h6>
+                                <h6 class="text-success"><i class="bi bi-graph-up-arrow me-1"></i><span data-inventory-avg-sold>--</span></h6>
                             </div>
                             <!-- <button class="filter-btn"><i class="bi bi-funnel me-1"></i>Filters</button> -->
                         </div>
@@ -592,71 +375,9 @@ include __DIR__ . '/includes/common-header.php';
                                     <th scope="col">Progress</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody data-inventory-table>
                                 <tr>
-                                    <td>Emaar Beachfront</td>
-                                    <td>450</td>
-                                    <td><span class="badge-sold">324</span></td>
-                                    <td>126</td>
-                                    <td>AED 2.8M</td>
-                                    <td>
-                                        <div class="progress">
-                                            <div class="progress-bar" style="width:72%"></div>
-                                        </div>
-                                        <span class="progress-text">72%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Sobha Hartland II</td>
-                                    <td>380</td>
-                                    <td><span class="badge-sold">285</span></td>
-                                    <td>95</td>
-                                    <td>AED 1.9M</td>
-                                    <td>
-                                        <div class="progress">
-                                            <div class="progress-bar" style="width:75%"></div>
-                                        </div>
-                                        <span class="progress-text">75%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Damac Lagoons</td>
-                                    <td>520</td>
-                                    <td><span class="badge-sold">312</span></td>
-                                    <td>208</td>
-                                    <td>AED 1.5M</td>
-                                    <td>
-                                        <div class="progress">
-                                            <div class="progress-bar" style="width:60%"></div>
-                                        </div>
-                                        <span class="progress-text">60%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Danube Elitz</td>
-                                    <td>280</td>
-                                    <td><span class="badge-sold">238</span></td>
-                                    <td>42</td>
-                                    <td>AED 890K</td>
-                                    <td>
-                                        <div class="progress">
-                                            <div class="progress-bar" style="width:85%"></div>
-                                        </div>
-                                        <span class="progress-text">85%</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Emaar Creek Beach</td>
-                                    <td>320</td>
-                                    <td><span class="badge-sold">192</span></td>
-                                    <td>128</td>
-                                    <td>AED 2.2M</td>
-                                    <td>
-                                        <div class="progress">
-                                            <div class="progress-bar" style="width:60%"></div>
-                                        </div>
-                                        <span class="progress-text">60%</span>
-                                    </td>
+                                    <td colspan="6" class="text-center py-4 text-muted">Loading inventory data…</td>
                                 </tr>
                             </tbody>
                         </table>

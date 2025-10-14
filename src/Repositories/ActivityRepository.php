@@ -47,7 +47,7 @@ final class ActivityRepository
 
         $sql = sprintf(
             'SELECT a.%1$s AS id, a.%2$s AS lead_id, a.%3$s AS activity_type, a.%4$s AS description, a.%5$s AS metadata,' .
-            ' a.%6$s AS created_by_name, a.%7$s AS created_at, l.%8$s AS lead_name'
+            ' a.%6$s AS created_by_name, a.%7$s AS created_at, l.%8$s AS lead_name' .
             ' FROM %9$s a INNER JOIN %10$s l ON a.%2$s = l.%11$s',
             $activityCols['id'] ?? 'id',
             $activityCols['lead_id'] ?? 'lead_id',
@@ -63,8 +63,17 @@ final class ActivityRepository
         );
 
         [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
+        $sourceFilter = isset($context['source_filter']) ? trim((string) $context['source_filter']) : '';
+        $conditions = [];
         if ($visibilityClause !== '') {
-            $sql .= ' WHERE ' . $visibilityClause;
+            $conditions[] = $visibilityClause;
+        }
+        if ($sourceFilter !== '') {
+            $conditions[] = sprintf('l.%s = :source_filter', $leadCols['source'] ?? 'source');
+        }
+
+        if (!empty($conditions)) {
+            $sql .= ' WHERE ' . implode(' AND ', $conditions);
         }
 
         $sql .= sprintf(' ORDER BY a.%s DESC, a.%s DESC LIMIT %d',
@@ -73,8 +82,13 @@ final class ActivityRepository
             $limit
         );
 
+        $params = $visibilityParams;
+        if ($sourceFilter !== '') {
+            $params[':source_filter'] = $sourceFilter;
+        }
+
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($visibilityParams);
+        $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -93,23 +107,30 @@ final class ActivityRepository
         $leadCols      = $this->leadMap['columns'] ?? [];
         $createdAt     = $activityCols['created_at'] ?? 'created_at';
 
+        $conditions = ['a.' . $createdAt . ' BETWEEN :start AND :end'];
+
+        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
+        if ($visibilityClause !== '') {
+            $conditions[] = $visibilityClause;
+        }
+
+        $sourceFilter = isset($context['source_filter']) ? trim((string) $context['source_filter']) : '';
+        if ($sourceFilter !== '') {
+            $conditions[] = sprintf('l.%s = :source_filter', $leadCols['source'] ?? 'source');
+        }
+
         $sql = sprintf(
             'SELECT DAYOFWEEK(a.%1$s) AS weekday, HOUR(a.%1$s) AS hour_block, COUNT(*) AS total'
             . ' FROM %2$s a INNER JOIN %3$s l ON a.%4$s = l.%5$s'
-            . ' WHERE a.%1$s BETWEEN :start AND :end',
+            . ' WHERE %6$s'
+            . ' GROUP BY weekday, hour_block ORDER BY weekday ASC, hour_block ASC',
             $createdAt,
             $activityTable,
             $leadTable,
             $activityCols['lead_id'] ?? 'lead_id',
-            $leadCols['id'] ?? 'id'
+            $leadCols['id'] ?? 'id',
+            implode(' AND ', $conditions)
         );
-
-        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
-        if ($visibilityClause !== '') {
-            $sql .= ' AND ' . $visibilityClause;
-        }
-
-        $sql .= ' GROUP BY weekday, hour_block ORDER BY weekday ASC, hour_block ASC';
 
         $params = array_merge(
             [
@@ -118,6 +139,10 @@ final class ActivityRepository
             ],
             $visibilityParams
         );
+
+        if ($sourceFilter !== '') {
+            $params[':source_filter'] = $sourceFilter;
+        }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -139,24 +164,30 @@ final class ActivityRepository
         $leadCols      = $this->leadMap['columns'] ?? [];
         $leadCreatedAt = $leadCols['created_at'] ?? 'created_at';
 
+        $conditions = ['l.' . $leadCreatedAt . ' BETWEEN :start AND :end'];
+
+        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
+        if ($visibilityClause !== '') {
+            $conditions[] = $visibilityClause;
+        }
+
+        $sourceFilter = isset($context['source_filter']) ? trim((string) $context['source_filter']) : '';
+        if ($sourceFilter !== '') {
+            $conditions[] = sprintf('l.%s = :source_filter', $leadCols['source'] ?? 'source');
+        }
+
         $sql = sprintf(
             'SELECT l.%1$s AS lead_id, MIN(a.%2$s) AS first_activity'
             . ' FROM %3$s l LEFT JOIN %4$s a ON a.%5$s = l.%1$s'
-            . ' WHERE l.%6$s BETWEEN :start AND :end',
+            . ' WHERE %6$s'
+            . ' GROUP BY l.%1$s',
             $leadCols['id'] ?? 'id',
             $activityCols['created_at'] ?? 'created_at',
             $leadTable,
             $activityTable,
             $activityCols['lead_id'] ?? 'lead_id',
-            $leadCreatedAt
+            implode(' AND ', $conditions)
         );
-
-        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
-        if ($visibilityClause !== '') {
-            $sql .= ' AND ' . $visibilityClause;
-        }
-
-        $sql .= sprintf(' GROUP BY l.%s', $leadCols['id'] ?? 'id');
 
         $params = array_merge(
             [
@@ -165,6 +196,10 @@ final class ActivityRepository
             ],
             $visibilityParams
         );
+
+        if ($sourceFilter !== '') {
+            $params[':source_filter'] = $sourceFilter;
+        }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -186,24 +221,30 @@ final class ActivityRepository
         $leadCols      = $this->leadMap['columns'] ?? [];
         $leadCreatedAt = $leadCols['created_at'] ?? 'created_at';
 
+        $conditions = ['l.' . $leadCreatedAt . ' BETWEEN :start AND :end'];
+
+        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
+        if ($visibilityClause !== '') {
+            $conditions[] = $visibilityClause;
+        }
+
+        $sourceFilter = isset($context['source_filter']) ? trim((string) $context['source_filter']) : '';
+        if ($sourceFilter !== '') {
+            $conditions[] = sprintf('l.%s = :source_filter', $leadCols['source'] ?? 'source');
+        }
+
         $sql = sprintf(
             'SELECT l.%1$s AS lead_id, MAX(a.%2$s) AS last_activity'
             . ' FROM %3$s l LEFT JOIN %4$s a ON a.%5$s = l.%1$s'
-            . ' WHERE l.%6$s BETWEEN :start AND :end',
+            . ' WHERE %6$s'
+            . ' GROUP BY l.%1$s',
             $leadCols['id'] ?? 'id',
             $activityCols['created_at'] ?? 'created_at',
             $leadTable,
             $activityTable,
             $activityCols['lead_id'] ?? 'lead_id',
-            $leadCreatedAt
+            implode(' AND ', $conditions)
         );
-
-        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
-        if ($visibilityClause !== '') {
-            $sql .= ' AND ' . $visibilityClause;
-        }
-
-        $sql .= sprintf(' GROUP BY l.%s', $leadCols['id'] ?? 'id');
 
         $params = array_merge(
             [
@@ -212,6 +253,10 @@ final class ActivityRepository
             ],
             $visibilityParams
         );
+
+        if ($sourceFilter !== '') {
+            $params[':source_filter'] = $sourceFilter;
+        }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -233,23 +278,29 @@ final class ActivityRepository
         $leadCols      = $this->leadMap['columns'] ?? [];
         $createdAt     = $activityCols['created_at'] ?? 'created_at';
 
+        $conditions = ['a.' . $createdAt . ' BETWEEN :start AND :end'];
+
+        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
+        if ($visibilityClause !== '') {
+            $conditions[] = $visibilityClause;
+        }
+
+        $sourceFilter = isset($context['source_filter']) ? trim((string) $context['source_filter']) : '';
+        if ($sourceFilter !== '') {
+            $conditions[] = sprintf('l.%s = :source_filter', $leadCols['source'] ?? 'source');
+        }
+
         $sql = sprintf(
             'SELECT a.%1$s AS lead_id, COUNT(*) AS total FROM %2$s a'
             . ' INNER JOIN %3$s l ON a.%1$s = l.%4$s'
-            . ' WHERE a.%5$s BETWEEN :start AND :end',
+            . ' WHERE %5$s'
+            . ' GROUP BY a.%1$s',
             $activityCols['lead_id'] ?? 'lead_id',
             $activityTable,
             $leadTable,
             $leadCols['id'] ?? 'id',
-            $createdAt
+            implode(' AND ', $conditions)
         );
-
-        [$visibilityClause, $visibilityParams] = LeadVisibility::build($context, $leadCols, 'l');
-        if ($visibilityClause !== '') {
-            $sql .= ' AND ' . $visibilityClause;
-        }
-
-        $sql .= sprintf(' GROUP BY a.%s', $activityCols['lead_id'] ?? 'lead_id');
 
         $params = array_merge(
             [
@@ -258,6 +309,10 @@ final class ActivityRepository
             ],
             $visibilityParams
         );
+
+        if ($sourceFilter !== '') {
+            $params[':source_filter'] = $sourceFilter;
+        }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

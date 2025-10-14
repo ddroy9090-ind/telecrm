@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HouzzHunt\Container;
 
 use HouzzHunt\Repositories\ActivityRepository;
+use HouzzHunt\Repositories\ChannelPartnerRepository;
 use HouzzHunt\Repositories\LeadRepository;
 use HouzzHunt\Repositories\ProjectRepository;
 use HouzzHunt\Repositories\SchemaInspector;
@@ -62,7 +63,16 @@ final class AppContainer
 
     public function leadStatsService(): LeadStatsService
     {
-        return new LeadStatsService($this->leadRepository(), $this->userRepository());
+        return new LeadStatsService(
+            $this->leadRepository(),
+            $this->userRepository(),
+            $this->channelPartnerRepository()
+        );
+    }
+
+    public function channelPartnerRepository(): ChannelPartnerRepository
+    {
+        return new ChannelPartnerRepository($this->pdo, $this->datamap);
     }
 
     public function agentPerformanceService(): AgentPerformanceService

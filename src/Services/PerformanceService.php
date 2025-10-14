@@ -47,6 +47,7 @@ final class PerformanceService
         $responseIntervals = [];
         $dealVelocity = [];
         $engagedCount = 0;
+        $closedCount = 0;
 
         foreach ($leads as $lead) {
             $leadId = (int) ($lead['id'] ?? 0);
@@ -70,6 +71,7 @@ final class PerformanceService
             }
 
             if (LeadStageClassifier::isClosed($lead['stage'] ?? null)) {
+                $closedCount++;
                 $closingActivity = $lastActivities[$leadId] ?? null;
                 if ($closingActivity) {
                     $closingTime = new DateTimeImmutable($closingActivity);
@@ -82,14 +84,17 @@ final class PerformanceService
         }
 
         $avgResponse = $responseIntervals ? round(array_sum($responseIntervals) / count($responseIntervals), 2) : null;
-        $engagementPct = $totalLeads > 0 ? round(($engagedCount / $totalLeads) * 100, 2) : null;
         $avgDealVelocity = $dealVelocity ? round(array_sum($dealVelocity) / count($dealVelocity), 2) : null;
+
+        $conversionRate = $totalLeads > 0 ? round(($closedCount / $totalLeads) * 100, 2) : null;
+        $closingDenominator = $engagedCount > 0 ? $engagedCount : $totalLeads;
+        $closingRatio = $closingDenominator > 0 ? round(($closedCount / $closingDenominator) * 100, 2) : null;
 
         return [
             'target_achievement' => [
-                'value' => null,
+                'value' => $conversionRate,
                 'unit' => 'pct',
-                'status' => 'not_configured',
+                'status' => $conversionRate !== null ? 'ok' : 'no_data',
             ],
             'avg_response_time_hours' => [
                 'value' => $avgResponse,
@@ -97,9 +102,9 @@ final class PerformanceService
                 'status' => $avgResponse !== null ? 'ok' : 'no_data',
             ],
             'lead_engagement_pct' => [
-                'value' => $engagementPct,
+                'value' => $closingRatio,
                 'unit' => 'pct',
-                'status' => $engagementPct !== null ? 'ok' : 'no_data',
+                'status' => $closingRatio !== null ? 'ok' : 'no_data',
             ],
             'deal_velocity_days' => [
                 'value' => $avgDealVelocity,

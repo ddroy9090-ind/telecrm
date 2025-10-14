@@ -222,6 +222,25 @@ $pageInlineScripts = $pageInlineScripts ?? [];
     })();
 </script>
 
+<script>
+    (function () {
+      var clearBtn = document.getElementById('clearFilters');
+      if (!clearBtn) return;
+      clearBtn.addEventListener('click', function () {
+        // Find the nearest filter-bar and clear inputs/selects
+        var filterBar = document.querySelector('.filter-bar');
+        if (!filterBar) return;
+        var inputs = filterBar.querySelectorAll('input[type="text"]');
+        var selects = filterBar.querySelectorAll('select');
+        inputs.forEach(function (el) { el.value = ''; });
+        selects.forEach(function (el) { el.selectedIndex = 0; });
+        // Optionally focus on search
+        var firstInput = filterBar.querySelector('input[type="text"]');
+        if (firstInput) firstInput.focus();
+      });
+    })();
+  </script>
+
 </body>
 
 </html>

@@ -58,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
-        body, html {
+        body,
+        html {
             height: 100%;
             margin: 0;
             font-family: "Open Sans", sans-serif;
@@ -306,56 +307,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Particle.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 
-   <script>
-    particlesJS("particles-js", {
-        "particles": {
-            "number": {
-                "value": 150,  /* increased from 70 to 150 */
-                "density": { "enable": true, "value_area": 1000 }
+    <script>
+        particlesJS("particles-js", {
+            "particles": {
+                "number": {
+                    "value": 150,
+                    /* increased from 70 to 150 */
+                    "density": {
+                        "enable": true,
+                        "value_area": 1000
+                    }
+                },
+                "color": {
+                    "value": "#ffffff"
+                },
+                "shape": {
+                    "type": "circle"
+                },
+                "opacity": {
+                    "value": 0.5,
+                    /* slightly brighter */
+                    "random": false
+                },
+                "size": {
+                    "value": 5,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 130,
+                    /* more lines by reducing distance */
+                    "color": "#ffffff",
+                    "opacity": 0.4,
+                    /* make lines more visible */
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false
+                }
             },
-            "color": { "value": "#ffffff" },
-            "shape": { "type": "circle" },
-            "opacity": {
-                "value": 0.5,  /* slightly brighter */
-                "random": false
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": {
+                        "distance": 180,
+                        "line_linked": {
+                            "opacity": 0.6
+                        }
+                    },
+                    "push": {
+                        "particles_nb": 5
+                    }
+                }
             },
-            "size": {
-                "value": 5,
-                "random": true
-            },
-            "line_linked": {
-                "enable": true,
-                "distance": 130,  /* more lines by reducing distance */
-                "color": "#ffffff",
-                "opacity": 0.4,   /* make lines more visible */
-                "width": 1
-            },
-            "move": {
-                "enable": true,
-                "speed": 2,
-                "direction": "none",
-                "random": false,
-                "straight": false,
-                "out_mode": "out",
-                "bounce": false
-            }
-        },
-        "interactivity": {
-            "detect_on": "canvas",
-            "events": {
-                "onhover": { "enable": true, "mode": "grab" },
-                "onclick": { "enable": true, "mode": "push" },
-                "resize": true
-            },
-            "modes": {
-                "grab": { "distance": 180, "line_linked": { "opacity": 0.6 } },
-                "push": { "particles_nb": 5 }
-            }
-        },
-        "retina_detect": true
-    });
-</script>
+            "retina_detect": true
+        });
+    </script>
 
 
 </body>
+
 </html>

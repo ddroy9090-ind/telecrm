@@ -14,25 +14,28 @@ a {
     text-decoration: none !important;
 }
 
-.page-link{
+.page-link {
     color: #02796f;
 }
 
-.active>.page-link, .page-link.active {
+.active>.page-link,
+.page-link.active {
     z-index: 3;
     color: #fff;
     background-color: #02796f;
     border-color: #02796f;
 }
 
-.page-link:focus{
+.page-link:focus {
     box-shadow: none;
     border-color: #02796f;
     color: #02796f;
 }
+
 ul.pagination.justify-content-center.mb-0 {
     justify-content: end !important;
 }
+
 span.profile {
     display: inline-block;
     width: 30px;
@@ -2919,5 +2922,185 @@ section.activity-section {
         align-items: flex-start;
         gap: 10px;
         margin-top: 10px;
+    }
+}
+
+
+/* Channel Partner Page Css---------- */
+/* ========== Container for filter area (custom) ========== */
+.filter-bar {
+    background: #fff;
+    border: 1px solid #e6e9ec;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+/* Ensure inner wrappers take full width inside columns */
+.filter-bar .inner-wrap {
+    width: 100%;
+}
+
+/* Search wrapper (parent of the input & icon) */
+.filter-bar .search-wrap {
+    position: relative;
+    width: 100%;
+    height: 44px;
+}
+
+/* Search icon (placed absolutely) */
+.filter-bar .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: #9aa3ac;
+    pointer-events: none;
+}
+
+/* Search input styles */
+.filter-bar .search-wrap input[type="text"] {
+    width: 100%;
+    height: 100%;
+    padding-left: 44px;
+    /* space for icon */
+    padding-right: 14px;
+    border: 1px solid #e1e6ea;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #222;
+    background: transparent;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+    -webkit-appearance: none;
+}
+
+.filter-bar .search-wrap input[type="text"]::placeholder {
+    color: #9aa3ac;
+    font-size: 14px;
+}
+
+.filter-bar .search-wrap input[type="text"]:focus {
+    border-color: #19bfa8;
+    /* teal focus */
+    box-shadow: 0 0 0 4px rgba(25, 191, 168, 0.08);
+}
+
+/* Select wrapper (parent for select element) */
+.filter-bar .select-wrap {
+    width: 100%;
+    height: 44px;
+}
+
+/* Select styles */
+.filter-bar .select-wrap select {
+    width: 100%;
+    height: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e1e6ea;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #222;
+    background-color: #fff;
+    appearance: none;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.filter-bar .select-wrap select:focus {
+    border-color: #19bfa8;
+    box-shadow: 0 0 0 4px rgba(25, 191, 168, 0.08);
+}
+
+/* To show a subtle custom "focus ring" look for the second dropdown similar to screenshot */
+.filter-bar .select-wrap.outline {
+    position: relative;
+}
+
+.filter-bar .select-wrap.outline::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 12px;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(25, 191, 168, 0.12);
+    opacity: 0;
+    transition: opacity .15s ease;
+}
+
+.filter-bar .select-wrap.outline select:focus+* {}
+
+/* We'll toggle visibility via :focus-within */
+.filter-bar .select-wrap.outline:focus-within::after {
+    opacity: 1;
+}
+
+/* Clear button wrapper and style */
+.filter-bar .action-wrap {
+    width: 100%;
+    height: 44px;
+}
+
+.filter-bar .action-wrap button {
+    width: 100%;
+    height: 100%;
+    padding: 0 12px;
+    border: 1px solid #e1e6ea;
+    border-radius: 8px;
+    /* background: #fff; */
+    font-size: 14px;
+    /* color: #333; */
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color .12s ease, border-color .12s ease;
+}
+
+.filter-bar .action-wrap button.btn-primary:hover{
+    background-color: #02796f;
+    color: #fff;
+}
+
+.filter-bar .action-wrap button:hover {
+    background-color: #fbfbfb;
+}
+
+.filter-bar .action-wrap button .x {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.filter-grid {
+    gap: 10px;
+    display: grid;
+    grid-template-columns: 1fr 233px 223px 252px;
+    align-items: center;
+}
+
+/* Responsive: tablet and below — stack columns */
+@media (max-width: 991px) {
+    .filter-grid {
+        grid-template-columns: 1fr 160px 160px;
+        grid-auto-flow: row;
+    }
+
+    /* place clear button in next row */
+    .filter-grid .action-wrap {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 575px) {
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-grid .select-wrap,
+    .filter-grid .action-wrap {
+        width: 100%;
     }
 }

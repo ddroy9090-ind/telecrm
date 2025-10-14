@@ -10,9 +10,28 @@ try {
 
     $controller = new InventoryController($container->inventoryService());
 
-    $result = $controller->projects((string) ($_GET['range'] ?? 'last_30_days'));
+    $startDate = trim((string) ($_GET['start_date'] ?? ''));
+    $endDate = trim((string) ($_GET['end_date'] ?? ''));
+
+    $result = $controller->projects(
+        (string) ($_GET['range'] ?? 'last_30_days'),
+        $startDate !== '' ? $startDate : null,
+        $endDate !== '' ? $endDate : null
+    );
 
     JsonResponder::send($result);
+} catch (InvalidArgumentException $e) {
+    if (!headers_sent()) {
+        http_response_code(400);
+        header('Content-Type: application/json');
+    }
+
+    echo json_encode([
+        'error' => $e->getMessage(),
+        'meta' => [
+            'generated_at' => gmdate(DATE_ATOM),
+        ],
+    ], JSON_THROW_ON_ERROR);
 } catch (Throwable $e) {
     if (!headers_sent()) {
         http_response_code(500);

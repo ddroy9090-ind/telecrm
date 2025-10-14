@@ -11,12 +11,17 @@
         range: config.defaultRange || 'last_30_days',
         agentId: config.agentId || null,
         source: config.source || '',
+        startDate: config.startDate || null,
+        endDate: config.endDate || null,
         pendingSearch: null,
         searchVisible: false,
     };
 
     const els = {
         rangeSelect: document.querySelector('[data-dashboard-range]'),
+        startDateInput: document.querySelector('[data-dashboard-start]'),
+        endDateInput: document.querySelector('[data-dashboard-end]'),
+        rangeApply: document.querySelector('[data-dashboard-apply-range]'),
         searchInput: document.querySelector('[data-dashboard-search]'),
         statValues: document.querySelectorAll('[data-stat-value]'),
         leadSourceList: document.querySelector('[data-lead-source-list]'),
@@ -94,6 +99,20 @@
         }
 
         return `${base}${base.includes('?') ? '&' : '?'}${query}`;
+    }
+
+    function getRangeQuery(extra = {}) {
+        const params = { ...extra, range: state.range };
+        if (state.range === 'custom') {
+            if (state.startDate) {
+                params.start_date = state.startDate;
+            }
+            if (state.endDate) {
+                params.end_date = state.endDate;
+            }
+        }
+
+        return params;
     }
 
     function updateLeadCounters(payload) {
@@ -608,44 +627,52 @@
     }
 
     function refreshDashboard() {
+        if (!endpoints || typeof endpoints !== 'object') {
+            return;
+        }
+
+        if (state.range === 'custom' && (!state.startDate || !state.endDate)) {
+            return;
+        }
+
         if (endpoints.leadCounters) {
-            fetchJson(buildUrl(endpoints.leadCounters, { range: state.range }))
+            fetchJson(buildUrl(endpoints.leadCounters, getRangeQuery()))
                 .then(updateLeadCounters)
                 .catch(() => {});
         }
 
         if (endpoints.leadSources) {
-            fetchJson(buildUrl(endpoints.leadSources, { range: state.range }))
+            fetchJson(buildUrl(endpoints.leadSources, getRangeQuery()))
                 .then(updateLeadSources)
                 .catch(() => {});
         }
 
         if (endpoints.topAgents) {
-            fetchJson(buildUrl(endpoints.topAgents, { range: state.range, limit: 5 }))
+            fetchJson(buildUrl(endpoints.topAgents, getRangeQuery({ limit: 5 })))
                 .then(updateTopAgents)
                 .catch(() => {});
         }
 
         if (endpoints.recentActivities) {
-            fetchJson(buildUrl(endpoints.recentActivities, { limit: 20 }))
+            fetchJson(buildUrl(endpoints.recentActivities, getRangeQuery({ limit: 20 })))
                 .then(updateRecentActivities)
                 .catch(() => {});
         }
 
         if (endpoints.activityHeatmap) {
-            fetchJson(buildUrl(endpoints.activityHeatmap, { range: state.range }))
+            fetchJson(buildUrl(endpoints.activityHeatmap, getRangeQuery()))
                 .then(renderHeatmap)
                 .catch(() => {});
         }
 
         if (endpoints.performance) {
-            fetchJson(buildUrl(endpoints.performance, { range: state.range }))
+            fetchJson(buildUrl(endpoints.performance, getRangeQuery()))
                 .then(updatePerformance)
                 .catch(() => {});
         }
 
         if (endpoints.inventory) {
-            fetchJson(buildUrl(endpoints.inventory, { range: state.range }))
+            fetchJson(buildUrl(endpoints.inventory, getRangeQuery()))
                 .then(updateInventory)
                 .catch(() => {});
         }
@@ -657,8 +684,91 @@
         }
         els.rangeSelect.addEventListener('change', (event) => {
             const value = event.target.value;
+            if (value === 'custom') {
+                state.range = 'custom';
+                if (els.startDateInput) {
+                    state.startDate = els.startDateInput.value || null;
+                }
+                if (els.endDateInput) {
+                    state.endDate = els.endDateInput.value || null;
+                }
+                if (state.startDate && state.endDate) {
+                    refreshDashboard();
+                }
+                return;
+            }
+
             state.range = value || config.defaultRange || 'last_30_days';
+            state.startDate = null;
+            state.endDate = null;
+            if (els.startDateInput) {
+                els.startDateInput.setCustomValidity('');
+            }
+            if (els.endDateInput) {
+                els.endDateInput.setCustomValidity('');
+            }
             refreshDashboard();
+        });
+    }
+
+    function setupCustomRange() {
+        if (!els.startDateInput || !els.endDateInput) {
+            return;
+        }
+
+        function clearValidation() {
+            els.startDateInput.setCustomValidity('');
+            els.endDateInput.setCustomValidity('');
+        }
+
+        function applyCustomRange() {
+            const start = els.startDateInput.value;
+            const end = els.endDateInput.value;
+
+            clearValidation();
+
+            if (!start || !end) {
+                return;
+            }
+
+            const startDateObj = new Date(start);
+            const endDateObj = new Date(end);
+
+            if (Number.isNaN(startDateObj.getTime()) || Number.isNaN(endDateObj.getTime())) {
+                return;
+            }
+
+            if (startDateObj > endDateObj) {
+                els.endDateInput.setCustomValidity('End date must be on or after the start date.');
+                els.endDateInput.reportValidity();
+                return;
+            }
+
+            state.startDate = start;
+            state.endDate = end;
+            state.range = 'custom';
+
+            if (els.rangeSelect && els.rangeSelect.value !== 'custom') {
+                els.rangeSelect.value = 'custom';
+            }
+
+            refreshDashboard();
+        }
+
+        if (els.rangeApply) {
+            els.rangeApply.addEventListener('click', (event) => {
+                event.preventDefault();
+                applyCustomRange();
+            });
+        }
+
+        [els.startDateInput, els.endDateInput].forEach((input) => {
+            input.addEventListener('change', () => {
+                clearValidation();
+                if (state.range === 'custom') {
+                    applyCustomRange();
+                }
+            });
         });
     }
 
@@ -759,6 +869,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         setupRangeSelector();
+        setupCustomRange();
         setupSearch();
         refreshDashboard();
     });

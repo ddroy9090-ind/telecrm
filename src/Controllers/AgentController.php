@@ -19,9 +19,9 @@ final class AgentController
     /**
      * @param array{role:string,user_id:int,user_name:?string} $context
      */
-    public function topAgents(string $rangeParam, array $context, int $limit): array
+    public function topAgents(string $rangeParam, array $context, int $limit, ?string $startDate = null, ?string $endDate = null): array
     {
-        $range = DateRange::fromPreset($rangeParam);
+        $range = DateRange::fromInput($rangeParam, $startDate, $endDate);
         $agents = $this->agentService->topAgents($range, $context, $limit);
 
         return [

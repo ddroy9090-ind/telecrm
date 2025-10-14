@@ -22,9 +22,9 @@ final class ChartsController
     /**
      * @param array{role:string,user_id:int,user_name:?string} $context
      */
-    public function leadSources(string $rangeParam, array $context): array
+    public function leadSources(string $rangeParam, array $context, ?string $startDate = null, ?string $endDate = null): array
     {
-        $range = DateRange::fromPreset($rangeParam);
+        $range = DateRange::fromInput($rangeParam, $startDate, $endDate);
         $sources = $this->leadStatsService->leadSources($range, $context);
 
         return [
@@ -39,9 +39,9 @@ final class ChartsController
     /**
      * @param array{role:string,user_id:int,user_name:?string} $context
      */
-    public function activityHeatmap(string $rangeParam, array $context): array
+    public function activityHeatmap(string $rangeParam, array $context, ?string $startDate = null, ?string $endDate = null): array
     {
-        $range = DateRange::fromPreset($rangeParam);
+        $range = DateRange::fromInput($rangeParam, $startDate, $endDate);
         $heatmap = $this->activityService->heatmap($range, $context);
 
         return [

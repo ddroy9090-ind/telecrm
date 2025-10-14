@@ -54,38 +54,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Houzz Hunt CRM - Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- App favicon -->
     <link rel="shortcut icon" href="assets/images/logo/favicon.svg">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: "Open Sans", sans-serif;
+        }
+
+        /* Particle Background */
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #013b2a, #3db174);
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
         .login-wrapper {
-            background: url("assets/images/banner/login.png") no-repeat center center;
-            background-size: cover;
+            position: relative;
+            z-index: 1;
             color: #d1d1c9;
             min-height: 100vh;
             display: flex;
             align-items: center;
         }
 
-
         span.whiteYellow {
             color: #fff;
-            font-family: "Open Sans", sans-serif;
-            /* font-style: italic; */
-            /* background: linear-gradient(97.08deg, #fff 0%, #edbb68 55.06%); */
-            /* -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text; */
             font-weight: 300;
         }
-
-
-
-        /* .login-wrapper h1 {
-            color: #d4a83a;
-            font-weight: bold;
-        } */
 
         .login-logo {
             width: 240px;
@@ -100,8 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-weight: 300;
             line-height: 1.3;
             color: #fff;
-            font-family: "Open Sans", sans-serif;
-            /* font-style: italic; */
         }
 
         .login-wrapper p {
@@ -109,13 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #fff;
             padding-bottom: 5px;
             font-size: 14px;
-        }
-
-        .login-wrapper .line {
-            width: 17%;
-            height: 2px;
-            background-color: #fff;
-            margin: 0px 0;
         }
 
         .login-wrapper .feature-icon img {
@@ -137,7 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .login-form .form-group label {
-            display: inline-block;
             margin-bottom: 5px;
             color: #111;
         }
@@ -158,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .login-box button {
-            background-color: #0d2d2b;
+            background-color: #319965;
             border: none;
             border-radius: 8px;
             width: 100%;
@@ -212,17 +204,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 
 <body>
+    <!-- Particle background -->
+    <div id="particles-js"></div>
+
     <div class="login-wrapper">
         <div class="container">
             <div class="row justify-content-between">
                 <!-- Left Section -->
                 <div class="col-lg-7 d-flex flex-column justify-content-center">
                     <a href="index.php"><img src="assets/images/logo/crm-logo.svg" alt="" class="login-logo"></a>
-                    <!-- <p>REAL ESTATE CRM</p> -->
-                    <!-- <div class="line"></div> -->
                     <h2><span class="whiteYellow">REAL ESTATE CRM Portal</span></h2>
                     <p>Your all-in-one platform for managing Dubai’s real estate operations.</p>
-                    <p class="">Log in to manage your leads, track client journeys, monitor listings, and drive sales performance with real-time insights.</p>
+                    <p>Log in to manage your leads, track client journeys, monitor listings, and drive sales performance with real-time insights.</p>
 
                     <div class="row mt-5">
                         <div class="col-4">
@@ -249,9 +242,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-
                 <!-- Right Section -->
-                <div class="col-lg-4  align-items-center">
+                <div class="col-lg-4 align-items-center">
                     <div class="login-box w-100">
                         <h3>Welcome Back</h3>
                         <p>Sign in to your partner account</p>
@@ -262,7 +254,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         <?php endif; ?>
 
-                        <!-- Login Form -->
                         <form class="login-form" method="POST" action="">
                             <div class="mb-3 form-group">
                                 <label>Email Address</label>
@@ -272,9 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="mb-3 form-group position-relative">
                                 <label>Password</label>
                                 <input type="password" class="form-control" id="password" name="password" required>
-                                <!-- Custom Toggle Icon -->
-                                <span id="togglePassword"
-                                    style="position:absolute; right:15px; top:55%; cursor:pointer; font-size:14px; user-select:none;">
+                                <span id="togglePassword" style="position:absolute; right:15px; top:55%; cursor:pointer; font-size:14px; user-select:none;">
                                     👁️
                                 </span>
                             </div>
@@ -298,13 +287,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             togglePassword.addEventListener("click", function() {
                                 const type = password.getAttribute("type") === "password" ? "text" : "password";
                                 password.setAttribute("type", type);
-
-                                // Change icon between open-eye and closed-eye
                                 this.textContent = type === "password" ? "👁️" : "🙈";
                             });
                         </script>
-
-
 
                         <div class="text-center mt-3">
                             <small>Need access? <a href="#" class="contact">Contact Admin</a></small>
@@ -315,10 +300,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
             </div>
-
-
         </div>
     </div>
-</body>
 
+    <!-- Particle.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+   <script>
+    particlesJS("particles-js", {
+        "particles": {
+            "number": {
+                "value": 150,  /* increased from 70 to 150 */
+                "density": { "enable": true, "value_area": 1000 }
+            },
+            "color": { "value": "#ffffff" },
+            "shape": { "type": "circle" },
+            "opacity": {
+                "value": 0.5,  /* slightly brighter */
+                "random": false
+            },
+            "size": {
+                "value": 5,
+                "random": true
+            },
+            "line_linked": {
+                "enable": true,
+                "distance": 130,  /* more lines by reducing distance */
+                "color": "#ffffff",
+                "opacity": 0.4,   /* make lines more visible */
+                "width": 1
+            },
+            "move": {
+                "enable": true,
+                "speed": 2,
+                "direction": "none",
+                "random": false,
+                "straight": false,
+                "out_mode": "out",
+                "bounce": false
+            }
+        },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": { "enable": true, "mode": "grab" },
+                "onclick": { "enable": true, "mode": "push" },
+                "resize": true
+            },
+            "modes": {
+                "grab": { "distance": 180, "line_linked": { "opacity": 0.6 } },
+                "push": { "particles_nb": 5 }
+            }
+        },
+        "retina_detect": true
+    });
+</script>
+
+
+</body>
 </html>

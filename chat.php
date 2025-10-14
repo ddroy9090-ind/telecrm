@@ -45,6 +45,7 @@ try {
                 WHEN up.last_seen IS NOT NULL AND up.last_seen >= (NOW() - INTERVAL 90 SECOND) THEN 1
                 ELSE 0
             END AS is_online,
+            CASE WHEN u.id = :me THEN 1 ELSE 0 END AS is_self,
             dc.id AS conversation_id,
             COALESCE(unread.unread_count, 0) AS unread_count
         FROM users u
@@ -60,8 +61,7 @@ try {
               AND (cp.last_read_message_id IS NULL OR m.id > cp.last_read_message_id)
             GROUP BY m.conversation_id
         ) unread ON unread.conversation_id = dc.id
-        WHERE u.id <> :me
-        ORDER BY u.full_name ASC
+        ORDER BY CASE WHEN u.id = :me THEN 0 ELSE 1 END, u.full_name ASC
     SQL);
     $userQuery->execute(['me' => $currentUserId]);
 
@@ -72,6 +72,7 @@ try {
             'email'           => $row['email'],
             'role'            => $row['role'],
             'is_online'       => (bool) $row['is_online'],
+            'is_self'         => (bool) $row['is_self'],
             'last_seen'       => $row['last_seen'],
             'conversation_id' => $row['conversation_id'] !== null ? (int) $row['conversation_id'] : null,
             'unread_count'    => (int) ($row['unread_count'] ?? 0),
@@ -224,13 +225,17 @@ include __DIR__ . '/includes/common-header.php';
                                 $displayName = $user['name'];
                                 $initials = strtoupper(substr($displayName, 0, 2));
                                 $statusClass = $user['is_online'] ? 'online' : 'offline';
-                                $statusLabel = $user['is_online'] ? 'Online' : 'Offline';
+                                $isSelf = !empty($user['is_self']);
+                                $statusLabel = $isSelf ? 'You' : ($user['is_online'] ? 'Online' : 'Offline');
                                 ?>
-                                <div class="chat-list-item" data-user-id="<?= htmlspecialchars((string) $user['id'], ENT_QUOTES, 'UTF-8') ?>" data-name="<?= htmlspecialchars(strtolower($displayName), ENT_QUOTES, 'UTF-8') ?>">
+                                <div class="chat-list-item<?= $isSelf ? ' is-self' : '' ?>" data-user-id="<?= htmlspecialchars((string) $user['id'], ENT_QUOTES, 'UTF-8') ?>" data-name="<?= htmlspecialchars(strtolower($displayName), ENT_QUOTES, 'UTF-8') ?>"<?= $isSelf ? ' aria-disabled="true"' : '' ?>>
                                     <div class="chat-avatar"><?= htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') ?></div>
                                     <div class="chat-list-body">
                                         <div class="chat-list-name">
-                                            <?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?>
+                                            <span><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php if ($isSelf): ?>
+                                                <span class="chat-self-tag">You</span>
+                                            <?php endif; ?>
                                             <?php if (!empty($user['role'])): ?>
                                                 <small><?= htmlspecialchars($user['role'], ENT_QUOTES, 'UTF-8') ?></small>
                                             <?php endif; ?>

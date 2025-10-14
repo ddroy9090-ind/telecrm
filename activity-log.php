@@ -166,6 +166,18 @@ include __DIR__ . '/includes/common-header.php';
     <?php include __DIR__ . '/includes/topbar.php'; ?>
 
     <main class="main-content">
+        <style>
+            .activity-log-table {
+                table-layout: fixed;
+                width: 100%;
+            }
+
+            .activity-log-table th,
+            .activity-log-table td {
+                width: calc(100% / 7);
+                word-break: break-word;
+            }
+        </style>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h1 class="main-heading">Activity Log</h1>
@@ -182,7 +194,7 @@ include __DIR__ . '/includes/common-header.php';
         <div class="card lead-table-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 lead-table">
+                    <table class="table table-hover align-middle mb-0 lead-table activity-log-table">
                         <thead>
                             <tr>
                                 <th scope="col">Activity ID</th>
@@ -201,10 +213,49 @@ include __DIR__ . '/includes/common-header.php';
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($activities as $activity): ?>
+                                    <?php
+                                    $activityIdDisplay = '#' . (int) $activity['id'];
+
+                                    $leadTooltipParts = ['Lead #' . (int) $activity['lead_id']];
+                                    if (!empty($activity['lead_name'])) {
+                                        $leadTooltipParts[] = (string) $activity['lead_name'];
+                                    }
+                                    if (!empty($activity['lead_phone'])) {
+                                        $leadTooltipParts[] = 'Phone: ' . (string) $activity['lead_phone'];
+                                    }
+                                    if (!empty($activity['lead_email'])) {
+                                        $leadTooltipParts[] = 'Email: ' . (string) $activity['lead_email'];
+                                    }
+                                    $leadTooltip = implode(' | ', $leadTooltipParts);
+
+                                    $activityTypeDisplay = trim((string) ($activity['activity_type'] ?? ''));
+                                    $activityTypeTooltip = $activityTypeDisplay !== '' ? $activityTypeDisplay : '—';
+
+                                    $description = trim((string) ($activity['description'] ?? ''));
+                                    $descriptionTooltip = $description !== '' ? preg_replace('/\s+/', ' ', $description) : '—';
+
+                                    $metadataDisplay = $activity['metadata_display'] ?? null;
+                                    $metadataTooltip = $metadataDisplay !== null && $metadataDisplay !== ''
+                                        ? preg_replace('/\s+/', ' ', $metadataDisplay)
+                                        : '—';
+
+                                    $createdBy = trim((string) ($activity['created_by_name'] ?? ''));
+                                    if ($createdBy === '' && !empty($activity['user_full_name'])) {
+                                        $createdBy = (string) $activity['user_full_name'];
+                                    }
+                                    if ($createdBy === '' && !empty($activity['created_by'])) {
+                                        $createdBy = 'User #' . (int) $activity['created_by'];
+                                    }
+                                    $createdByDisplay = $createdBy !== '' ? $createdBy : 'System';
+
+                                    $createdAtDisplay = hh_format_activity_timestamp($activity['created_at'] ?? null);
+                                    ?>
                                     <tr>
-                                        <td>#<?php echo (int) $activity['id']; ?></td>
-                                        <td>
-                                            <div class="fw-semibold text-dark">Lead #<?php echo (int) $activity['lead_id']; ?></div>
+                                        <td title="<?php echo htmlspecialchars($activityIdDisplay, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <?php echo htmlspecialchars($activityIdDisplay); ?>
+                                        </td>
+                                        <td title="<?php echo htmlspecialchars($leadTooltip, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <div class="fw-semibold text-dark"><?php echo htmlspecialchars('Lead #' . (int) $activity['lead_id']); ?></div>
                                             <?php if (!empty($activity['lead_name'])): ?>
                                                 <div class="text-muted small"><?php echo htmlspecialchars($activity['lead_name']); ?></div>
                                             <?php endif; ?>
@@ -215,12 +266,11 @@ include __DIR__ . '/includes/common-header.php';
                                                 <div class="text-muted small">✉ <?php echo htmlspecialchars($activity['lead_email']); ?></div>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($activity['activity_type'] ?? ''); ?></span>
+                                        <td title="<?php echo htmlspecialchars($activityTypeTooltip, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($activityTypeDisplay); ?></span>
                                         </td>
-                                        <td>
+                                        <td title="<?php echo htmlspecialchars($descriptionTooltip, ENT_QUOTES, 'UTF-8'); ?>">
                                             <?php
-                                            $description = trim((string) ($activity['description'] ?? ''));
                                             if ($description === '') {
                                                 echo '<span class="text-muted">—</span>';
                                             } else {
@@ -228,27 +278,18 @@ include __DIR__ . '/includes/common-header.php';
                                             }
                                             ?>
                                         </td>
-                                        <td>
-                                            <?php if (!empty($activity['metadata_display'])): ?>
-                                                <pre class="mb-0 small text-break"><?php echo htmlspecialchars($activity['metadata_display']); ?></pre>
+                                        <td title="<?php echo htmlspecialchars($metadataTooltip, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <?php if (!empty($metadataDisplay)): ?>
+                                                <pre class="mb-0 small text-break"><?php echo htmlspecialchars($metadataDisplay); ?></pre>
                                             <?php else: ?>
                                                 <span class="text-muted">—</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <?php
-                                            $createdBy = trim((string) ($activity['created_by_name'] ?? ''));
-                                            if ($createdBy === '' && !empty($activity['user_full_name'])) {
-                                                $createdBy = (string) $activity['user_full_name'];
-                                            }
-                                            if ($createdBy === '' && !empty($activity['created_by'])) {
-                                                $createdBy = 'User #' . (int) $activity['created_by'];
-                                            }
-                                            echo $createdBy !== '' ? htmlspecialchars($createdBy) : '<span class="text-muted">System</span>';
-                                            ?>
+                                        <td title="<?php echo htmlspecialchars($createdByDisplay, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <?php echo $createdBy !== '' ? htmlspecialchars($createdBy) : '<span class="text-muted">System</span>'; ?>
                                         </td>
-                                        <td>
-                                            <?php echo htmlspecialchars(hh_format_activity_timestamp($activity['created_at'] ?? null)); ?>
+                                        <td title="<?php echo htmlspecialchars($createdAtDisplay, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <?php echo htmlspecialchars($createdAtDisplay); ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

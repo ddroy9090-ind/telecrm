@@ -127,6 +127,27 @@ final class DateRange
     }
 
     /**
+     * Provide human-readable labels for the current and previous periods.
+     *
+     * @return array{current:array{label:string,start:string,end:string},previous:array{label:string,start:string,end:string}}
+     */
+    public function getPeriodSummaries(): array
+    {
+        return [
+            'current' => [
+                'label' => self::formatPeriodLabel($this->start, $this->end),
+                'start' => $this->start->format(DATE_ATOM),
+                'end' => $this->end->format(DATE_ATOM),
+            ],
+            'previous' => [
+                'label' => self::formatPeriodLabel($this->previousStart, $this->previousEnd),
+                'start' => $this->previousStart->format(DATE_ATOM),
+                'end' => $this->previousEnd->format(DATE_ATOM),
+            ],
+        ];
+    }
+
+    /**
      * Iterate each day in the range.
      *
      * @return DatePeriod
@@ -134,5 +155,14 @@ final class DateRange
     public function iterateDays(): DatePeriod
     {
         return new DatePeriod($this->start, new DateInterval('P1D'), $this->end->modify('+1 day'));
+    }
+
+    private static function formatPeriodLabel(DateTimeImmutable $start, DateTimeImmutable $end): string
+    {
+        if ($start->format('Y-m') === $end->format('Y-m')) {
+            return $start->format('F Y');
+        }
+
+        return sprintf('%s - %s', $start->format('M j, Y'), $end->format('M j, Y'));
     }
 }

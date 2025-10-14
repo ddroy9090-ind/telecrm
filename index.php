@@ -108,6 +108,10 @@ include __DIR__ . '/includes/common-header.php';
                                     <i class='bx bx-minus'></i>
                                     <span data-stat-change-value="total-leads">--</span> <small data-stat-change-label="total-leads">vs previous period</small>
                                 </div>
+                                <div class="lead-metric-detail">
+                                    <small class="text-muted d-block" data-stat-detail-current="total-leads">--</small>
+                                    <small class="text-muted d-block" data-stat-detail-previous="total-leads">--</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -123,6 +127,10 @@ include __DIR__ . '/includes/common-header.php';
                                 <div class="lead-metric-growth blue" data-stat-change="hot-active" data-stat-change-default-class="blue">
                                     <i class='bx bx-minus'></i>
                                     <span data-stat-change-value="hot-active">--</span> <small data-stat-change-label="hot-active">vs previous period</small>
+                                </div>
+                                <div class="lead-metric-detail">
+                                    <small class="text-muted d-block" data-stat-detail-current="hot-active">--</small>
+                                    <small class="text-muted d-block" data-stat-detail-previous="hot-active">--</small>
                                 </div>
                             </div>
                         </div>
@@ -140,6 +148,10 @@ include __DIR__ . '/includes/common-header.php';
                                     <i class='bx bx-minus'></i>
                                     <span data-stat-change-value="closed-leads">--</span> <small data-stat-change-label="closed-leads">vs previous period</small>
                                 </div>
+                                <div class="lead-metric-detail">
+                                    <small class="text-muted d-block" data-stat-detail-current="closed-leads">--</small>
+                                    <small class="text-muted d-block" data-stat-detail-previous="closed-leads">--</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -155,6 +167,10 @@ include __DIR__ . '/includes/common-header.php';
                                 <div class="lead-metric-growth yellow" data-stat-change="channel-partners" data-stat-change-default-class="yellow">
                                     <i class='bx bx-minus'></i>
                                     <span data-stat-change-value="channel-partners">--</span> <small data-stat-change-label="channel-partners">vs previous period</small>
+                                </div>
+                                <div class="lead-metric-detail">
+                                    <small class="text-muted d-block" data-stat-detail-current="channel-partners">--</small>
+                                    <small class="text-muted d-block" data-stat-detail-previous="channel-partners">--</small>
                                 </div>
                             </div>
                         </div>

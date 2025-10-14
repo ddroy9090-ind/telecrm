@@ -33,43 +33,19 @@
     const state = {
         currentUserId: parseInt(app.dataset.currentUserId, 10),
         currentUserName: app.dataset.currentUserName || '',
+        sidebar: {
+            users: [],
+            groups: [],
+        },
+        searchTerm: '',
         activeEntity: null,
         currentConversationId: null,
+        conversationMeta: null,
         lastMessageId: 0,
         messageIds: new Set(),
-        sidebarData: {
-            users: parseJson(app.dataset.initialUsers) ?? [],
-            groups: parseJson(app.dataset.initialGroups) ?? [],
-        },
         sidebarTimer: null,
         conversationTimer: null,
     };
-
-    function parseJson(value) {
-        if (!value) {
-            return [];
-        }
-        try {
-            return JSON.parse(value);
-        } catch (err) {
-            console.warn('Failed to parse JSON payload', err);
-            return [];
-        }
-    }
-
-    function formatTime(value) {
-        if (!value) {
-            return '';
-        }
-        const date = new Date(value.replace(' ', 'T'));
-        if (Number.isNaN(date.getTime())) {
-            return value;
-        }
-        return new Intl.DateTimeFormat(undefined, {
-            hour: 'numeric',
-            minute: '2-digit',
-        }).format(date);
-    }
 
     function createElement(tag, options = {}) {
         const element = document.createElement(tag);
@@ -89,10 +65,116 @@
         return element;
     }
 
+    function parseNumber(value) {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    function requestJson(url, options = {}, defaultError = 'Something went wrong.') {
+        const fetchOptions = Object.assign({
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+        }, options || {});
+
+        if (fetchOptions.headers && options && options.headers) {
+            fetchOptions.headers = Object.assign({}, { 'Accept': 'application/json' }, options.headers);
+        }
+
+        return fetch(url, fetchOptions)
+            .then(async (response) => {
+                const raw = await response.text();
+                let data = null;
+
+                if (raw !== '') {
+                    try {
+                        data = JSON.parse(raw);
+                    } catch (err) {
+                        throw new Error(defaultError);
+                    }
+                }
+
+                if (!response.ok) {
+                    const message = data && data.error ? data.error : defaultError;
+                    throw new Error(message);
+                }
+
+                return data || {};
+            });
+    }
+
+    function formatTime(value) {
+        if (!value) {
+            return '';
+        }
+        const date = new Date(value.replace(' ', 'T'));
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        return new Intl.DateTimeFormat(undefined, {
+            hour: 'numeric',
+            minute: '2-digit',
+        }).format(date);
+    }
+
+    function showSidebarLoading() {
+        if (elements.userList) {
+            elements.userList.innerHTML = '<div class="chat-empty">Loading teammates…</div>';
+        }
+        if (elements.groupList) {
+            elements.groupList.innerHTML = '<div class="chat-empty">Loading groups…</div>';
+        }
+    }
+
+    function showConversationPlaceholder(message) {
+        if (!elements.messageList) {
+            return;
+        }
+        elements.messageList.innerHTML = '';
+        const placeholder = createElement('div', { className: 'chat-empty', text: message || 'Select a conversation to get started.' });
+        elements.messageList.appendChild(placeholder);
+        enableComposer(false);
+    }
+
+    function showLoadingState(message) {
+        if (!elements.messageList) {
+            return;
+        }
+        elements.messageList.innerHTML = '';
+        const loading = createElement('div', { className: 'chat-empty', text: message || 'Loading…' });
+        elements.messageList.appendChild(loading);
+        enableComposer(false);
+    }
+
+    function showErrorState(message) {
+        if (!elements.messageList) {
+            return;
+        }
+        elements.messageList.innerHTML = '';
+        const error = createElement('div', { className: 'chat-empty', text: message || 'Something went wrong. Please try again.' });
+        elements.messageList.appendChild(error);
+        enableComposer(false);
+    }
+
+    function enableComposer(enabled) {
+        if (elements.messageInput) {
+            elements.messageInput.disabled = !enabled;
+            if (!enabled) {
+                elements.messageInput.value = '';
+            }
+        }
+        if (elements.sendButton) {
+            const hasText = elements.messageInput && elements.messageInput.value.trim() !== '';
+            elements.sendButton.disabled = !enabled || !hasText;
+        }
+        if (elements.conversationField) {
+            elements.conversationField.value = enabled && state.currentConversationId ? String(state.currentConversationId) : '';
+        }
+    }
+
     function renderSidebar() {
-        renderEntityList(elements.userList, state.sidebarData.users, 'user');
-        renderEntityList(elements.groupList, state.sidebarData.groups, 'group');
-        updateActiveEntityClasses();
+        renderEntityList(elements.userList, state.sidebar.users, 'user');
+        renderEntityList(elements.groupList, state.sidebar.groups, 'group');
+        updateActiveEntityHighlight();
         applySearchFilter();
     }
 
@@ -104,9 +186,8 @@
         container.innerHTML = '';
 
         if (!Array.isArray(items) || items.length === 0) {
-            const empty = createElement('div', { className: 'chat-empty' });
-            empty.textContent = type === 'user' ? 'No teammates available yet.' : 'No groups yet. Create one to get started!';
-            container.appendChild(empty);
+            const emptyMessage = type === 'user' ? 'No teammates available yet.' : 'No groups yet. Create one to get started!';
+            container.appendChild(createElement('div', { className: 'chat-empty', text: emptyMessage }));
             return;
         }
 
@@ -122,103 +203,100 @@
         const searchEmpty = createElement('div', {
             className: 'chat-empty',
             text: 'No matches found.',
-            attrs: { 'data-role': 'search-empty', hidden: 'hidden' },
         });
+        searchEmpty.dataset.role = 'search-empty';
+        searchEmpty.hidden = true;
         container.appendChild(searchEmpty);
     }
 
     function createEntityNode(item, type) {
         const entity = createElement('div', { className: 'chat-entity' });
         entity.dataset.entity = type;
-        entity.dataset.search = `${(item.name || '').toLowerCase()} ${(item.email || '').toLowerCase()}`.trim();
+
+        const name = item.name || item.email || 'Conversation';
+        const initials = name.trim().slice(0, 2).toUpperCase();
 
         if (type === 'user') {
             entity.dataset.userId = String(item.id);
+            if (item.conversation_id) {
+                entity.dataset.conversationId = String(item.conversation_id);
+            }
+            entity.dataset.search = `${(item.name || '').toLowerCase()} ${(item.email || '').toLowerCase()}`.trim();
             if (item.is_self) {
                 entity.classList.add('chat-entity--self');
                 entity.setAttribute('aria-disabled', 'true');
             }
-            if (item.conversation_id) {
-                entity.dataset.conversationId = String(item.conversation_id);
-            }
         } else {
             entity.dataset.conversationId = String(item.id);
+            entity.dataset.search = (item.name || '').toLowerCase();
         }
 
-        const initials = (item.name || item.email || '?').trim().slice(0, 2).toUpperCase();
         const avatar = createElement('div', { className: 'chat-entity__avatar', text: initials });
         avatar.setAttribute('aria-hidden', 'true');
+        entity.appendChild(avatar);
 
         const details = createElement('div', { className: 'chat-entity__details' });
         const nameRow = createElement('div', { className: 'chat-entity__name' });
-        nameRow.appendChild(createElement('span', { text: item.name || 'Conversation' }));
-
+        nameRow.appendChild(createElement('span', { text: name }));
         if (type === 'user' && item.role) {
             nameRow.appendChild(createElement('small', { text: item.role }));
         }
+        details.appendChild(nameRow);
 
         const meta = createElement('div', { className: 'chat-entity__meta' });
         if (type === 'user') {
             meta.textContent = item.email || '';
-        } else {
-            if (item.last_message) {
-                const previewSender = item.last_message_from ? `${item.last_message_from}: ` : '';
-                meta.textContent = `${previewSender}${item.last_message}`;
-            } else if (Array.isArray(item.participants)) {
-                meta.textContent = `${item.participants.length} members`;
-            } else {
-                meta.textContent = '';
-            }
+        } else if (item.last_message) {
+            const prefix = item.last_message_from ? `${item.last_message_from}: ` : '';
+            meta.textContent = `${prefix}${item.last_message}`;
+        } else if (Array.isArray(item.participants)) {
+            meta.textContent = `${item.participants.length} member${item.participants.length === 1 ? '' : 's'}`;
         }
-
-        details.appendChild(nameRow);
         details.appendChild(meta);
-
-        entity.appendChild(avatar);
         entity.appendChild(details);
 
         if (type === 'user') {
             const status = createElement('div', { className: 'chat-entity__status' });
-            const statusClass = item.is_self ? 'is-online' : (item.is_online ? 'is-online' : 'is-offline');
+            const statusClass = item.is_self || item.is_online ? 'is-online' : 'is-offline';
             status.classList.add(statusClass);
             status.appendChild(createElement('span', { className: 'status-dot' }));
-            status.appendChild(createElement('span', { text: item.is_self ? 'You' : (item.is_online ? 'Online' : 'Offline') }));
+            const label = item.is_self ? 'You' : (item.is_online ? 'Online' : 'Offline');
+            status.appendChild(createElement('span', { text: label }));
             entity.appendChild(status);
         }
 
         if (item.unread_count) {
-            const badge = createElement('span', {
+            entity.appendChild(createElement('span', {
                 className: 'chat-entity__badge',
                 text: String(item.unread_count),
-            });
-            entity.appendChild(badge);
+            }));
         }
 
         return entity;
     }
 
-    function updateActiveEntityClasses() {
+    function updateActiveEntityHighlight() {
+        if (!state.activeEntity) {
+            return;
+        }
         const entities = app.querySelectorAll('.chat-entity');
         entities.forEach((entity) => {
             const type = entity.dataset.entity;
-            const conversationId = entity.dataset.conversationId ? parseInt(entity.dataset.conversationId, 10) : null;
-            const userId = entity.dataset.userId ? parseInt(entity.dataset.userId, 10) : null;
-
+            const conversationId = parseNumber(entity.dataset.conversationId || '');
+            const userId = parseNumber(entity.dataset.userId || '');
             let isActive = false;
 
-            if (state.activeEntity) {
-                if (state.activeEntity.type === 'group' && type === 'group') {
-                    isActive = Boolean(state.activeEntity.conversationId && conversationId === state.activeEntity.conversationId);
-                } else if (state.activeEntity.type === 'user' && type === 'user') {
-                    if (state.activeEntity.conversationId && conversationId === state.activeEntity.conversationId) {
-                        isActive = true;
-                    } else if (!state.activeEntity.conversationId && !conversationId && state.activeEntity.userId && state.activeEntity.userId === userId) {
-                        isActive = true;
-                    }
+            if (state.activeEntity.type === 'group' && type === 'group') {
+                isActive = conversationId !== null && conversationId === state.activeEntity.conversationId;
+            } else if (state.activeEntity.type === 'user' && type === 'user') {
+                if (state.activeEntity.conversationId && conversationId === state.activeEntity.conversationId) {
+                    isActive = true;
+                } else if (!state.activeEntity.conversationId && !conversationId && state.activeEntity.userId === userId) {
+                    isActive = true;
                 }
             }
 
-            entity.classList.toggle('active', isActive);
+            entity.classList.toggle('active', Boolean(isActive));
         });
     }
 
@@ -226,7 +304,7 @@
         if (!elements.searchInput) {
             return;
         }
-        const term = elements.searchInput.value.trim().toLowerCase();
+        state.searchTerm = elements.searchInput.value.trim().toLowerCase();
         [elements.userList, elements.groupList].forEach((container) => {
             if (!container) {
                 return;
@@ -238,15 +316,15 @@
             let visibleCount = 0;
             items.forEach((item) => {
                 const haystack = item.dataset.search || '';
-                const match = term === '' || haystack.includes(term);
+                const match = state.searchTerm === '' || haystack.includes(state.searchTerm);
                 item.classList.toggle('is-hidden', !match);
                 if (match) {
                     visibleCount += 1;
                 }
             });
-            const searchEmpty = container.querySelector('[data-role="search-empty"]');
-            if (searchEmpty) {
-                searchEmpty.hidden = term === '' || visibleCount > 0;
+            const empty = container.querySelector('[data-role="search-empty"]');
+            if (empty) {
+                empty.hidden = state.searchTerm === '' || visibleCount > 0;
             }
         });
     }
@@ -258,8 +336,8 @@
         }
 
         const type = target.dataset.entity;
-        const conversationId = target.dataset.conversationId ? parseInt(target.dataset.conversationId, 10) : null;
-        const userId = target.dataset.userId ? parseInt(target.dataset.userId, 10) : null;
+        const conversationId = parseNumber(target.dataset.conversationId || '');
+        const userId = parseNumber(target.dataset.userId || '');
 
         state.activeEntity = {
             type,
@@ -267,7 +345,7 @@
             conversationId: conversationId,
         };
 
-        updateActiveEntityClasses();
+        updateActiveEntityHighlight();
 
         if (conversationId) {
             openConversation(conversationId);
@@ -277,30 +355,24 @@
     }
 
     function startDirectConversation(userId, element) {
-        showLoadingState('Creating conversation…');
-        fetch(endpoints.create, {
+        showLoadingState('Starting conversation…');
+        requestJson(endpoints.create, {
             method: 'POST',
-            credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ participants: [userId] }),
-        })
-            .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
+        }, 'Unable to start the conversation.')
             .then((data) => {
-                if (!data || data.error || !data.conversation) {
-                    throw new Error(data && data.error ? data.error : 'Unable to start the conversation.');
+                if (!data || !data.conversation) {
+                    throw new Error('Unable to start the conversation.');
                 }
-
-                const conversationId = parseInt(data.conversation.id, 10);
+                const conversationId = parseNumber(data.conversation.id);
+                if (!conversationId) {
+                    throw new Error('Invalid conversation identifier.');
+                }
                 element.dataset.conversationId = String(conversationId);
-
-                const sidebarUser = state.sidebarData.users.find((user) => parseInt(user.id, 10) === userId);
-                if (sidebarUser) {
-                    sidebarUser.conversation_id = conversationId;
-                }
-
                 state.activeEntity.conversationId = conversationId;
                 openConversation(conversationId);
                 refreshSidebar();
@@ -314,7 +386,6 @@
         if (!conversationId) {
             return;
         }
-
         state.currentConversationId = conversationId;
         state.lastMessageId = 0;
         state.messageIds.clear();
@@ -323,29 +394,22 @@
         const url = new URL(endpoints.conversation, window.location.origin);
         url.searchParams.set('conversation_id', String(conversationId));
         url.searchParams.set('limit', '200');
-
         const requestedConversationId = conversationId;
 
-        fetch(url.toString(), {
-            credentials: 'same-origin',
-            headers: {
-                'Accept': 'application/json',
-            },
-        })
-            .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
+        requestJson(url.toString(), {}, 'Unable to load conversation.')
             .then((data) => {
                 if (state.currentConversationId !== requestedConversationId) {
                     return;
                 }
-                if (!data || data.error) {
-                    throw new Error(data && data.error ? data.error : 'Unable to load conversation.');
-                }
-
                 renderConversation(data);
-                clearUnread(conversationId);
-                if (data.last_message_id) {
-                    markConversationRead(data.last_message_id);
+                if (data && data.last_message_id) {
+                    const lastMessageId = parseNumber(data.last_message_id);
+                    if (lastMessageId) {
+                        state.lastMessageId = lastMessageId;
+                        markConversationRead(lastMessageId);
+                    }
                 }
+                clearUnread(requestedConversationId);
             })
             .catch((error) => {
                 if (state.currentConversationId !== requestedConversationId) {
@@ -359,46 +423,57 @@
         if (!elements.messageList) {
             return;
         }
-
         elements.messageList.innerHTML = '';
 
-        if (payload.conversation) {
-            updateHeader(payload.conversation);
-        }
+        const conversation = payload && payload.conversation ? payload.conversation : null;
+        state.conversationMeta = conversation;
 
-        const messages = Array.isArray(payload.messages) ? payload.messages : [];
+        updateConversationHeader(conversation);
 
+        const messages = Array.isArray(payload && payload.messages) ? payload.messages : [];
         if (messages.length === 0) {
-            const empty = createElement('div', { className: 'chat-empty' });
-            empty.textContent = 'Say hello to start the conversation!';
+            const empty = createElement('div', { className: 'chat-empty', text: 'Say hello to start the conversation!' });
             elements.messageList.appendChild(empty);
         } else {
             messages.forEach((message) => appendMessage(message, { scroll: false }));
             scrollMessagesToBottom();
         }
 
-        state.lastMessageId = payload.last_message_id ? parseInt(payload.last_message_id, 10) : 0;
         enableComposer(true);
     }
 
-    function updateHeader(conversation) {
+    function updateConversationHeader(conversation) {
         if (!conversation) {
+            if (elements.headerTitle) {
+                elements.headerTitle.textContent = 'Select a conversation';
+            }
+            if (elements.headerSubtitle) {
+                elements.headerSubtitle.textContent = 'Choose someone from the list to start chatting';
+            }
+            if (elements.headerAvatar) {
+                elements.headerAvatar.textContent = (state.currentUserName || '?').trim().slice(0, 2).toUpperCase();
+            }
             return;
         }
+
+        const participants = Array.isArray(conversation.participants) ? conversation.participants : [];
+        const partner = participants.find((participant) => parseNumber(participant.id) !== state.currentUserId);
+
         if (elements.headerTitle) {
-            elements.headerTitle.textContent = conversation.name || 'Conversation';
+            elements.headerTitle.textContent = conversation.name || (partner ? partner.name : 'Conversation');
         }
+
         if (elements.headerSubtitle) {
             if (conversation.is_group) {
-                const participants = Array.isArray(conversation.participants) ? conversation.participants.length : 0;
-                elements.headerSubtitle.textContent = `${participants} participant${participants === 1 ? '' : 's'}`;
-            } else if (Array.isArray(conversation.participants)) {
-                const partner = conversation.participants.find((user) => parseInt(user.id, 10) !== state.currentUserId);
+                const count = participants.length;
+                elements.headerSubtitle.textContent = `${count} participant${count === 1 ? '' : 's'}`;
+            } else {
                 elements.headerSubtitle.textContent = partner ? partner.email : '';
             }
         }
+
         if (elements.headerAvatar) {
-            const source = conversation.name || elements.headerTitle.textContent || '';
+            const source = conversation.name || (partner ? partner.name : 'Conversation');
             elements.headerAvatar.textContent = (source || '?').trim().slice(0, 2).toUpperCase();
         }
     }
@@ -407,7 +482,10 @@
         if (!elements.messageList || !message) {
             return;
         }
-        const messageId = parseInt(message.id, 10);
+        const messageId = parseNumber(message.id);
+        if (!messageId) {
+            return;
+        }
         if (state.messageIds.has(messageId)) {
             return;
         }
@@ -415,7 +493,8 @@
         state.lastMessageId = Math.max(state.lastMessageId, messageId);
 
         const wrapper = createElement('div', { className: 'chat-message' });
-        const isMine = Boolean(message.is_mine || parseInt(message.sender_id, 10) === state.currentUserId);
+        const senderId = parseNumber(message.sender_id);
+        const isMine = Boolean(message.is_mine || (senderId !== null && senderId === state.currentUserId));
         if (isMine) {
             wrapper.classList.add('chat-message--mine');
         }
@@ -443,46 +522,6 @@
         elements.messageList.scrollTop = elements.messageList.scrollHeight;
     }
 
-    function enableComposer(enabled) {
-        if (elements.messageInput) {
-            elements.messageInput.disabled = !enabled;
-        }
-        if (elements.sendButton) {
-            const hasText = elements.messageInput && elements.messageInput.value.trim() !== '';
-            elements.sendButton.disabled = !enabled || !hasText;
-        }
-        if (elements.conversationField) {
-            elements.conversationField.value = enabled && state.currentConversationId ? String(state.currentConversationId) : '';
-        }
-        if (!enabled && elements.messageInput) {
-            elements.messageInput.value = '';
-        }
-        if (enabled) {
-            handleComposerInput();
-        }
-    }
-
-    function showLoadingState(message) {
-        if (!elements.messageList) {
-            return;
-        }
-        elements.messageList.innerHTML = '';
-        const loading = createElement('div', { className: 'chat-empty', text: message || 'Loading…' });
-        elements.messageList.appendChild(loading);
-        enableComposer(false);
-    }
-
-    function showErrorState(message) {
-        if (!elements.messageList) {
-            return;
-        }
-        elements.messageList.innerHTML = '';
-        const error = createElement('div', { className: 'chat-empty' });
-        error.textContent = message || 'Something went wrong. Please try again later.';
-        elements.messageList.appendChild(error);
-        enableComposer(false);
-    }
-
     function handleComposerInput() {
         if (!elements.sendButton || !elements.messageInput) {
             return;
@@ -496,37 +535,38 @@
         if (!elements.messageInput) {
             return;
         }
-
-        const messageBody = elements.messageInput.value.trim();
-        if (!messageBody || !state.currentConversationId) {
+        const body = elements.messageInput.value.trim();
+        if (!body || !state.currentConversationId) {
             return;
         }
 
         elements.sendButton.disabled = true;
-
         const payload = new URLSearchParams();
         payload.append('conversation_id', String(state.currentConversationId));
-        payload.append('message', messageBody);
+        payload.append('message', body);
 
-        fetch(endpoints.send, {
+        requestJson(endpoints.send, {
             method: 'POST',
-            credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             },
             body: payload.toString(),
-        })
-            .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
+        }, 'Unable to send the message.')
             .then((data) => {
-                if (!data || data.error || !data.message) {
-                    throw new Error(data && data.error ? data.error : 'Unable to send the message.');
+                if (!data || !data.message) {
+                    throw new Error('Unable to send the message.');
                 }
-
                 elements.messageInput.value = '';
                 handleComposerInput();
                 appendMessage(data.message, { scroll: true });
-                markConversationRead(data.message.id);
+                if (data.message && data.message.id) {
+                    const messageId = parseNumber(data.message.id);
+                    if (messageId) {
+                        markConversationRead(messageId);
+                    }
+                }
+                clearUnread(state.currentConversationId);
                 refreshSidebar();
             })
             .catch((error) => {
@@ -543,16 +583,15 @@
         payload.append('conversation_id', String(state.currentConversationId));
         payload.append('last_message_id', String(lastMessageId));
 
-        fetch(endpoints.markRead, {
+        requestJson(endpoints.markRead, {
             method: 'POST',
-            credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             },
             body: payload.toString(),
         }).catch(() => {
-            // Ignore read failures.
+            // Ignore errors while marking messages as read.
         });
     }
 
@@ -561,23 +600,30 @@
             return;
         }
 
-        state.sidebarData.users = state.sidebarData.users.map((user) => {
-            if (parseInt(user.conversation_id, 10) === conversationId) {
+        let updated = false;
+        state.sidebar.users = state.sidebar.users.map((user) => {
+            if (parseNumber(user.conversation_id) === conversationId && user.unread_count) {
+                updated = true;
                 return Object.assign({}, user, { unread_count: 0 });
             }
             return user;
         });
 
-        state.sidebarData.groups = state.sidebarData.groups.map((group) => {
-            if (parseInt(group.id, 10) === conversationId) {
+        state.sidebar.groups = state.sidebar.groups.map((group) => {
+            if (parseNumber(group.id) === conversationId && group.unread_count) {
+                updated = true;
                 return Object.assign({}, group, { unread_count: 0 });
             }
             return group;
         });
 
-        const badge = app.querySelector(`.chat-entity[data-conversation-id="${conversationId}"] .chat-entity__badge`);
-        if (badge && badge.parentNode) {
-            badge.parentNode.removeChild(badge);
+        if (updated) {
+            renderSidebar();
+        } else {
+            const badge = app.querySelector(`.chat-entity[data-conversation-id="${conversationId}"] .chat-entity__badge`);
+            if (badge && badge.parentNode) {
+                badge.parentNode.removeChild(badge);
+            }
         }
     }
 
@@ -585,29 +631,31 @@
         if (!state.currentConversationId) {
             return;
         }
-        const currentConversationId = state.currentConversationId;
+        const conversationId = state.currentConversationId;
         const url = new URL(endpoints.conversation, window.location.origin);
-        url.searchParams.set('conversation_id', String(currentConversationId));
+        url.searchParams.set('conversation_id', String(conversationId));
         url.searchParams.set('limit', '200');
 
-        fetch(url.toString(), {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' },
-        })
-            .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
+        requestJson(url.toString(), {}, 'Unable to refresh the conversation.')
             .then((data) => {
-                if (state.currentConversationId !== currentConversationId) {
+                if (state.currentConversationId !== conversationId) {
                     return;
                 }
-                if (!data || data.error) {
+                if (!data || !Array.isArray(data.messages)) {
                     return;
                 }
-                const messages = Array.isArray(data.messages) ? data.messages : [];
-                const newMessages = messages.filter((message) => !state.messageIds.has(parseInt(message.id, 10)));
-                if (newMessages.length > 0) {
-                    newMessages.forEach((message) => appendMessage(message, { scroll: true }));
-                    if (data.last_message_id) {
-                        markConversationRead(data.last_message_id);
+                data.messages.forEach((message) => {
+                    const messageId = parseNumber(message.id);
+                    if (!messageId || state.messageIds.has(messageId)) {
+                        return;
+                    }
+                    appendMessage(message, { scroll: true });
+                });
+                if (data.last_message_id) {
+                    const lastMessageId = parseNumber(data.last_message_id);
+                    if (lastMessageId && lastMessageId !== state.lastMessageId) {
+                        state.lastMessageId = lastMessageId;
+                        markConversationRead(lastMessageId);
                     }
                 }
             })
@@ -617,17 +665,16 @@
     }
 
     function refreshSidebar() {
-        fetch(endpoints.sidebar, {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' },
-        })
-            .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
+        requestJson(endpoints.sidebar, {}, 'Unable to refresh sidebar.')
             .then((data) => {
-                if (!data || data.error) {
+                if (!data) {
                     return;
                 }
-                state.sidebarData.users = Array.isArray(data.users) ? data.users : [];
-                state.sidebarData.groups = Array.isArray(data.groups) ? data.groups : [];
+                if (data.current_user && data.current_user.name) {
+                    state.currentUserName = data.current_user.name;
+                }
+                state.sidebar.users = Array.isArray(data.users) ? data.users : [];
+                state.sidebar.groups = Array.isArray(data.groups) ? data.groups : [];
                 renderSidebar();
             })
             .catch(() => {
@@ -639,15 +686,14 @@
         if (!elements.groupUserList) {
             return;
         }
-        const users = state.sidebarData.users.filter((user) => !user.is_self);
-        if (users.length === 0) {
+        const teammates = state.sidebar.users.filter((user) => !user.is_self);
+        if (teammates.length === 0) {
             elements.groupUserList.innerHTML = '<div class="text-muted small">No teammates available.</div>';
             return;
         }
-
         const fragment = document.createDocumentFragment();
-        users.forEach((user) => {
-            const formCheck = createElement('div', { className: 'form-check' });
+        teammates.forEach((user) => {
+            const wrapper = createElement('div', { className: 'form-check' });
             const input = createElement('input', {
                 className: 'form-check-input',
                 attrs: {
@@ -662,9 +708,9 @@
                 attrs: { for: `group-user-${user.id}` },
             });
             label.innerHTML = `<strong>${user.name}</strong><br><span class="text-muted small">${user.email}</span>`;
-            formCheck.appendChild(input);
-            formCheck.appendChild(label);
-            fragment.appendChild(formCheck);
+            wrapper.appendChild(input);
+            wrapper.appendChild(label);
+            fragment.appendChild(wrapper);
         });
         elements.groupUserList.innerHTML = '';
         elements.groupUserList.appendChild(fragment);
@@ -675,38 +721,42 @@
         if (!elements.groupForm) {
             return;
         }
-
         const formData = new FormData(elements.groupForm);
         const name = (formData.get('name') || '').toString().trim();
-        const participants = Array.from(elements.groupUserList.querySelectorAll('input[name="participants[]"]:checked')).map((input) => parseInt(input.value, 10));
+        const selected = Array.from(elements.groupUserList.querySelectorAll('input[name="participants[]"]:checked'))
+            .map((input) => parseNumber(input.value))
+            .filter((value) => value !== null);
 
         if (!name) {
             alert('Please provide a group name.');
             return;
         }
-        if (participants.length === 0) {
+        if (selected.length === 0) {
             alert('Please select at least one teammate.');
             return;
         }
 
-        elements.groupForm.querySelector('button[type="submit"]').disabled = true;
+        const submitButton = elements.groupForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
 
-        fetch(endpoints.create, {
+        requestJson(endpoints.create, {
             method: 'POST',
-            credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ name, participants }),
-        })
-            .then((response) => response.json().catch(() => ({ error: 'Invalid server response.' })))
+            body: JSON.stringify({ name, participants: selected }),
+        }, 'Unable to create the group.')
             .then((data) => {
-                if (!data || data.error || !data.conversation) {
-                    throw new Error(data && data.error ? data.error : 'Unable to create the group.');
+                if (!data || !data.conversation) {
+                    throw new Error('Unable to create the group.');
                 }
-
-                const conversationId = parseInt(data.conversation.id, 10);
+                const conversationId = parseNumber(data.conversation.id);
+                if (!conversationId) {
+                    throw new Error('Invalid conversation identifier.');
+                }
                 const newGroup = {
                     id: conversationId,
                     name: data.conversation.name || name,
@@ -716,33 +766,34 @@
                     last_message_from: null,
                     participants: Array.isArray(data.participants) ? data.participants : [],
                 };
-
-                state.sidebarData.groups.unshift(newGroup);
+                state.sidebar.groups.unshift(newGroup);
                 state.activeEntity = {
                     type: 'group',
                     conversationId,
                     userId: null,
                 };
-
                 renderSidebar();
-
                 const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(elements.groupModal) : null;
                 if (modalInstance) {
                     modalInstance.hide();
                 }
                 elements.groupForm.reset();
-                elements.groupForm.querySelector('button[type="submit"]').disabled = false;
-
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
                 openConversation(conversationId);
             })
             .catch((error) => {
-                elements.groupForm.querySelector('button[type="submit"]').disabled = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
                 alert(error.message || 'Unable to create the group.');
             });
     }
 
     function initialise() {
-        renderSidebar();
+        showSidebarLoading();
+        showConversationPlaceholder('Select a conversation to get started.');
 
         app.addEventListener('click', handleEntityClick);
 
@@ -766,6 +817,7 @@
             elements.groupForm.addEventListener('submit', handleGroupSubmit);
         }
 
+        refreshSidebar();
         state.sidebarTimer = window.setInterval(refreshSidebar, 15000);
         state.conversationTimer = window.setInterval(refreshConversation, 5000);
     }

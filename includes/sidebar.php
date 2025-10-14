@@ -76,6 +76,12 @@
                     </li>
                 </ul>
             </li>
+            <li>
+                <a href="activity-log.php" class="sidebar-link">
+                    <span class="sidebar-icon"><i class="bx bx-history"></i></span>
+                    <span class="sidebar-text">Activity Log</span>
+                </a>
+            </li>
             <li class="sidebar-logout mt-auto">
                 <a href="logout.php" class="sidebar-link" onclick="return confirm('Are you sure you want to logout?')">
                     <span class="sidebar-icon"><i class="bx bx-log-out"></i></span>

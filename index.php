@@ -88,7 +88,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <i class='bx bx-dollar'></i>
                             </div>
                             <div class="lead-metric-content">
-                                <h6>Closed Deals</h6>
+                                <h6>Closed Leads</h6>
                                 <h2>89</h2>
                                 <p>AED 124.5M total value</p>
                                 <div class="lead-metric-growth red">

@@ -31,6 +31,7 @@ final class StatsController
             'data' => $counters,
             'meta' => [
                 'range' => $range->getLabel(),
+                'periods' => $range->getPeriodSummaries(),
                 'generated_at' => gmdate(DATE_ATOM),
             ],
         ];

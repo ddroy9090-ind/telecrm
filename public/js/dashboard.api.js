@@ -102,6 +102,13 @@
         }
 
         const data = payload.data;
+        const periods = (payload.meta && payload.meta.periods) ? payload.meta.periods : null;
+        const currentPeriodLabel = periods && periods.current && periods.current.label
+            ? periods.current.label
+            : null;
+        const previousPeriodLabel = periods && periods.previous && periods.previous.label
+            ? periods.previous.label
+            : null;
 
         Object.keys(data).forEach((key) => {
             const metric = data[key];
@@ -146,7 +153,11 @@
                 }
 
                 if (changeLabel) {
-                    changeLabel.textContent = 'vs previous period';
+                    if (previousPeriodLabel) {
+                        changeLabel.textContent = `vs ${previousPeriodLabel}`;
+                    } else {
+                        changeLabel.textContent = 'vs previous period';
+                    }
                 }
 
                 if (changeIcon) {
@@ -160,6 +171,25 @@
                         changeIcon.classList.add('bx-trending-down');
                     }
                 }
+            }
+
+            const currentDetail = document.querySelector(`[data-stat-detail-current="${key.replace(/_/g, '-')}"]`);
+            const previousDetail = document.querySelector(`[data-stat-detail-previous="${key.replace(/_/g, '-')}"]`);
+
+            if (currentDetail) {
+                const label = currentPeriodLabel || 'Current period';
+                const valueText = (typeof metric.value === 'number')
+                    ? formatNumber(metric.value)
+                    : '--';
+                currentDetail.textContent = `${label}: ${valueText}`;
+            }
+
+            if (previousDetail) {
+                const label = previousPeriodLabel || 'Previous period';
+                const valueText = (typeof metric.previous_value === 'number')
+                    ? formatNumber(metric.previous_value)
+                    : '--';
+                previousDetail.textContent = `${label}: ${valueText}`;
             }
         });
     }

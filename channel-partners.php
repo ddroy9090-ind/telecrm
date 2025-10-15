@@ -785,9 +785,7 @@ $pageInlineScripts[] = <<<HTML
                 var normalized = String(value).trim();
 
                 if (settings.preserveLineBreaks) {
-                    var fragments = normalized.split(/
-?
-/);
+                    var fragments = normalized.split(/\r?\n/);
                     element.innerHTML = '';
                     fragments.forEach(function (fragment, index) {
                         element.appendChild(document.createTextNode(fragment));

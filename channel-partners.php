@@ -422,6 +422,351 @@ $pageInlineScripts[] = <<<HTML
 </script>
 HTML;
 
+$pageInlineScripts[] = <<<HTML
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var leadSidebar = document.getElementById('leadSidebar');
+        var overlay = document.getElementById('leadSidebarOverlay');
+        var detailsView = document.getElementById('partnerDetailsView');
+        var addPartnerForm = document.getElementById('addPartnerForm');
+        var body = document.body;
+
+        if (!leadSidebar || !overlay || !detailsView) {
+            return;
+        }
+
+        var titleElement = leadSidebar.querySelector('[data-sidebar-title]');
+        var subtitleElement = leadSidebar.querySelector('[data-sidebar-subtitle]');
+        var defaultTitle = titleElement ? titleElement.textContent.trim() : '';
+        var defaultSubtitle = subtitleElement ? subtitleElement.textContent.trim() : '';
+
+        var detailFields = {};
+        detailsView.querySelectorAll('[data-partner-detail]').forEach(function (element) {
+            var key = element.getAttribute('data-partner-detail');
+            if (key) {
+                detailFields[key] = element;
+            }
+        });
+
+        var documentFields = {};
+        detailsView.querySelectorAll('[data-partner-document]').forEach(function (element) {
+            var key = element.getAttribute('data-partner-document');
+            if (key) {
+                documentFields[key] = element;
+            }
+        });
+
+        var closeTrigger = leadSidebar.querySelector('.lead-sidebar__close');
+        var addPartnerTrigger = document.querySelector('[data-open-lead-sidebar]');
+        var overlayHideTimeout = null;
+
+        var showOverlay = function () {
+            if (!overlay) {
+                return;
+            }
+
+            if (overlayHideTimeout) {
+                window.clearTimeout(overlayHideTimeout);
+                overlayHideTimeout = null;
+            }
+
+            overlay.hidden = false;
+            window.requestAnimationFrame(function () {
+                overlay.classList.add('is-visible');
+            });
+        };
+
+        var openSidebarForView = function () {
+            leadSidebar.classList.add('is-open');
+            leadSidebar.setAttribute('aria-hidden', 'false');
+            body.classList.add('lead-sidebar-open');
+            showOverlay();
+        };
+
+        var showFormMode = function () {
+            if (detailsView) {
+                detailsView.hidden = true;
+                detailsView.setAttribute('aria-hidden', 'true');
+            }
+
+            if (addPartnerForm) {
+                addPartnerForm.hidden = false;
+                addPartnerForm.removeAttribute('aria-hidden');
+            }
+
+            leadSidebar.classList.remove('is-viewing-partner');
+
+            if (titleElement) {
+                titleElement.textContent = defaultTitle;
+            }
+
+            if (subtitleElement) {
+                subtitleElement.textContent = defaultSubtitle;
+            }
+        };
+
+        var applyTextValue = function (element, value, options) {
+            if (!element) {
+                return;
+            }
+
+            var settings = Object.assign({
+                fallback: 'Not provided',
+                preserveLineBreaks: false
+            }, options || {});
+
+            var hasValue = value !== null && typeof value !== 'undefined' && String(value).trim() !== '';
+
+            if (hasValue) {
+                var normalized = String(value).trim();
+
+                if (settings.preserveLineBreaks) {
+                    var fragments = normalized.split(/\r?\n/);
+                    element.innerHTML = '';
+                    fragments.forEach(function (fragment, index) {
+                        element.appendChild(document.createTextNode(fragment));
+                        if (index < fragments.length - 1) {
+                            element.appendChild(document.createElement('br'));
+                        }
+                    });
+                } else {
+                    element.textContent = normalized;
+                }
+
+                element.classList.remove('is-empty');
+            } else {
+                element.textContent = settings.fallback;
+                element.classList.add('is-empty');
+            }
+        };
+
+        var applyLinkValue = function (element, value, builder, fallback) {
+            if (!element) {
+                return;
+            }
+
+            var emptyText = fallback || 'Not provided';
+            var linkBuilder = typeof builder === 'function' ? builder : function (input) {
+                return input;
+            };
+
+            element.innerHTML = '';
+
+            var hasValue = value !== null && typeof value !== 'undefined' && String(value).trim() !== '';
+            if (hasValue) {
+                var normalized = String(value).trim();
+                var href = linkBuilder(normalized);
+                var anchor = document.createElement('a');
+                anchor.href = href || '#';
+                anchor.textContent = normalized;
+
+                if (/^https?:/i.test(anchor.href)) {
+                    anchor.target = '_blank';
+                    anchor.rel = 'noopener';
+                }
+
+                anchor.classList.add('text-decoration-none');
+                element.appendChild(anchor);
+                element.classList.remove('is-empty');
+            } else {
+                element.textContent = emptyText;
+                element.classList.add('is-empty');
+            }
+        };
+
+        var applyDocumentValue = function (element, documentInfo) {
+            if (!element) {
+                return;
+            }
+
+            element.innerHTML = '';
+
+            if (documentInfo && documentInfo.url) {
+                var anchor = document.createElement('a');
+                anchor.href = documentInfo.url;
+                anchor.textContent = documentInfo.name && documentInfo.name.trim() !== '' ? documentInfo.name : 'View document';
+                anchor.target = '_blank';
+                anchor.rel = 'noopener';
+                anchor.classList.add('text-decoration-none');
+                element.appendChild(anchor);
+                element.classList.remove('is-empty');
+            } else {
+                element.textContent = 'Not uploaded';
+                element.classList.add('is-empty');
+            }
+        };
+
+        var populateDetails = function (partnerData) {
+            if (!partnerData) {
+                return;
+            }
+
+            applyTextValue(detailFields.partner_code, partnerData.partner_code, { fallback: 'Not available' });
+            applyTextValue(detailFields.company_name, partnerData.company_name);
+            applyTextValue(detailFields.contact_person, partnerData.contact_person);
+            applyTextValue(detailFields.status, partnerData.status, { fallback: 'Not set' });
+            applyTextValue(detailFields.commission_structure, partnerData.commission_structure, { fallback: 'Not set' });
+            applyTextValue(detailFields.remarks, partnerData.remarks, { preserveLineBreaks: true });
+
+            applyLinkValue(detailFields.email, partnerData.email, function (value) {
+                return 'mailto:' + value;
+            });
+
+            applyLinkValue(detailFields.phone, partnerData.phone, function (value) {
+                return 'tel:' + value;
+            });
+
+            applyTextValue(detailFields.whatsapp, partnerData.whatsapp);
+            applyTextValue(detailFields.country, partnerData.country);
+            applyTextValue(detailFields.city, partnerData.city);
+            applyTextValue(detailFields.address, partnerData.address, { preserveLineBreaks: true });
+
+            applyTextValue(detailFields.rera_number, partnerData.rera_number);
+            applyTextValue(detailFields.license_number, partnerData.license_number);
+
+            applyLinkValue(detailFields.website, partnerData.website, function (value) {
+                var trimmed = value.trim();
+                if (/^https?:\/\//i.test(trimmed)) {
+                    return trimmed;
+                }
+                return 'https://' + trimmed;
+            });
+
+            applyTextValue(detailFields.created_at, partnerData.created_at, { fallback: 'Not available' });
+
+            if (partnerData.documents) {
+                Object.keys(documentFields).forEach(function (key) {
+                    applyDocumentValue(documentFields[key], partnerData.documents[key] || null);
+                });
+            } else {
+                Object.keys(documentFields).forEach(function (key) {
+                    applyDocumentValue(documentFields[key], null);
+                });
+            }
+        };
+
+        var showPartnerDetails = function (partnerData) {
+            if (!partnerData) {
+                return;
+            }
+
+            populateDetails(partnerData);
+
+            if (titleElement) {
+                var titleText = partnerData.company_name && partnerData.company_name.trim() !== '' ? partnerData.company_name : 'Partner Details';
+                titleElement.textContent = titleText;
+            }
+
+            if (subtitleElement) {
+                if (partnerData.partner_code && partnerData.partner_code.trim() !== '') {
+                    subtitleElement.textContent = 'Partner Code: ' + partnerData.partner_code;
+                } else {
+                    subtitleElement.textContent = 'Review partner information';
+                }
+            }
+
+            if (addPartnerForm) {
+                addPartnerForm.hidden = true;
+                addPartnerForm.setAttribute('aria-hidden', 'true');
+            }
+
+            detailsView.hidden = false;
+            detailsView.removeAttribute('aria-hidden');
+            leadSidebar.classList.add('is-viewing-partner');
+
+            openSidebarForView();
+        };
+
+        document.querySelectorAll('[data-action="view"][data-partner-id]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+
+                var row = button.closest('tr[data-partner-json]');
+                if (!row) {
+                    return;
+                }
+
+                var dropdown = button.closest('.dropdown');
+                if (dropdown) {
+                    var toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+                    if (toggle && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                        var instance = bootstrap.Dropdown.getInstance(toggle) || new bootstrap.Dropdown(toggle);
+                        instance.hide();
+                    } else {
+                        dropdown.classList.remove('show');
+                        var menu = dropdown.querySelector('.dropdown-menu');
+                        if (menu) {
+                            menu.classList.remove('show');
+                        }
+                    }
+                }
+
+                var payload = row.getAttribute('data-partner-json');
+                if (!payload) {
+                    return;
+                }
+
+                var parsed;
+                try {
+                    parsed = JSON.parse(payload);
+                } catch (error) {
+                    console.error('Unable to parse partner data', error);
+                    return;
+                }
+
+                showPartnerDetails(parsed);
+            });
+        });
+
+        if (addPartnerTrigger) {
+            addPartnerTrigger.addEventListener('click', function () {
+                showFormMode();
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', function () {
+                showFormMode();
+            });
+        }
+
+        if (closeTrigger) {
+            closeTrigger.addEventListener('click', function () {
+                showFormMode();
+            });
+        }
+
+        var viewCloseButton = detailsView.querySelector('[data-partner-details-close]');
+        if (viewCloseButton) {
+            viewCloseButton.addEventListener('click', function (event) {
+                event.preventDefault();
+
+                if (closeTrigger) {
+                    closeTrigger.click();
+                } else {
+                    leadSidebar.classList.remove('is-open');
+                    leadSidebar.setAttribute('aria-hidden', 'true');
+                    body.classList.remove('lead-sidebar-open');
+
+                    if (overlay) {
+                        overlay.classList.remove('is-visible');
+                        overlay.hidden = true;
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                showFormMode();
+            }
+        });
+
+        showFormMode();
+    });
+</script>
+HTML;
+
 $pageTitle = 'Channel Partners';
 
 include __DIR__ . '/includes/common-header.php';
@@ -602,8 +947,65 @@ include __DIR__ . '/includes/common-header.php';
                                     } elseif ($status === 'Inactive') {
                                         $statusClass = 'bg-dark';
                                     }
+
+                                    $createdAtRaw = $partner['created_at'] ?? '';
+                                    $createdAtDisplay = '';
+
+                                    if ($createdAtRaw !== '') {
+                                        try {
+                                            $createdAtDisplay = (new DateTimeImmutable($createdAtRaw))->format('d M Y, h:i A');
+                                        } catch (Throwable $dateException) {
+                                            $createdAtDisplay = $createdAtRaw;
+                                        }
+                                    }
+
+                                    $partnerDocuments = [
+                                        'rera_certificate' => $partner['rera_certificate'] ?? null,
+                                        'trade_license' => $partner['trade_license'] ?? null,
+                                        'agreement' => $partner['agreement'] ?? null,
+                                    ];
+
+                                    $documentsForView = [];
+
+                                    foreach ($partnerDocuments as $documentKey => $documentPath) {
+                                        if ($documentPath === null || $documentPath === '') {
+                                            $documentsForView[$documentKey] = null;
+                                            continue;
+                                        }
+
+                                        $documentsForView[$documentKey] = [
+                                            'url' => hh_asset($documentPath),
+                                            'name' => basename((string) $documentPath),
+                                        ];
+                                    }
+
+                                    $partnerDataForView = [
+                                        'id' => (int) ($partner['id'] ?? 0),
+                                        'partner_code' => $partnerCode,
+                                        'company_name' => $companyName,
+                                        'contact_person' => $contactPerson,
+                                        'email' => $email,
+                                        'phone' => $phone,
+                                        'whatsapp' => $whatsapp,
+                                        'country' => $country,
+                                        'city' => $city,
+                                        'address' => $partner['address'] ?? '',
+                                        'status' => $status,
+                                        'commission_structure' => $commission,
+                                        'remarks' => $partner['remarks'] ?? '',
+                                        'rera_number' => $partner['rera_number'] ?? '',
+                                        'license_number' => $partner['license_number'] ?? '',
+                                        'website' => $partner['website'] ?? '',
+                                        'created_at' => $createdAtDisplay,
+                                        'documents' => $documentsForView,
+                                    ];
+
+                                    $partnerJson = json_encode($partnerDataForView, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                                    if ($partnerJson === false) {
+                                        $partnerJson = '{}';
+                                    }
                                     ?>
-                                    <tr class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
+                                    <tr class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json='<?= htmlspecialchars($partnerJson, ENT_QUOTES, 'UTF-8') ?>'>
                                         <td>
                                             <?= htmlspecialchars($partnerCode, ENT_QUOTES, 'UTF-8') ?>
                                         </td>
@@ -731,13 +1133,157 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
                     <div class="lead-sidebar__header-content">
                         <div class="lead-sidebar__header-text">
-                            <p class="lead-sidebar__header-title mb-1">Add New Partner</p>
-                            <p class="text-white small">Enter partner details to add them to your network</p>
+                            <p class="lead-sidebar__header-title mb-1" data-sidebar-title>Add New Partner</p>
+                            <p class="text-white small" data-sidebar-subtitle>Enter partner details to add them to your network</p>
                         </div>
                     </div>
                 </header>
 
                 <div class="lead-sidebar__body">
+                    <div id="partnerDetailsView" class="lead-sidebar__view" hidden>
+                        <section class="lead-sidebar__section">
+                            <h3 class="lead-sidebar__section-title">Partner Overview</h3>
+                            <div class="lead-sidebar__details">
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Partner Code</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="partner_code"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Company Name</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="company_name"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Contact Person</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="contact_person"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Status</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="status"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Commission Structure</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="commission_structure"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Remarks</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="remarks"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="lead-sidebar__section mt-4">
+                            <h3 class="lead-sidebar__section-title">Contact & Location</h3>
+                            <div class="lead-sidebar__details">
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Email</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="email"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Phone</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="phone"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">WhatsApp</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="whatsapp"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Country</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="country"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">City</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="city"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Address</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="address"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="lead-sidebar__section mt-4">
+                            <h3 class="lead-sidebar__section-title">Compliance & Activity</h3>
+                            <div class="lead-sidebar__details">
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">RERA Number</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="rera_number"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">License Number</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="license_number"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Website</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="website"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Created On</div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="created_at"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="lead-sidebar__section mt-4">
+                            <h3 class="lead-sidebar__section-title">Documents</h3>
+                            <div class="lead-sidebar__details">
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">RERA Certificate</div>
+                                        <div class="lead-sidebar__item-value" data-partner-document="rera_certificate"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Trade License</div>
+                                        <div class="lead-sidebar__item-value" data-partner-document="trade_license"></div>
+                                    </div>
+                                </div>
+                                <div class="lead-sidebar__item">
+                                    <div class="lead-sidebar__item-content">
+                                        <div class="lead-sidebar__item-label">Agreement / MOU</div>
+                                        <div class="lead-sidebar__item-value" data-partner-document="agreement"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-outline-secondary" data-partner-details-close>Close</button>
+                        </div>
+                    </div>
+
                     <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data" novalidate>
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Basic Details</h3>

@@ -1296,60 +1296,70 @@ $pageInlineScripts[] = <<<HTML
             });
         }
 
-        document.querySelectorAll('[data-action="view"][data-partner-id]').forEach(function (button) {
-            button.addEventListener('click', function (event) {
-                event.preventDefault();
+        function resolvePartnerFallback(button, partnerId) {
+            var row = button.closest('tr[data-partner-id]');
 
-                closeAnyDropdown(button);
+            if (!row) {
+                row = getPartnerRowById(partnerId);
+            }
 
-                var row = button.closest('tr[data-partner-id]');
-                var partnerId = row ? parseInt(row.getAttribute('data-partner-id'), 10) : parseInt(button.getAttribute('data-partner-id'), 10);
-                var fallback = row ? parsePartnerDataFromRow(row) : null;
+            return {
+                row: row,
+                data: row ? parsePartnerDataFromRow(row) : null
+            };
+        }
 
-                if (!partnerId) {
-                    window.alert('Unable to determine the selected partner.');
-                    return;
-                }
+        function handlePartnerAction(event) {
+            var target = event.target instanceof Element ? event.target : null;
+            if (!target) {
+                return;
+            }
 
-                handleViewAction(partnerId, fallback);
-            });
-        });
+            var button = target.closest('[data-partner-id][data-action]');
+            if (!button) {
+                return;
+            }
 
-        document.querySelectorAll('[data-action="edit"][data-partner-id]').forEach(function (button) {
-            button.addEventListener('click', function (event) {
-                event.preventDefault();
+            var action = (button.getAttribute('data-action') || '').toLowerCase();
+            if (['view', 'edit', 'delete'].indexOf(action) === -1) {
+                return;
+            }
 
-                closeAnyDropdown(button);
+            event.preventDefault();
+            event.stopPropagation();
 
-                var partnerId = parseInt(button.getAttribute('data-partner-id'), 10);
-                if (!partnerId) {
-                    window.alert('Unable to determine the selected partner.');
-                    return;
-                }
+            closeAnyDropdown(button);
 
-                var row = button.closest('tr[data-partner-id]');
-                var fallback = row ? parsePartnerDataFromRow(row) : null;
+            var partnerIdValue = button.getAttribute('data-partner-id');
+            var partnerId = partnerIdValue ? parseInt(partnerIdValue, 10) : NaN;
 
-                handleEditAction(partnerId, fallback);
-            });
-        });
+            if (!partnerId) {
+                window.alert('Unable to determine the selected partner.');
+                return;
+            }
 
-        document.querySelectorAll('[data-action="delete"][data-partner-id]').forEach(function (button) {
-            button.addEventListener('click', function (event) {
-                event.preventDefault();
+            var fallback = resolvePartnerFallback(button, partnerId);
 
-                closeAnyDropdown(button);
+            if (action === 'view') {
+                handleViewAction(partnerId, fallback.data);
+                return;
+            }
 
-                var partnerId = parseInt(button.getAttribute('data-partner-id'), 10);
-                if (!partnerId) {
-                    window.alert('Unable to determine the selected partner.');
-                    return;
-                }
+            if (action === 'edit') {
+                handleEditAction(partnerId, fallback.data);
+                return;
+            }
 
-                var row = button.closest('tr[data-partner-id]');
-                handleDeleteAction(partnerId, row);
-            });
-        });
+            if (action === 'delete') {
+                handleDeleteAction(partnerId, fallback.row);
+            }
+        }
+
+        if (partnerTableBody) {
+            partnerTableBody.addEventListener('click', handlePartnerAction);
+        }
+
+        document.addEventListener('click', handlePartnerAction);
 
         ensureEmptyStateRow();
 

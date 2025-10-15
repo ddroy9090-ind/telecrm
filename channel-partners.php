@@ -703,22 +703,60 @@ $pageInlineScripts[] = <<<HTML
             });
         });
 
-        document.querySelectorAll('tr[data-partner-json]').forEach(function (row) {
-            row.addEventListener('click', function (event) {
-                var targetElement = event.target instanceof Element ? event.target : event.target.parentElement;
+        var findPartnerRow = function (startingNode) {
+            var current = startingNode;
 
-                if (targetElement && typeof targetElement.closest === 'function' && targetElement.closest(preventSelector)) {
+            while (current && current !== document.body) {
+                if (
+                    current.nodeType === 1 &&
+                    (
+                        (typeof current.matches === 'function' && current.matches('tr[data-partner-json]')) ||
+                        (current.tagName === 'TR' && current.hasAttribute('data-partner-json'))
+                    )
+                ) {
+                    return current;
+                }
+
+                current = current.parentElement;
+            }
+
+            return null;
+        };
+
+        var partnerTableBody = document.querySelector('.lead-table tbody');
+        if (partnerTableBody) {
+            partnerTableBody.addEventListener('click', function (event) {
+                var target = event.target;
+
+                if (!target) {
                     return;
                 }
 
-                var partnerData = parsePartnerDataFromRow(row);
+                if (target.nodeType !== 1) {
+                    target = target.parentElement;
+                }
+
+                if (!target) {
+                    return;
+                }
+
+                if (typeof target.closest === 'function' && target.closest(preventSelector)) {
+                    return;
+                }
+
+                var clickedRow = findPartnerRow(target);
+                if (!clickedRow) {
+                    return;
+                }
+
+                var partnerData = parsePartnerDataFromRow(clickedRow);
                 if (!partnerData) {
                     return;
                 }
 
                 showPartnerDetails(partnerData);
             });
-        });
+        }
 
         if (addPartnerTrigger) {
             addPartnerTrigger.addEventListener('click', function () {

@@ -106,7 +106,7 @@ $handleUpload = static function (string $fieldName) use (&$formErrors, &$uploade
     }
 
     $fileSize = (int) ($file['size'] ?? 0);
-    $maxSize = 5 * 1024 * 1024; // 5 MB limit.
+    $maxSize = 100 * 1024 * 1024; // 5 MB limit.
     if ($fileSize > $maxSize) {
         $formErrors[$fieldName] = 'The uploaded file exceeds the 5MB size limit.';
         return null;

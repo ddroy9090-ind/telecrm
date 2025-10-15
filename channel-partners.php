@@ -488,32 +488,6 @@ if (!isset($pageInlineScripts) || !is_array($pageInlineScripts)) {
 $pageInlineScripts[] = <<<HTML
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var addPartnerButton = document.querySelector('[data-open-lead-sidebar]');
-        if (!addPartnerButton) {
-            return;
-        }
-
-        var preventSelector = '[data-prevent-lead-open]';
-        document.querySelectorAll('[data-partner-status]').forEach(function (row) {
-            row.addEventListener('click', function (event) {
-                if (event.target.closest(preventSelector)) {
-                    return;
-                }
-
-                if (row.getAttribute('data-partner-status') !== 'Active') {
-                    return;
-                }
-
-                addPartnerButton.click();
-            });
-        });
-    });
-</script>
-HTML;
-
-$pageInlineScripts[] = <<<HTML
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
         var partnerTable = document.querySelector('[data-partner-table]');
         var partnerForm = document.getElementById('addPartnerForm');
         var addPartnerButton = document.querySelector('[data-open-lead-sidebar]');
@@ -524,6 +498,7 @@ $pageInlineScripts[] = <<<HTML
         var submitButton = partnerForm ? partnerForm.querySelector('button[type="submit"]') : null;
         var partnerModalElement = document.getElementById('partnerDetailsModal');
         var partnerModalInstance = null;
+        var preventSelector = '[data-prevent-lead-open]';
 
         if (!partnerTable) {
             return;
@@ -685,6 +660,31 @@ $pageInlineScripts[] = <<<HTML
                 }
             }
         };
+
+        partnerTable.querySelectorAll('tr[data-partner-json]').forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                if (event.target.closest(preventSelector)) {
+                    return;
+                }
+
+                var partner = parsePartner(row);
+                if (!partner) {
+                    return;
+                }
+
+                if (!partnerModalElement || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                    return;
+                }
+
+                partnerModalInstance = bootstrap.Modal.getOrCreateInstance(partnerModalElement);
+                if (!partnerModalInstance) {
+                    return;
+                }
+
+                populateModal(partner);
+                partnerModalInstance.show();
+            });
+        });
 
         var populateForm = function (partner) {
             if (!partnerForm) {

@@ -703,22 +703,35 @@ $pageInlineScripts[] = <<<HTML
             });
         });
 
-        document.querySelectorAll('tr[data-partner-json]').forEach(function (row) {
-            row.addEventListener('click', function (event) {
+        var partnerTableBody = document.querySelector('.lead-table tbody');
+        if (partnerTableBody) {
+            partnerTableBody.addEventListener('click', function (event) {
                 var targetElement = event.target instanceof Element ? event.target : event.target.parentElement;
 
-                if (targetElement && typeof targetElement.closest === 'function' && targetElement.closest(preventSelector)) {
+                if (!targetElement) {
                     return;
                 }
 
-                var partnerData = parsePartnerDataFromRow(row);
+                if (typeof targetElement.closest === 'function' && targetElement.closest(preventSelector)) {
+                    return;
+                }
+
+                var clickedRow = typeof targetElement.closest === 'function'
+                    ? targetElement.closest('tr[data-partner-json]')
+                    : null;
+
+                if (!clickedRow) {
+                    return;
+                }
+
+                var partnerData = parsePartnerDataFromRow(clickedRow);
                 if (!partnerData) {
                     return;
                 }
 
                 showPartnerDetails(partnerData);
             });
-        });
+        }
 
         if (addPartnerTrigger) {
             addPartnerTrigger.addEventListener('click', function () {

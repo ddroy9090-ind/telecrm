@@ -703,48 +703,23 @@ $pageInlineScripts[] = <<<HTML
             });
         });
 
-        var findPartnerRow = function (startingNode) {
-            var current = startingNode;
-
-            while (current && current !== document.body) {
-                if (
-                    current.nodeType === 1 &&
-                    (
-                        (typeof current.matches === 'function' && current.matches('tr[data-partner-json]')) ||
-                        (current.tagName === 'TR' && current.hasAttribute('data-partner-json'))
-                    )
-                ) {
-                    return current;
-                }
-
-                current = current.parentElement;
-            }
-
-            return null;
-        };
-
         var partnerTableBody = document.querySelector('.lead-table tbody');
         if (partnerTableBody) {
             partnerTableBody.addEventListener('click', function (event) {
-                var target = event.target;
+                var targetElement = event.target instanceof Element ? event.target : event.target.parentElement;
 
-                if (!target) {
+                if (!targetElement) {
                     return;
                 }
 
-                if (target.nodeType !== 1) {
-                    target = target.parentElement;
-                }
-
-                if (!target) {
+                if (typeof targetElement.closest === 'function' && targetElement.closest(preventSelector)) {
                     return;
                 }
 
-                if (typeof target.closest === 'function' && target.closest(preventSelector)) {
-                    return;
-                }
+                var clickedRow = typeof targetElement.closest === 'function'
+                    ? targetElement.closest('tr[data-partner-json]')
+                    : null;
 
-                var clickedRow = findPartnerRow(target);
                 if (!clickedRow) {
                     return;
                 }

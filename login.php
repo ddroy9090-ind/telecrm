@@ -277,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <a href="#" class="forgot">Forgot password?</a>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100">Sign In to Portal</button>
+                            <button type="submit" class="btn btn-primary w-100">Login CRM</button>
                         </form>
 
                         <script>

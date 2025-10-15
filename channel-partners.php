@@ -1082,7 +1082,7 @@ include __DIR__ . '/includes/common-header.php';
                                     ];
                                     $partnerJson = htmlspecialchars(json_encode($partnerPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
                                     ?>
-                                    <tr class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json="<?= $partnerJson ?>">
+                                    <tr  class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json="<?= $partnerJson ?>">
                                         <td>
                                             <?= htmlspecialchars($partnerCode, ENT_QUOTES, 'UTF-8') ?>
                                         </td>
@@ -1349,82 +1349,84 @@ include __DIR__ . '/includes/common-header.php';
                         <h5 class="modal-title" id="partnerDetailsModalLabel">Partner Details</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body partner-details-modal">
                         <dl class="row mb-0" data-partner-details>
                             <div class="col-sm-4">
                                 <dt>Partner Code</dt>
-                                <dd class="text-break" data-field="partner_code">—</dd>
+                                <dd data-field="partner_code">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>Company</dt>
-                                <dd class="text-break" data-field="company_name">—</dd>
+                                <dd data-field="company_name">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>Contact Person</dt>
-                                <dd class="text-break" data-field="contact_person">—</dd>
+                                <dd data-field="contact_person">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>Email</dt>
-                                <dd class="text-break" data-field="email">—</dd>
+                                <dd data-field="email">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>Phone</dt>
-                                <dd class="text-break" data-field="phone">—</dd>
+                                <dd data-field="phone">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>WhatsApp</dt>
-                                <dd class="text-break" data-field="whatsapp">—</dd>
+                                <dd data-field="whatsapp">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>Status</dt>
-                                <dd class="text-break" data-field="status">—</dd>
+                                <dd data-field="status">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>Commission</dt>
-                                <dd class="text-break" data-field="commission_structure">—</dd>
+                                <dd data-field="commission_structure">—</dd>
                             </div>
                             <div class="col-sm-4">
-                                <dt>Website</dt>
-                                <dd class="text-break" data-field="website">—</dd>
-                            </div>
-                            <div class="col-sm-6">
                                 <dt>Country</dt>
-                                <dd class="text-break" data-field="country">—</dd>
+                                <dd data-field="country">—</dd>
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-sm-8">
+                                <dt>Website</dt>
+                                <dd data-field="website">—</dd>
+                            </div>
+                            
+                            <div class="col-sm-4">
                                 <dt>City</dt>
-                                <dd class="text-break" data-field="city">—</dd>
+                                <dd data-field="city">—</dd>
                             </div>
                             <div class="col-12">
                                 <dt>Address</dt>
-                                <dd class="text-break" data-field="address">—</dd>
+                                <dd data-field="address">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>RERA Number</dt>
-                                <dd class="text-break" data-field="rera_number">—</dd>
+                                <dd data-field="rera_number">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>License Number</dt>
-                                <dd class="text-break" data-field="license_number">—</dd>
+                                <dd data-field="license_number">—</dd>
                             </div>
                             <div class="col-sm-4">
                                 <dt>Created</dt>
-                                <dd class="text-break" data-field="created_at">—</dd>
+                                <dd data-field="created_at">—</dd>
                             </div>
                             <div class="col-12">
                                 <dt>Remarks</dt>
-                                <dd class="text-break" data-field="remarks">—</dd>
+                                <dd data-field="remarks">—</dd>
                             </div>
                             <div class="col-12">
                                 <dt>Documents</dt>
-                                <dd data-field="documents">
+                                <dd data-field="documents" class="doc">
                                     <span class="text-muted">No documents uploaded.</span>
                                 </dd>
                             </div>
                         </dl>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+                    <div class="modal-footer border-0 bg-white">
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>

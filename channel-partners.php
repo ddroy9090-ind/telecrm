@@ -39,7 +39,25 @@ $createPartnersTableSql = <<<SQL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL;
 
+$createPartnerDocumentsTableSql = <<<SQL
+    CREATE TABLE IF NOT EXISTS partner_documents (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        partner_id INT UNSIGNED NOT NULL,
+        document_type VARCHAR(100) NOT NULL,
+        original_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(255) NOT NULL,
+        mime_type VARCHAR(100) DEFAULT NULL,
+        file_size INT UNSIGNED DEFAULT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_partner_documents_partner
+            FOREIGN KEY (partner_id)
+            REFERENCES all_partners (id)
+            ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+SQL;
+
 $pdo->exec($createPartnersTableSql);
+$pdo->exec($createPartnerDocumentsTableSql);
 
 $uploadDirectory = __DIR__ . '/uploads/partners';
 $formErrors = [];
@@ -65,12 +83,13 @@ $successMessage = '';
 $allowedStatuses = ['Pending', 'Active', 'Inactive'];
 
 $uploadedFilePaths = [];
+$uploadedFileMetadata = [];
 
 $sanitize = static function (?string $value): string {
     return trim((string) $value);
 };
 
-$handleUpload = static function (string $fieldName) use (&$formErrors, &$uploadedFilePaths, $uploadDirectory): ?string {
+$handleUpload = static function (string $fieldName) use (&$formErrors, &$uploadedFilePaths, &$uploadedFileMetadata, $uploadDirectory): ?array {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
         return null;
     }
@@ -124,7 +143,16 @@ $handleUpload = static function (string $fieldName) use (&$formErrors, &$uploade
 
     $uploadedFilePaths[] = $destinationPath;
 
-    return 'uploads/partners/' . $filename;
+    $metadata = [
+        'db_path' => 'uploads/partners/' . $filename,
+        'original_name' => $originalName,
+        'mime_type' => (string) ($file['type'] ?? ''),
+        'file_size' => $fileSize,
+    ];
+
+    $uploadedFileMetadata[$fieldName] = $metadata;
+
+    return $metadata;
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -175,15 +203,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formErrors['website'] = 'Please provide a valid website URL.';
     }
 
-    $reraCertificatePath = null;
-    $tradeLicensePath = null;
-    $agreementPath = null;
+    $reraCertificateUpload = null;
+    $tradeLicenseUpload = null;
+    $agreementUpload = null;
 
     if (empty($formErrors)) {
         try {
-            $reraCertificatePath = $handleUpload('rera_certificate');
-            $tradeLicensePath = $handleUpload('trade_license');
-            $agreementPath = $handleUpload('agreement');
+            $reraCertificateUpload = $handleUpload('rera_certificate');
+            $tradeLicenseUpload = $handleUpload('trade_license');
+            $agreementUpload = $handleUpload('agreement');
         } catch (Throwable $uploadException) {
             $formErrors['general'] = 'An unexpected error occurred while processing uploads.';
         }
@@ -251,9 +279,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':status' => $formValues['status'],
                 ':commission_structure' => $formValues['commission_structure'],
                 ':remarks' => $formValues['remarks'] !== '' ? $formValues['remarks'] : null,
-                ':rera_certificate' => $reraCertificatePath,
-                ':trade_license' => $tradeLicensePath,
-                ':agreement' => $agreementPath,
+                ':rera_certificate' => $reraCertificateUpload['db_path'] ?? null,
+                ':trade_license' => $tradeLicenseUpload['db_path'] ?? null,
+                ':agreement' => $agreementUpload['db_path'] ?? null,
             ]);
 
             $newPartnerId = (int) $pdo->lastInsertId();
@@ -264,6 +292,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':partner_code' => $partnerCode,
                 ':id' => $newPartnerId,
             ]);
+
+            $insertDocumentSql = <<<SQL
+                INSERT INTO partner_documents (
+                    partner_id,
+                    document_type,
+                    original_name,
+                    file_path,
+                    mime_type,
+                    file_size
+                ) VALUES (
+                    :partner_id,
+                    :document_type,
+                    :original_name,
+                    :file_path,
+                    :mime_type,
+                    :file_size
+                )
+            SQL;
+
+            $documentStatement = $pdo->prepare($insertDocumentSql);
+
+            $documentFields = [
+                'rera_certificate' => 'RERA Certificate',
+                'trade_license' => 'Trade License',
+                'agreement' => 'Agreement/MOU',
+            ];
+
+            foreach ($documentFields as $field => $label) {
+                if (!isset($uploadedFileMetadata[$field])) {
+                    continue;
+                }
+
+                $metadata = $uploadedFileMetadata[$field];
+
+                $documentStatement->execute([
+                    ':partner_id' => $newPartnerId,
+                    ':document_type' => $label,
+                    ':original_name' => $metadata['original_name'],
+                    ':file_path' => $metadata['db_path'],
+                    ':mime_type' => $metadata['mime_type'] !== '' ? $metadata['mime_type'] : null,
+                    ':file_size' => $metadata['file_size'],
+                ]);
+            }
 
             $pdo->commit();
 

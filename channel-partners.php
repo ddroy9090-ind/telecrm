@@ -669,6 +669,14 @@ $pageInlineScripts[] = <<<HTML
         var partnerIdInput = document.getElementById('partnerIdInput');
         var body = document.body;
         var preventSelector = '[data-prevent-lead-open]';
+        var partnerTableBody = document.querySelector('.lead-table tbody');
+        var emptyStateMessage = 'No partners found. Use the "Add Partner" button to create one.';
+        var statElements = {
+            total: document.querySelector('[data-partner-stat="total"]'),
+            active: document.querySelector('[data-partner-stat="active"]'),
+            pending: document.querySelector('[data-partner-stat="pending"]'),
+            inactive: document.querySelector('[data-partner-stat="inactive"]')
+        };
 
         if (!leadSidebar || !overlay || !detailsView) {
             return;
@@ -921,6 +929,68 @@ $pageInlineScripts[] = <<<HTML
             }
         }
 
+        function getPartnerRowById(partnerId) {
+            if (!partnerId) {
+                return null;
+            }
+
+            return document.querySelector('tr[data-partner-id="' + partnerId + '"]');
+        }
+
+        function updatePartnerStats() {
+            var totals = {
+                total: 0,
+                active: 0,
+                pending: 0,
+                inactive: 0
+            };
+
+            document.querySelectorAll('tr[data-partner-id]').forEach(function (row) {
+                totals.total += 1;
+
+                var status = (row.getAttribute('data-partner-status') || '').toLowerCase();
+                if (status === 'active') {
+                    totals.active += 1;
+                } else if (status === 'pending') {
+                    totals.pending += 1;
+                } else if (status === 'inactive') {
+                    totals.inactive += 1;
+                }
+            });
+
+            Object.keys(statElements).forEach(function (key) {
+                if (statElements[key]) {
+                    statElements[key].textContent = totals[key];
+                }
+            });
+        }
+
+        function ensureEmptyStateRow() {
+            if (!partnerTableBody) {
+                return;
+            }
+
+            var partnerRows = partnerTableBody.querySelectorAll('tr[data-partner-id]');
+            var emptyRow = partnerTableBody.querySelector('[data-empty-state-row]');
+
+            if (partnerRows.length === 0) {
+                if (!emptyRow) {
+                    emptyRow = document.createElement('tr');
+                    emptyRow.setAttribute('data-empty-state-row', 'true');
+
+                    var cell = document.createElement('td');
+                    cell.colSpan = 9;
+                    cell.className = 'text-center py-4';
+                    cell.textContent = emptyStateMessage;
+
+                    emptyRow.appendChild(cell);
+                    partnerTableBody.appendChild(emptyRow);
+                }
+            } else if (emptyRow) {
+                emptyRow.remove();
+            }
+        }
+
         function setFormFieldValue(fieldName, value) {
             if (!addPartnerForm) {
                 return;
@@ -1138,12 +1208,20 @@ $pageInlineScripts[] = <<<HTML
         }
 
         function handleViewAction(partnerId, fallbackData) {
+            var fallbackDisplayed = false;
+
+            if (fallbackData) {
+                showPartnerDetails(fallbackData);
+                fallbackDisplayed = true;
+            }
+
             return fetchPartnerData(partnerId).then(function (partner) {
-                showPartnerDetails(partner);
+                if (partner) {
+                    showPartnerDetails(partner);
+                }
             }).catch(function (error) {
-                if (fallbackData) {
+                if (fallbackDisplayed) {
                     console.warn('Falling back to table data for partner view:', error);
-                    showPartnerDetails(fallbackData);
                     return;
                 }
 
@@ -1151,25 +1229,68 @@ $pageInlineScripts[] = <<<HTML
             });
         }
 
-        function handleEditAction(partnerId) {
+        function handleEditAction(partnerId, fallbackData) {
+            if (fallbackData) {
+                showFormMode({
+                    mode: 'edit',
+                    partner: fallbackData,
+                    resetForm: true
+                });
+            } else {
+                showFormMode({
+                    mode: 'edit',
+                    partner: null,
+                    resetForm: true
+                });
+            }
+
+            if (partnerIdInput) {
+                partnerIdInput.value = partnerId;
+            }
+
             return loadPartnerForEdit(partnerId).then(function (partner) {
+                if (!partner) {
+                    throw new Error('Unable to load partner for editing.');
+                }
+
                 showFormMode({
                     mode: 'edit',
                     partner: partner,
-                    resetForm: true
+                    resetForm: false,
+                    shouldOpen: false
                 });
+
+                if (partnerIdInput) {
+                    partnerIdInput.value = partner.id || partnerId;
+                }
             }).catch(function (error) {
-                window.alert(error.message || 'Unable to load partner for editing.');
+                if (fallbackData) {
+                    console.warn('Falling back to table data for partner edit:', error);
+                } else {
+                    window.alert(error.message || 'Unable to load partner for editing.');
+                    closeSidebar();
+                }
             });
         }
 
-        function handleDeleteAction(partnerId) {
+        function handleDeleteAction(partnerId, rowElement) {
             if (!window.confirm('Are you sure you want to delete this partner? This action cannot be undone.')) {
                 return;
             }
 
-            deletePartner(partnerId).then(function () {
-                window.location.reload();
+            deletePartner(partnerId).then(function (result) {
+                var targetRow = rowElement || getPartnerRowById(partnerId);
+
+                if (targetRow) {
+                    targetRow.remove();
+                }
+
+                updatePartnerStats();
+                ensureEmptyStateRow();
+                closeSidebar();
+
+                var message = result && result.message ? result.message : 'Partner deleted successfully.';
+                window.alert(message);
             }).catch(function (error) {
                 window.alert(error.message || 'Unable to delete the partner.');
             });
@@ -1206,7 +1327,10 @@ $pageInlineScripts[] = <<<HTML
                     return;
                 }
 
-                handleEditAction(partnerId);
+                var row = button.closest('tr[data-partner-id]');
+                var fallback = row ? parsePartnerDataFromRow(row) : null;
+
+                handleEditAction(partnerId, fallback);
             });
         });
 
@@ -1222,11 +1346,13 @@ $pageInlineScripts[] = <<<HTML
                     return;
                 }
 
-                handleDeleteAction(partnerId);
+                var row = button.closest('tr[data-partner-id]');
+                handleDeleteAction(partnerId, row);
             });
         });
 
-        var partnerTableBody = document.querySelector('.lead-table tbody');
+        ensureEmptyStateRow();
+
         if (partnerTableBody) {
             partnerTableBody.addEventListener('click', function (event) {
                 var targetElement = event.target instanceof Element ? event.target : null;
@@ -1337,25 +1463,25 @@ include __DIR__ . '/includes/common-header.php';
                 <div class="col-md-3">
                     <div class="stat-card total-leads">
                         <h6>Total Partners</h6>
-                        <h2><?= (int) $totalPartners ?></h2>
+                        <h2 data-partner-stat="total"><?= (int) $totalPartners ?></h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card active-leads">
                         <h6>Active</h6>
-                        <h2><?= (int) $activePartners ?></h2>
+                        <h2 data-partner-stat="active"><?= (int) $activePartners ?></h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card closed-leads">
                         <h6>Pending</h6>
-                        <h2><?= (int) $pendingPartners ?></h2>
+                        <h2 data-partner-stat="pending"><?= (int) $pendingPartners ?></h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card lost-leads">
                         <h6>Inactive</h6>
-                        <h2><?= (int) $inactivePartners ?></h2>
+                        <h2 data-partner-stat="inactive"><?= (int) $inactivePartners ?></h2>
                     </div>
                 </div>
             </div>
@@ -1646,7 +1772,7 @@ include __DIR__ . '/includes/common-header.php';
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr>
+                                <tr data-empty-state-row>
                                     <td colspan="9" class="text-center py-4">
                                         No partners found. Use the "Add Partner" button to create one.
                                     </td>

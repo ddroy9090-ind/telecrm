@@ -1551,9 +1551,7 @@ include __DIR__ . '/includes/common-header.php';
                                         $partnerJson = '{}';
                                     }
                                     ?>
-                                    <tr class="lead-table-row" data-partner-id="<?= (int) ($partner['id'] ?? 0) ?>"
-                                        data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>"
-                                        data-partner-json='<?= htmlspecialchars($partnerJson, ENT_QUOTES, 'UTF-8') ?>'>
+                                    <tr class="lead-table-row" data-partner-id="<?= (int) ($partner['id'] ?? 0) ?>" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json='<?= htmlspecialchars($partnerJson, ENT_QUOTES, 'UTF-8') ?>'>
                                         <td>
                                             <?= htmlspecialchars($partnerCode, ENT_QUOTES, 'UTF-8') ?>
                                         </td>
@@ -1854,12 +1852,9 @@ include __DIR__ . '/includes/common-header.php';
                     <?php
                     $initialFormMode = isset($_POST['partner_action']) && $_POST['partner_action'] === 'update' ? 'edit' : 'create';
                     ?>
-                    <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data"
-                        novalidate data-initial-mode="<?= htmlspecialchars($initialFormMode, ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="partner_action" id="partnerActionInput"
-                            value="<?= htmlspecialchars($_POST['partner_action'] ?? 'create', ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="partner_id" id="partnerIdInput"
-                            value="<?= isset($_POST['partner_id']) ? (int) $_POST['partner_id'] : '' ?>">
+                    <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data" novalidate data-initial-mode="<?= htmlspecialchars($initialFormMode, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="partner_action" id="partnerActionInput" value="<?= htmlspecialchars($_POST['partner_action'] ?? 'create', ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="partner_id" id="partnerIdInput" value="<?= isset($_POST['partner_id']) ? (int) $_POST['partner_id'] : '' ?>">
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Basic Details</h3>
                             <div class="row g-3">

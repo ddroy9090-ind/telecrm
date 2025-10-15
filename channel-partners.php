@@ -705,7 +705,9 @@ $pageInlineScripts[] = <<<HTML
 
         document.querySelectorAll('tr[data-partner-json]').forEach(function (row) {
             row.addEventListener('click', function (event) {
-                if (event.target.closest(preventSelector)) {
+                var targetElement = event.target instanceof Element ? event.target : event.target.parentElement;
+
+                if (targetElement && typeof targetElement.closest === 'function' && targetElement.closest(preventSelector)) {
                     return;
                 }
 

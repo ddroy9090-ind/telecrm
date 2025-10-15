@@ -1021,9 +1021,9 @@ include __DIR__ . '/includes/common-header.php';
                                 <th scope="col">Name</th>
                                 <th scope="col">Email</th>
                                 <th scope="col">WhatsApp</th>
-                                <th scope="col">Country</th>
+                                <!-- <th scope="col">Country</th> -->
                                 <th scope="col">Status</th>
-                                <th scope="col">Commission</th>
+                                <!-- <th scope="col">Commission</th> -->
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
@@ -1116,7 +1116,7 @@ include __DIR__ . '/includes/common-header.php';
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td>
+                                        <!-- <td>
                                             <?php
                                             $locationParts = array_filter([$country, $city], static function ($value) {
                                                 return $value !== null && $value !== '';
@@ -1128,17 +1128,17 @@ include __DIR__ . '/includes/common-header.php';
                                             <?php else: ?>
                                                 <span class="text-muted">Not provided</span>
                                             <?php endif; ?>
-                                        </td>
+                                        </td> -->
                                         <td>
                                             <span class="badge badge-role-manager"><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></span>
                                         </td>
-                                        <td>
+                                        <!-- <td>
                                             <?php if ($commission !== ''): ?>
                                                 <?= htmlspecialchars($commission, ENT_QUOTES, 'UTF-8') ?>
                                             <?php else: ?>
                                                 <span class="text-muted">Not set</span>
                                             <?php endif; ?>
-                                        </td>
+                                        </td> -->
                                         <td>
                                             <div class="dropdown" data-prevent-lead-open>
                                                 <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">

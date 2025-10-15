@@ -639,7 +639,7 @@ p {
 
 /* INFO block bottom-left */
 .hh-property-hero-info {
-    max-width: 900px;
+    max-width: 800px;
     position: relative;
     /* top: 113px; */
     padding-left: 20px;
@@ -761,7 +761,7 @@ p {
 /* CTA bottom center */
 .hh-property-hero-ctas {
     position: absolute;
-    bottom: 0px;
+    bottom: 40px;
     right: -5%;
     transform: translateX(-50%);
     display: flex;

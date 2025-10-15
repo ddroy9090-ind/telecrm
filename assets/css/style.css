@@ -2367,16 +2367,19 @@ button:focus:not(:focus-visible) {
     color: #0d6efd;
 }
 
-.lead-metric-growth.green {
+.lead-metric-growth.green, .lead-metric-growth.blue {
     color: #02796f;
+    display: none;
 }
 
 .lead-metric-growth.red {
     color: #d01f28;
+    display: none;
 }
 
 .lead-metric-growth.yellow {
     color: #005f52;
+    display: none;
 }
 
 .lead-metric-growth i {

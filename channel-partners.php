@@ -399,37 +399,12 @@ if (!isset($pageInlineScripts) || !is_array($pageInlineScripts)) {
 $pageInlineScripts[] = <<<HTML
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var addPartnerButton = document.querySelector('[data-open-lead-sidebar]');
-        if (!addPartnerButton) {
-            return;
-        }
-
-        var preventSelector = '[data-prevent-lead-open]';
-        document.querySelectorAll('[data-partner-status]').forEach(function (row) {
-            row.addEventListener('click', function (event) {
-                if (event.target.closest(preventSelector)) {
-                    return;
-                }
-
-                if (row.getAttribute('data-partner-status') !== 'Active') {
-                    return;
-                }
-
-                addPartnerButton.click();
-            });
-        });
-    });
-</script>
-HTML;
-
-$pageInlineScripts[] = <<<HTML
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
         var leadSidebar = document.getElementById('leadSidebar');
         var overlay = document.getElementById('leadSidebarOverlay');
         var detailsView = document.getElementById('partnerDetailsView');
         var addPartnerForm = document.getElementById('addPartnerForm');
         var body = document.body;
+        var preventSelector = '[data-prevent-lead-open]';
 
         if (!leadSidebar || !overlay || !detailsView) {
             return;
@@ -645,6 +620,24 @@ $pageInlineScripts[] = <<<HTML
             }
         };
 
+        var parsePartnerDataFromRow = function (row) {
+            if (!row) {
+                return null;
+            }
+
+            var payload = row.getAttribute('data-partner-json');
+            if (!payload) {
+                return null;
+            }
+
+            try {
+                return JSON.parse(payload);
+            } catch (error) {
+                console.error('Unable to parse partner data', error);
+                return null;
+            }
+        };
+
         var showPartnerDetails = function (partnerData) {
             if (!partnerData) {
                 return;
@@ -701,20 +694,27 @@ $pageInlineScripts[] = <<<HTML
                     }
                 }
 
-                var payload = row.getAttribute('data-partner-json');
-                if (!payload) {
-                    return;
-                }
-
-                var parsed;
-                try {
-                    parsed = JSON.parse(payload);
-                } catch (error) {
-                    console.error('Unable to parse partner data', error);
+                var parsed = parsePartnerDataFromRow(row);
+                if (!parsed) {
                     return;
                 }
 
                 showPartnerDetails(parsed);
+            });
+        });
+
+        document.querySelectorAll('tr[data-partner-json]').forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                if (event.target.closest(preventSelector)) {
+                    return;
+                }
+
+                var partnerData = parsePartnerDataFromRow(row);
+                if (!partnerData) {
+                    return;
+                }
+
+                showPartnerDetails(partnerData);
             });
         });
 

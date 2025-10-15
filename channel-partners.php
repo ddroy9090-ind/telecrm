@@ -44,6 +44,7 @@ $pdo->exec($createPartnersTableSql);
 $uploadDirectory = __DIR__ . '/uploads/partners';
 $formErrors = [];
 $formValues = [
+    'id' => 0,
     'company_name' => '',
     'contact_person' => '',
     'email' => '',
@@ -65,6 +66,20 @@ $successMessage = '';
 $allowedStatuses = ['Pending', 'Active', 'Inactive'];
 
 $uploadedFilePaths = [];
+$filesToDeleteAfterSuccess = [];
+
+$handleFileRemoval = static function (?string $relativePath): void {
+    if (!is_string($relativePath) || $relativePath === '') {
+        return;
+    }
+
+    $fullPath = __DIR__ . '/' . ltrim($relativePath, '/');
+    if ($fullPath === '' || !is_file($fullPath)) {
+        return;
+    }
+
+    @unlink($fullPath);
+};
 
 $sanitize = static function (?string $value): string {
     return trim((string) $value);
@@ -128,6 +143,53 @@ $handleUpload = static function (string $fieldName) use (&$formErrors, &$uploade
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['delete_partner_id'])) {
+        $deletePartnerId = (int) ($_POST['delete_partner_id'] ?? 0);
+
+        if ($deletePartnerId > 0) {
+            try {
+                $selectStatement = $pdo->prepare('SELECT rera_certificate, trade_license, agreement FROM all_partners WHERE id = :id');
+                $selectStatement->execute([':id' => $deletePartnerId]);
+                $partnerFiles = $selectStatement->fetch(PDO::FETCH_ASSOC) ?: [];
+
+                $deleteStatement = $pdo->prepare('DELETE FROM all_partners WHERE id = :id');
+                $deleteStatement->execute([':id' => $deletePartnerId]);
+
+                foreach (['rera_certificate', 'trade_license', 'agreement'] as $fileField) {
+                    if (isset($partnerFiles[$fileField])) {
+                        $handleFileRemoval($partnerFiles[$fileField]);
+                    }
+                }
+
+                header('Location: channel-partners.php?deleted=1');
+                exit;
+            } catch (Throwable $exception) {
+                $formErrors['general'] = 'Unable to delete the selected partner. Please try again.';
+            }
+        } else {
+            $formErrors['general'] = 'Invalid partner selected for deletion.';
+        }
+    }
+
+    $editingPartnerId = (int) ($_POST['partner_id'] ?? 0);
+    $isEditing = $editingPartnerId > 0;
+    $existingPartner = null;
+
+    if ($isEditing) {
+        try {
+            $selectPartnerStatement = $pdo->prepare('SELECT * FROM all_partners WHERE id = :id');
+            $selectPartnerStatement->execute([':id' => $editingPartnerId]);
+            $existingPartner = $selectPartnerStatement->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (Throwable $exception) {
+            $existingPartner = null;
+        }
+
+        if ($existingPartner === null) {
+            $formErrors['general'] = 'The selected partner could not be found. Please refresh and try again.';
+        }
+    }
+
+    $formValues['id'] = $editingPartnerId;
     $formValues['company_name'] = $sanitize($_POST['company_name'] ?? '');
     $formValues['contact_person'] = $sanitize($_POST['contact_person'] ?? '');
     $formValues['email'] = $sanitize($_POST['email'] ?? '');
@@ -175,15 +237,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formErrors['website'] = 'Please provide a valid website URL.';
     }
 
-    $reraCertificatePath = null;
-    $tradeLicensePath = null;
-    $agreementPath = null;
+    $reraCertificatePath = $isEditing ? ($existingPartner['rera_certificate'] ?? null) : null;
+    $tradeLicensePath = $isEditing ? ($existingPartner['trade_license'] ?? null) : null;
+    $agreementPath = $isEditing ? ($existingPartner['agreement'] ?? null) : null;
 
     if (empty($formErrors)) {
         try {
-            $reraCertificatePath = $handleUpload('rera_certificate');
-            $tradeLicensePath = $handleUpload('trade_license');
-            $agreementPath = $handleUpload('agreement');
+            $uploadFields = [
+                'rera_certificate' => 'rera_certificate',
+                'trade_license' => 'trade_license',
+                'agreement' => 'agreement',
+            ];
+
+            foreach ($uploadFields as $fileField) {
+                $fileArray = $_FILES[$fileField] ?? null;
+                $hasUpload = is_array($fileArray) && (($fileArray['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE);
+
+                if (!$hasUpload) {
+                    continue;
+                }
+
+                $uploadedPath = $handleUpload($fileField);
+
+                if ($uploadedPath === null) {
+                    continue;
+                }
+
+                if ($fileField === 'rera_certificate') {
+                    if ($reraCertificatePath && $reraCertificatePath !== $uploadedPath) {
+                        $filesToDeleteAfterSuccess[] = $reraCertificatePath;
+                    }
+                    $reraCertificatePath = $uploadedPath;
+                } elseif ($fileField === 'trade_license') {
+                    if ($tradeLicensePath && $tradeLicensePath !== $uploadedPath) {
+                        $filesToDeleteAfterSuccess[] = $tradeLicensePath;
+                    }
+                    $tradeLicensePath = $uploadedPath;
+                } elseif ($fileField === 'agreement') {
+                    if ($agreementPath && $agreementPath !== $uploadedPath) {
+                        $filesToDeleteAfterSuccess[] = $agreementPath;
+                    }
+                    $agreementPath = $uploadedPath;
+                }
+            }
         } catch (Throwable $uploadException) {
             $formErrors['general'] = 'An unexpected error occurred while processing uploads.';
         }
@@ -192,6 +288,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($formErrors)) {
         try {
             $pdo->beginTransaction();
+
+            if ($isEditing) {
+                $updateSql = <<<SQL
+                    UPDATE all_partners
+                    SET
+                        company_name = :company_name,
+                        contact_person = :contact_person,
+                        email = :email,
+                        phone = :phone,
+                        whatsapp = :whatsapp,
+                        country = :country,
+                        city = :city,
+                        address = :address,
+                        rera_number = :rera_number,
+                        license_number = :license_number,
+                        website = :website,
+                        status = :status,
+                        commission_structure = :commission_structure,
+                        remarks = :remarks,
+                        rera_certificate = :rera_certificate,
+                        trade_license = :trade_license,
+                        agreement = :agreement
+                    WHERE id = :id
+                SQL;
+
+                $updateStatement = $pdo->prepare($updateSql);
+                $updateStatement->execute([
+                    ':company_name' => $formValues['company_name'],
+                    ':contact_person' => $formValues['contact_person'],
+                    ':email' => $formValues['email'],
+                    ':phone' => $formValues['phone'],
+                    ':whatsapp' => $formValues['whatsapp'] !== '' ? $formValues['whatsapp'] : null,
+                    ':country' => $formValues['country'],
+                    ':city' => $formValues['city'] !== '' ? $formValues['city'] : null,
+                    ':address' => $formValues['address'] !== '' ? $formValues['address'] : null,
+                    ':rera_number' => $formValues['rera_number'] !== '' ? $formValues['rera_number'] : null,
+                    ':license_number' => $formValues['license_number'] !== '' ? $formValues['license_number'] : null,
+                    ':website' => $formValues['website'] !== '' ? $formValues['website'] : null,
+                    ':status' => $formValues['status'],
+                    ':commission_structure' => $formValues['commission_structure'],
+                    ':remarks' => $formValues['remarks'] !== '' ? $formValues['remarks'] : null,
+                    ':rera_certificate' => $reraCertificatePath,
+                    ':trade_license' => $tradeLicensePath,
+                    ':agreement' => $agreementPath,
+                    ':id' => $editingPartnerId,
+                ]);
+
+                $pdo->commit();
+
+                foreach ($filesToDeleteAfterSuccess as $filePath) {
+                    $handleFileRemoval($filePath);
+                }
+
+                header('Location: channel-partners.php?updated=1');
+                exit;
+            }
 
             $insertSql = <<<SQL
                 INSERT INTO all_partners (
@@ -280,6 +432,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            $filesToDeleteAfterSuccess = [];
+
             $formErrors['general'] = 'Unable to save the partner at this time. Please try again.';
         }
     } else {
@@ -288,11 +442,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 @unlink($path);
             }
         }
+
+        $filesToDeleteAfterSuccess = [];
     }
 }
 
 if (isset($_GET['added']) && $_GET['added'] === '1') {
     $successMessage = 'Partner has been added successfully.';
+} elseif (isset($_GET['updated']) && $_GET['updated'] === '1') {
+    $successMessage = 'Partner details have been updated successfully.';
+} elseif (isset($_GET['deleted']) && $_GET['deleted'] === '1') {
+    $successMessage = 'Partner has been deleted successfully.';
 }
 
 try {
@@ -345,6 +505,366 @@ $pageInlineScripts[] = <<<HTML
                 }
 
                 addPartnerButton.click();
+            });
+        });
+    });
+</script>
+HTML;
+
+$pageInlineScripts[] = <<<HTML
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var partnerTable = document.querySelector('[data-partner-table]');
+        var partnerForm = document.getElementById('addPartnerForm');
+        var addPartnerButton = document.querySelector('[data-open-lead-sidebar]');
+        var deletePartnerForm = document.getElementById('deletePartnerForm');
+        var deletePartnerInput = deletePartnerForm ? deletePartnerForm.querySelector('[name="delete_partner_id"]') : null;
+        var sidebarTitle = document.querySelector('.lead-sidebar__header-title');
+        var sidebarDescription = document.querySelector('.lead-sidebar__header-text .text-white');
+        var submitButton = partnerForm ? partnerForm.querySelector('button[type="submit"]') : null;
+        var partnerModalElement = document.getElementById('partnerDetailsModal');
+        var partnerModalInstance = null;
+
+        if (!partnerTable) {
+            return;
+        }
+
+        var defaultSidebarTitle = sidebarTitle ? sidebarTitle.textContent : '';
+        var defaultSidebarDescription = sidebarDescription ? sidebarDescription.textContent : '';
+        var defaultSubmitLabel = submitButton ? submitButton.textContent : '';
+
+        var closeDropdownMenu = function (element) {
+            if (!element) {
+                return;
+            }
+
+            var dropdown = element.closest('.dropdown');
+            if (!dropdown) {
+                return;
+            }
+
+            var toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+            if (toggle && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                var dropdownInstance = bootstrap.Dropdown.getInstance(toggle) || new bootstrap.Dropdown(toggle);
+                dropdownInstance.hide();
+                return;
+            }
+
+            dropdown.classList.remove('show');
+            var menu = dropdown.querySelector('.dropdown-menu');
+            if (menu) {
+                menu.classList.remove('show');
+            }
+        };
+
+        var parsePartner = function (row) {
+            if (!row) {
+                return null;
+            }
+
+            var payload = row.getAttribute('data-partner-json');
+            if (!payload) {
+                return null;
+            }
+
+            try {
+                return JSON.parse(payload);
+            } catch (error) {
+                console.error('Failed to parse partner payload', error);
+                return null;
+            }
+        };
+
+        var formatValue = function (value) {
+            if (value === null || typeof value === 'undefined') {
+                return '';
+            }
+
+            return String(value).trim();
+        };
+
+        var populateModal = function (partner) {
+            if (!partnerModalElement) {
+                return;
+            }
+
+            var detailContainer = partnerModalElement.querySelector('[data-partner-details]');
+            if (!detailContainer) {
+                return;
+            }
+
+            var setField = function (fieldName, value, options) {
+                var target = detailContainer.querySelector('[data-field="' + fieldName + '"]');
+                if (!target) {
+                    return;
+                }
+
+                var displayValue = formatValue(value);
+                var fallback = (options && options.fallback) || '—';
+
+                if (options && options.render) {
+                    options.render(target, displayValue, fallback, partner);
+                    return;
+                }
+
+                target.textContent = displayValue !== '' ? displayValue : fallback;
+            };
+
+            var createdAt = formatValue(partner.created_at);
+            if (createdAt !== '') {
+                var createdDate = new Date(createdAt);
+                if (!Number.isNaN(createdDate.getTime())) {
+                    createdAt = createdDate.toLocaleString();
+                }
+            }
+
+            setField('partner_code', partner.partner_code);
+            setField('company_name', partner.company_name);
+            setField('contact_person', partner.contact_person);
+            setField('email', partner.email);
+            setField('phone', partner.phone);
+            setField('whatsapp', partner.whatsapp);
+            setField('status', partner.status);
+            setField('commission_structure', partner.commission_structure);
+            setField('country', partner.country);
+            setField('city', partner.city);
+            setField('address', partner.address);
+            setField('rera_number', partner.rera_number);
+            setField('license_number', partner.license_number);
+            setField('created_at', createdAt);
+            setField('remarks', partner.remarks);
+            setField('website', partner.website, {
+                render: function (element, value, fallback) {
+                    element.innerHTML = '';
+                    if (value === '') {
+                        element.textContent = fallback;
+                        return;
+                    }
+
+                    var link = document.createElement('a');
+                    link.href = value;
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    link.textContent = value;
+                    element.appendChild(link);
+                },
+            });
+
+            var documentsField = detailContainer.querySelector('[data-field="documents"]');
+            if (documentsField) {
+                documentsField.innerHTML = '';
+                var documents = [
+                    { label: 'RERA Certificate', value: partner.rera_certificate },
+                    { label: 'Trade License', value: partner.trade_license },
+                    { label: 'Agreement / MOU', value: partner.agreement },
+                ].filter(function (entry) {
+                    return formatValue(entry.value) !== '';
+                });
+
+                if (!documents.length) {
+                    var empty = document.createElement('span');
+                    empty.className = 'text-muted';
+                    empty.textContent = 'No documents uploaded.';
+                    documentsField.appendChild(empty);
+                } else {
+                    var list = document.createElement('ul');
+                    list.className = 'list-unstyled mb-0';
+
+                    documents.forEach(function (entry) {
+                        var listItem = document.createElement('li');
+                        var link = document.createElement('a');
+                        link.href = entry.value;
+                        link.target = '_blank';
+                        link.rel = 'noopener';
+                        link.textContent = entry.label;
+                        listItem.appendChild(link);
+                        list.appendChild(listItem);
+                    });
+
+                    documentsField.appendChild(list);
+                }
+            }
+        };
+
+        var populateForm = function (partner) {
+            if (!partnerForm) {
+                return;
+            }
+
+            var elements = partnerForm.elements;
+            if (!elements) {
+                return;
+            }
+
+            var setInputValue = function (name, value) {
+                var element = elements.namedItem(name);
+                if (!element) {
+                    return;
+                }
+
+                var displayValue = formatValue(value);
+
+                if (element.tagName === 'SELECT') {
+                    element.value = displayValue !== '' ? displayValue : '';
+                    return;
+                }
+
+                element.value = displayValue;
+            };
+
+            setInputValue('partner_id', partner.id || 0);
+            setInputValue('company_name', partner.company_name);
+            setInputValue('contact_person', partner.contact_person);
+            setInputValue('email', partner.email);
+            setInputValue('phone', partner.phone);
+            setInputValue('whatsapp', partner.whatsapp);
+            setInputValue('country', partner.country);
+            setInputValue('city', partner.city);
+            setInputValue('address', partner.address);
+            setInputValue('rera_number', partner.rera_number);
+            setInputValue('license_number', partner.license_number);
+            setInputValue('website', partner.website);
+            setInputValue('status', partner.status);
+            setInputValue('commission_structure', partner.commission_structure);
+            setInputValue('remarks', partner.remarks);
+
+            ['rera_certificate', 'trade_license', 'agreement'].forEach(function (fieldName) {
+                var fileField = elements.namedItem(fieldName);
+                if (fileField && fileField.type === 'file') {
+                    fileField.value = '';
+                }
+            });
+
+            if (sidebarTitle) {
+                sidebarTitle.textContent = 'Edit Partner';
+            }
+
+            if (sidebarDescription) {
+                sidebarDescription.textContent = 'Update the channel partner details and save your changes.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Update Partner';
+            }
+        };
+
+        var openSidebarForEdit = function (partner) {
+            if (!partnerForm) {
+                return;
+            }
+
+            if (addPartnerButton) {
+                addPartnerButton.click();
+            } else {
+                var sidebar = document.getElementById('leadSidebar');
+                var overlay = document.getElementById('leadSidebarOverlay');
+                if (sidebar) {
+                    sidebar.classList.add('is-open');
+                    sidebar.setAttribute('aria-hidden', 'false');
+                }
+                if (overlay) {
+                    overlay.hidden = false;
+                    overlay.classList.add('is-visible');
+                }
+                document.body.classList.add('lead-sidebar-open');
+            }
+
+            window.requestAnimationFrame(function () {
+                populateForm(partner);
+            });
+        };
+
+        var resetFormForCreate = function () {
+            if (!partnerForm) {
+                return;
+            }
+
+            window.requestAnimationFrame(function () {
+                if (sidebarTitle) {
+                    sidebarTitle.textContent = defaultSidebarTitle;
+                }
+
+                if (sidebarDescription) {
+                    sidebarDescription.textContent = defaultSidebarDescription;
+                }
+
+                if (submitButton) {
+                    submitButton.textContent = defaultSubmitLabel;
+                }
+
+                var idField = partnerForm.querySelector('[name="partner_id"]');
+                if (idField) {
+                    idField.value = '0';
+                }
+            });
+        };
+
+        if (addPartnerButton) {
+            addPartnerButton.addEventListener('click', resetFormForCreate);
+        }
+
+        partnerTable.querySelectorAll('[data-partner-action]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                var action = button.getAttribute('data-partner-action');
+                var row = button.closest('tr[data-partner-json]');
+                var partner = parsePartner(row);
+
+                if (action === 'view') {
+                    closeDropdownMenu(button);
+
+                    if (!partner) {
+                        return;
+                    }
+
+                    if (partnerModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        partnerModalInstance = bootstrap.Modal.getOrCreateInstance(partnerModalElement);
+                    }
+
+                    if (!partnerModalInstance) {
+                        return;
+                    }
+
+                    populateModal(partner);
+                    partnerModalInstance.show();
+                    return;
+                }
+
+                if (action === 'edit') {
+                    closeDropdownMenu(button);
+
+                    if (!partner) {
+                        return;
+                    }
+
+                    openSidebarForEdit(partner);
+                    return;
+                }
+
+                if (action === 'delete') {
+                    closeDropdownMenu(button);
+
+                    if (!deletePartnerForm || !deletePartnerInput) {
+                        return;
+                    }
+
+                    var partnerId = Number(button.getAttribute('data-partner-id') || 0);
+                    if (!partnerId) {
+                        return;
+                    }
+
+                    var partnerName = button.getAttribute('data-partner-name') || '';
+                    var confirmationMessage = partnerName
+                        ? 'Are you sure you want to delete "' + partnerName + '"? This action cannot be undone.'
+                        : 'Are you sure you want to delete this partner? This action cannot be undone.';
+
+                    if (window.confirm(confirmationMessage)) {
+                        deletePartnerInput.value = String(partnerId);
+                        deletePartnerForm.submit();
+                    }
+                }
             });
         });
     });
@@ -493,7 +1013,7 @@ include __DIR__ . '/includes/common-header.php';
         <div class="card lead-table-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 lead-table">
+                    <table class="table table-hover align-middle mb-0 lead-table" data-partner-table>
                         <thead>
                             <tr>
                                 <th scope="col">P Code</th>
@@ -518,9 +1038,14 @@ include __DIR__ . '/includes/common-header.php';
                                     $phone = $partner['phone'] ?? '';
                                     $country = $partner['country'] ?? '';
                                     $city = $partner['city'] ?? '';
+                                    $address = $partner['address'] ?? '';
                                     $status = $partner['status'] ?? '';
                                     $commission = $partner['commission_structure'] ?? '';
                                     $whatsapp = $partner['whatsapp'] ?? '';
+                                    $reraNumber = $partner['rera_number'] ?? '';
+                                    $licenseNumber = $partner['license_number'] ?? '';
+                                    $website = $partner['website'] ?? '';
+                                    $remarks = $partner['remarks'] ?? '';
                                     $avatarInitial = mb_strtoupper(mb_substr($companyName !== '' ? $companyName : ($contactPerson !== '' ? $contactPerson : 'P'), 0, 1, 'UTF-8'));
                                     $statusClass = 'bg-secondary';
 
@@ -532,7 +1057,32 @@ include __DIR__ . '/includes/common-header.php';
                                         $statusClass = 'bg-dark';
                                     }
                                     ?>
-                                    <tr class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
+                                    <?php
+                                    $partnerPayload = [
+                                        'id' => (int) ($partner['id'] ?? 0),
+                                        'partner_code' => $partnerCode,
+                                        'company_name' => $companyName,
+                                        'contact_person' => $contactPerson,
+                                        'email' => $email,
+                                        'phone' => $phone,
+                                        'whatsapp' => $whatsapp,
+                                        'country' => $country,
+                                        'city' => $city,
+                                        'address' => $address,
+                                        'rera_number' => $reraNumber,
+                                        'license_number' => $licenseNumber,
+                                        'website' => $website,
+                                        'status' => $status,
+                                        'commission_structure' => $commission,
+                                        'remarks' => $remarks,
+                                        'rera_certificate' => $partner['rera_certificate'] ?? null,
+                                        'trade_license' => $partner['trade_license'] ?? null,
+                                        'agreement' => $partner['agreement'] ?? null,
+                                        'created_at' => $partner['created_at'] ?? null,
+                                    ];
+                                    $partnerJson = htmlspecialchars(json_encode($partnerPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
+                                    ?>
+                                    <tr class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json="<?= $partnerJson ?>">
                                         <td>
                                             <?= htmlspecialchars($partnerCode, ENT_QUOTES, 'UTF-8') ?>
                                         </td>
@@ -596,17 +1146,17 @@ include __DIR__ . '/includes/common-header.php';
                                                 </button>
                                                 <ul class="dropdown-menu">
                                                     <li>
-                                                        <button class="dropdown-item" type="button" data-action="view" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                        <button class="dropdown-item" type="button" data-partner-action="view" data-partner-id="<?= (int) $partner['id'] ?>">
                                                             <i class="bi bi-eye me-2"></i> View
                                                         </button>
                                                     </li>
                                                     <li>
-                                                        <button class="dropdown-item" type="button" data-action="edit" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                        <button class="dropdown-item" type="button" data-partner-action="edit" data-partner-id="<?= (int) $partner['id'] ?>">
                                                             <i class="bi bi-pencil me-2"></i> Edit
                                                         </button>
                                                     </li>
                                                     <li>
-                                                        <button class="dropdown-item text-danger" type="button" data-action="delete" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                        <button class="dropdown-item text-danger" type="button" data-partner-action="delete" data-partner-id="<?= (int) $partner['id'] ?>" data-partner-name="<?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?>">
                                                             <i class="bi bi-trash me-2"></i> Delete
                                                         </button>
                                                     </li>
@@ -668,6 +1218,7 @@ include __DIR__ . '/includes/common-header.php';
 
                 <div class="lead-sidebar__body">
                     <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data" novalidate>
+                        <input type="hidden" name="partner_id" value="<?= isset($formValues['id']) ? (int) $formValues['id'] : 0 ?>">
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Basic Details</h3>
                             <div class="row g-3">
@@ -788,6 +1339,96 @@ include __DIR__ . '/includes/common-header.php';
                 </div>
             </div>
         </aside>
+        <form method="post" id="deletePartnerForm" class="d-none">
+            <input type="hidden" name="delete_partner_id" value="0">
+        </form>
+        <div class="modal fade" id="partnerDetailsModal" tabindex="-1" aria-hidden="true" aria-labelledby="partnerDetailsModalLabel">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="partnerDetailsModalLabel">Partner Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <dl class="row mb-0" data-partner-details>
+                            <div class="col-sm-4">
+                                <dt>Partner Code</dt>
+                                <dd class="text-break" data-field="partner_code">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Company</dt>
+                                <dd class="text-break" data-field="company_name">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Contact Person</dt>
+                                <dd class="text-break" data-field="contact_person">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Email</dt>
+                                <dd class="text-break" data-field="email">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Phone</dt>
+                                <dd class="text-break" data-field="phone">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>WhatsApp</dt>
+                                <dd class="text-break" data-field="whatsapp">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Status</dt>
+                                <dd class="text-break" data-field="status">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Commission</dt>
+                                <dd class="text-break" data-field="commission_structure">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Website</dt>
+                                <dd class="text-break" data-field="website">—</dd>
+                            </div>
+                            <div class="col-sm-6">
+                                <dt>Country</dt>
+                                <dd class="text-break" data-field="country">—</dd>
+                            </div>
+                            <div class="col-sm-6">
+                                <dt>City</dt>
+                                <dd class="text-break" data-field="city">—</dd>
+                            </div>
+                            <div class="col-12">
+                                <dt>Address</dt>
+                                <dd class="text-break" data-field="address">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>RERA Number</dt>
+                                <dd class="text-break" data-field="rera_number">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>License Number</dt>
+                                <dd class="text-break" data-field="license_number">—</dd>
+                            </div>
+                            <div class="col-sm-4">
+                                <dt>Created</dt>
+                                <dd class="text-break" data-field="created_at">—</dd>
+                            </div>
+                            <div class="col-12">
+                                <dt>Remarks</dt>
+                                <dd class="text-break" data-field="remarks">—</dd>
+                            </div>
+                            <div class="col-12">
+                                <dt>Documents</dt>
+                                <dd data-field="documents">
+                                    <span class="text-muted">No documents uploaded.</span>
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 

@@ -777,7 +777,8 @@ $pageInlineScripts[] = <<<HTML
                 var normalized = String(value).trim();
 
                 if (settings.preserveLineBreaks) {
-                    var fragments = normalized.split(/?
+                    var fragments = normalized.split(/
+?
 /);
                     element.innerHTML = '';
                     fragments.forEach(function (fragment, index) {
@@ -1325,7 +1326,8 @@ include __DIR__ . '/includes/common-header.php';
                 </div>
                 <div class="col-lg-6">
                     <div class="text-end">
-                        <button type="button" class="btn btn-primary" data-open-lead-sidebar aria-controls="leadSidebar">
+                        <button type="button" class="btn btn-primary" data-open-lead-sidebar
+                            aria-controls="leadSidebar">
                             <i class="bx bx-user-plus me-1"></i> Add Partner
                         </button>
                     </div>
@@ -1393,12 +1395,16 @@ include __DIR__ . '/includes/common-header.php';
                                     <!-- Parent div for input styles (custom) -->
                                     <div class="search-wrap">
                                         <!-- Icon -->
-                                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"></circle>
-                                            <path d="M20 20 L16.65 16.65" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                                            aria-hidden="true">
+                                            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6">
+                                            </circle>
+                                            <path d="M20 20 L16.65 16.65" stroke="currentColor" stroke-width="1.6"
+                                                stroke-linecap="round"></path>
                                         </svg>
                                         <!-- Input has NO class per rule (parent has class) -->
-                                        <input type="text" placeholder="Search by company, contact, email, or phone..." aria-label="Search">
+                                        <input type="text" placeholder="Search by company, contact, email, or phone..."
+                                            aria-label="Search">
                                     </div>
                                 </div>
 
@@ -1545,19 +1551,24 @@ include __DIR__ . '/includes/common-header.php';
                                         $partnerJson = '{}';
                                     }
                                     ?>
-                                    <tr class="lead-table-row" data-partner-id="<?= (int) ($partner['id'] ?? 0) ?>" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json='<?= htmlspecialchars($partnerJson, ENT_QUOTES, 'UTF-8') ?>'>
+                                    <tr class="lead-table-row" data-partner-id="<?= (int) ($partner['id'] ?? 0) ?>"
+                                        data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-partner-json='<?= htmlspecialchars($partnerJson, ENT_QUOTES, 'UTF-8') ?>'>
                                         <td>
                                             <?= htmlspecialchars($partnerCode, ENT_QUOTES, 'UTF-8') ?>
                                         </td>
                                         <td>
                                             <div class="lead-info">
-                                                <div class="avatar" data-lead-avatar><?= htmlspecialchars($avatarInitial, ENT_QUOTES, 'UTF-8') ?></div>
-                                                <div><strong><?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></strong></div>
+                                                <div class="avatar" data-lead-avatar>
+                                                    <?= htmlspecialchars($avatarInitial, ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div><strong><?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?></strong>
+                                                </div>
                                             </div>
                                         </td>
                                         <td>
                                             <?php if ($contactPerson !== ''): ?>
-                                                <span class="d-block fw-semibold"><?= htmlspecialchars($contactPerson, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <span
+                                                    class="d-block fw-semibold"><?= htmlspecialchars($contactPerson, ENT_QUOTES, 'UTF-8') ?></span>
                                             <?php else: ?>
                                                 <span class="text-muted">Not provided</span>
                                             <?php endif; ?>
@@ -1565,7 +1576,8 @@ include __DIR__ . '/includes/common-header.php';
                                         <td>
                                             <?php if ($email !== ''): ?>
                                                 <a class="text-decoration-none" href="javascript:void(0)">
-                                                    <i class="bi bi-envelope me-1"></i><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>
+                                                    <i
+                                                        class="bi bi-envelope me-1"></i><?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>
                                                 </a>
                                             <?php else: ?>
                                                 <span class="text-muted">Not provided</span>
@@ -1573,9 +1585,11 @@ include __DIR__ . '/includes/common-header.php';
                                         </td>
                                         <td>
                                             <div class="d-flex flex-column">
-                                                <span><i class="bi bi-telephone me-1"></i><?= htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <span><i
+                                                        class="bi bi-telephone me-1"></i><?= htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ?></span>
                                                 <?php if ($whatsapp !== ''): ?>
-                                                    <span><i class="bi bi-whatsapp me-1 text-success"></i><?= htmlspecialchars($whatsapp, ENT_QUOTES, 'UTF-8') ?></span>
+                                                    <span><i
+                                                            class="bi bi-whatsapp me-1 text-success"></i><?= htmlspecialchars($whatsapp, ENT_QUOTES, 'UTF-8') ?></span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -1593,7 +1607,8 @@ include __DIR__ . '/includes/common-header.php';
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <span class="badge badge-role-manager"><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span
+                                                class="badge badge-role-manager"><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></span>
                                         </td>
                                         <td>
                                             <?php if ($commission !== ''): ?>
@@ -1604,22 +1619,26 @@ include __DIR__ . '/includes/common-header.php';
                                         </td>
                                         <td>
                                             <div class="dropdown" data-prevent-lead-open>
-                                                <button class="btn btn-link p-0 border-0 text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <button class="btn btn-link p-0 border-0 text-dark" type="button"
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="bi bi-three-dots-vertical fs-5"></i>
                                                 </button>
                                                 <ul class="dropdown-menu">
                                                     <li>
-                                                        <button class="dropdown-item" type="button" data-action="view" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                        <button class="dropdown-item" type="button" data-action="view"
+                                                            data-partner-id="<?= (int) $partner['id'] ?>">
                                                             <i class="bi bi-eye me-2"></i> View
                                                         </button>
                                                     </li>
                                                     <li>
-                                                        <button class="dropdown-item" type="button" data-action="edit" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                        <button class="dropdown-item" type="button" data-action="edit"
+                                                            data-partner-id="<?= (int) $partner['id'] ?>">
                                                             <i class="bi bi-pencil me-2"></i> Edit
                                                         </button>
                                                     </li>
                                                     <li>
-                                                        <button class="dropdown-item text-danger" type="button" data-action="delete" data-partner-id="<?= (int) $partner['id'] ?>">
+                                                        <button class="dropdown-item text-danger" type="button"
+                                                            data-action="delete" data-partner-id="<?= (int) $partner['id'] ?>">
                                                             <i class="bi bi-trash me-2"></i> Delete
                                                         </button>
                                                     </li>
@@ -1667,14 +1686,16 @@ include __DIR__ . '/includes/common-header.php';
                 <header class="lead-sidebar__header">
                     <div class="lead-sidebar__header-background"></div>
                     <div class="lead-sidebar__header-actions">
-                        <button type="button" class="lead-sidebar__action-btn lead-sidebar__close" data-action="close" aria-label="Close sidebar">
+                        <button type="button" class="lead-sidebar__action-btn lead-sidebar__close" data-action="close"
+                            aria-label="Close sidebar">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
                     <div class="lead-sidebar__header-content">
                         <div class="lead-sidebar__header-text">
                             <p class="lead-sidebar__header-title mb-1" data-sidebar-title>Add New Partner</p>
-                            <p class="text-white small" data-sidebar-subtitle>Enter partner details to add them to your network</p>
+                            <p class="text-white small" data-sidebar-subtitle>Enter partner details to add them to your
+                                network</p>
                         </div>
                     </div>
                 </header>
@@ -1699,7 +1720,8 @@ include __DIR__ . '/includes/common-header.php';
                                 <div class="lead-sidebar__item">
                                     <div class="lead-sidebar__item-content">
                                         <div class="lead-sidebar__item-label">Contact Person</div>
-                                        <div class="lead-sidebar__item-value" data-partner-detail="contact_person"></div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="contact_person">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="lead-sidebar__item">
@@ -1711,7 +1733,8 @@ include __DIR__ . '/includes/common-header.php';
                                 <div class="lead-sidebar__item">
                                     <div class="lead-sidebar__item-content">
                                         <div class="lead-sidebar__item-label">Commission Structure</div>
-                                        <div class="lead-sidebar__item-value" data-partner-detail="commission_structure"></div>
+                                        <div class="lead-sidebar__item-value"
+                                            data-partner-detail="commission_structure"></div>
                                     </div>
                                 </div>
                                 <div class="lead-sidebar__item">
@@ -1777,7 +1800,8 @@ include __DIR__ . '/includes/common-header.php';
                                 <div class="lead-sidebar__item">
                                     <div class="lead-sidebar__item-content">
                                         <div class="lead-sidebar__item-label">License Number</div>
-                                        <div class="lead-sidebar__item-value" data-partner-detail="license_number"></div>
+                                        <div class="lead-sidebar__item-value" data-partner-detail="license_number">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="lead-sidebar__item">
@@ -1801,13 +1825,15 @@ include __DIR__ . '/includes/common-header.php';
                                 <div class="lead-sidebar__item">
                                     <div class="lead-sidebar__item-content">
                                         <div class="lead-sidebar__item-label">RERA Certificate</div>
-                                        <div class="lead-sidebar__item-value" data-partner-document="rera_certificate"></div>
+                                        <div class="lead-sidebar__item-value" data-partner-document="rera_certificate">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="lead-sidebar__item">
                                     <div class="lead-sidebar__item-content">
                                         <div class="lead-sidebar__item-label">Trade License</div>
-                                        <div class="lead-sidebar__item-value" data-partner-document="trade_license"></div>
+                                        <div class="lead-sidebar__item-value" data-partner-document="trade_license">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="lead-sidebar__item">
@@ -1820,38 +1846,52 @@ include __DIR__ . '/includes/common-header.php';
                         </section>
 
                         <div class="text-end mt-4">
-                            <button type="button" class="btn btn-outline-secondary" data-partner-details-close>Close</button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                data-partner-details-close>Close</button>
                         </div>
                     </div>
 
                     <?php
                     $initialFormMode = isset($_POST['partner_action']) && $_POST['partner_action'] === 'update' ? 'edit' : 'create';
                     ?>
-                    <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data" novalidate data-initial-mode="<?= htmlspecialchars($initialFormMode, ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="partner_action" id="partnerActionInput" value="<?= htmlspecialchars($_POST['partner_action'] ?? 'create', ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="partner_id" id="partnerIdInput" value="<?= isset($_POST['partner_id']) ? (int) $_POST['partner_id'] : '' ?>">
+                    <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data"
+                        novalidate data-initial-mode="<?= htmlspecialchars($initialFormMode, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="partner_action" id="partnerActionInput"
+                            value="<?= htmlspecialchars($_POST['partner_action'] ?? 'create', ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="partner_id" id="partnerIdInput"
+                            value="<?= isset($_POST['partner_id']) ? (int) $_POST['partner_id'] : '' ?>">
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Basic Details</h3>
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label class="form-label">Company Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="company_name" placeholder="Enter company name" required data-sidebar-focus value="<?= htmlspecialchars($formValues['company_name'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="text" class="form-control" name="company_name"
+                                        placeholder="Enter company name" required data-sidebar-focus
+                                        value="<?= htmlspecialchars($formValues['company_name'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Contact Person <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="contact_person" placeholder="Full name" required value="<?= htmlspecialchars($formValues['contact_person'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="text" class="form-control" name="contact_person"
+                                        placeholder="Full name" required
+                                        value="<?= htmlspecialchars($formValues['contact_person'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control" name="email" placeholder="email@example.com" required value="<?= htmlspecialchars($formValues['email'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="email" class="form-control" name="email"
+                                        placeholder="email@example.com" required
+                                        value="<?= htmlspecialchars($formValues['email'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Phone <span class="text-danger">*</span></label>
-                                    <input type="tel" class="form-control" name="phone" placeholder="+971-50-123-4567" required value="<?= htmlspecialchars($formValues['phone'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="tel" class="form-control" name="phone" placeholder="+971-50-123-4567"
+                                        required
+                                        value="<?= htmlspecialchars($formValues['phone'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">WhatsApp</label>
-                                    <input type="tel" class="form-control" name="whatsapp" placeholder="+971-50-123-4567" value="<?= htmlspecialchars($formValues['whatsapp'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="tel" class="form-control" name="whatsapp"
+                                        placeholder="+971-50-123-4567"
+                                        value="<?= htmlspecialchars($formValues['whatsapp'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Country <span class="text-danger">*</span></label>
@@ -1873,18 +1913,22 @@ include __DIR__ . '/includes/common-header.php';
                                         foreach ($countries as $countryOption):
                                             $isSelected = $formValues['country'] === $countryOption;
                                             ?>
-                                            <option value="<?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?>" <?= $isSelected ? 'selected' : '' ?>><?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?></option>
+                                            <option value="<?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?>"
+                                                <?= $isSelected ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?></option>
                                         <?php endforeach; ?>
                                     </select>
 
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">City</label>
-                                    <input type="text" class="form-control" name="city" placeholder="Enter city" value="<?= htmlspecialchars($formValues['city'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="text" class="form-control" name="city" placeholder="Enter city"
+                                        value="<?= htmlspecialchars($formValues['city'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Address</label>
-                                    <textarea class="form-control" name="address" placeholder="Full address" rows="2"><?= htmlspecialchars($formValues['address'], ENT_QUOTES, 'UTF-8') ?></textarea>
+                                    <textarea class="form-control" name="address" placeholder="Full address"
+                                        rows="2"><?= htmlspecialchars($formValues['address'], ENT_QUOTES, 'UTF-8') ?></textarea>
                                 </div>
                             </div>
                         </section>
@@ -1894,31 +1938,42 @@ include __DIR__ . '/includes/common-header.php';
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">RERA Number</label>
-                                    <input type="text" class="form-control" name="rera_number" placeholder="RERA-12345" value="<?= htmlspecialchars($formValues['rera_number'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="text" class="form-control" name="rera_number" placeholder="RERA-12345"
+                                        value="<?= htmlspecialchars($formValues['rera_number'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">License Number</label>
-                                    <input type="text" class="form-control" name="license_number" placeholder="LIC-67890" value="<?= htmlspecialchars($formValues['license_number'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="text" class="form-control" name="license_number"
+                                        placeholder="LIC-67890"
+                                        value="<?= htmlspecialchars($formValues['license_number'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Website</label>
-                                    <input type="url" class="form-control" name="website" placeholder="https://example.com" value="<?= htmlspecialchars($formValues['website'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="url" class="form-control" name="website"
+                                        placeholder="https://example.com"
+                                        value="<?= htmlspecialchars($formValues['website'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Status <span class="text-danger">*</span></label>
                                     <select class="select-dropDownClass" name="status" required>
                                         <?php foreach ($allowedStatuses as $statusOption): ?>
-                                            <option value="<?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?>" <?= $formValues['status'] === $statusOption ? 'selected' : '' ?>><?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?></option>
+                                            <option value="<?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?>"
+                                                <?= $formValues['status'] === $statusOption ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Commission Structure <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="commission_structure" placeholder="e.g., 3% or 3000" required value="<?= htmlspecialchars($formValues['commission_structure'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <label class="form-label">Commission Structure <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="commission_structure"
+                                        placeholder="e.g., 3% or 3000" required
+                                        value="<?= htmlspecialchars($formValues['commission_structure'], ENT_QUOTES, 'UTF-8') ?>">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Remarks</label>
-                                    <textarea class="form-control" name="remarks" placeholder="Additional notes..." rows="2"><?= htmlspecialchars($formValues['remarks'], ENT_QUOTES, 'UTF-8') ?></textarea>
+                                    <textarea class="form-control" name="remarks" placeholder="Additional notes..."
+                                        rows="2"><?= htmlspecialchars($formValues['remarks'], ENT_QUOTES, 'UTF-8') ?></textarea>
                                 </div>
                             </div>
                         </section>
@@ -1927,12 +1982,14 @@ include __DIR__ . '/includes/common-header.php';
                             <h3 class="lead-sidebar__section-title">Documents Upload</h3>
                             <div class="mb-3">
                                 <label class="form-label">RERA Certificate</label>
-                                <input type="file" class="form-control" name="rera_certificate" accept=".pdf,.jpg,.jpeg,.png">
+                                <input type="file" class="form-control" name="rera_certificate"
+                                    accept=".pdf,.jpg,.jpeg,.png">
                                 <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Trade License</label>
-                                <input type="file" class="form-control" name="trade_license" accept=".pdf,.jpg,.jpeg,.png">
+                                <input type="file" class="form-control" name="trade_license"
+                                    accept=".pdf,.jpg,.jpeg,.png">
                                 <small class="text-muted">PDF, JPG, PNG (Max 5MB)</small>
                             </div>
                             <div class="mb-3">

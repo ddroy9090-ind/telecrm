@@ -1038,9 +1038,14 @@ include __DIR__ . '/includes/common-header.php';
                                     $phone = $partner['phone'] ?? '';
                                     $country = $partner['country'] ?? '';
                                     $city = $partner['city'] ?? '';
+                                    $address = $partner['address'] ?? '';
                                     $status = $partner['status'] ?? '';
                                     $commission = $partner['commission_structure'] ?? '';
                                     $whatsapp = $partner['whatsapp'] ?? '';
+                                    $reraNumber = $partner['rera_number'] ?? '';
+                                    $licenseNumber = $partner['license_number'] ?? '';
+                                    $website = $partner['website'] ?? '';
+                                    $remarks = $partner['remarks'] ?? '';
                                     $avatarInitial = mb_strtoupper(mb_substr($companyName !== '' ? $companyName : ($contactPerson !== '' ? $contactPerson : 'P'), 0, 1, 'UTF-8'));
                                     $statusClass = 'bg-secondary';
 

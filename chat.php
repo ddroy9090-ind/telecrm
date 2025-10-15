@@ -58,7 +58,7 @@ include __DIR__ . '/includes/common-header.php';
                         <h2 class="chat-sidebar__title">Team Chat</h2>
                         <p class="chat-sidebar__subtitle">Connect with your teammates instantly</p>
                     </div>
-                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newGroupModal">
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newGroupModal">
                         <i class="bx bx-user-plus"></i>
                         <span>Create Group</span>
                     </button>
@@ -110,7 +110,7 @@ include __DIR__ . '/includes/common-header.php';
                 <form class="chat-composer" id="chatMessageForm" autocomplete="off">
                     <input type="hidden" name="conversation_id" id="chatConversationId" value="">
                     <textarea id="chatMessageInput" name="message" rows="1" placeholder="Type your message" disabled></textarea>
-                    <button type="submit" class="btn btn-success" id="chatSendButton" disabled>
+                    <button type="submit" class="btn btn-primary" id="chatSendButton" disabled>
                         <span>Send</span>
                         <i class="bx bx-paper-plane"></i>
                     </button>
@@ -141,8 +141,8 @@ include __DIR__ . '/includes/common-header.php';
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Create group</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create group</button>
                 </div>
             </form>
         </div>

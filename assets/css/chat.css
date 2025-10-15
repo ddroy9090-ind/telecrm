@@ -5,7 +5,7 @@
 
 .chat-shell {
     display: grid;
-    grid-template-columns: 340px 1fr;
+    grid-template-columns: 500px 1fr;
     gap: 24px;
     min-height: calc(100vh - 140px);
 }
@@ -90,7 +90,7 @@
     box-shadow: 0 0 0 3px rgba(45, 122, 89, 0.15);
 }
 
-.chat-sidebar__section + .chat-sidebar__section {
+.chat-sidebar__section+.chat-sidebar__section {
     margin-top: 20px;
 }
 
@@ -158,7 +158,7 @@
 }
 
 .chat-entity.active {
-    background: linear-gradient(135deg, #2e7d5f, #1b5e3d);
+    background: linear-gradient(90deg, #02796f 0%, #05b6a1 100%);
     color: #ffffff;
     border-color: transparent;
     box-shadow: 0 12px 26px rgba(34, 163, 111, 0.35);
@@ -175,7 +175,7 @@
     width: 42px;
     height: 42px;
     border-radius: 14px;
-    background: linear-gradient(135deg, #2e7d5f, #49b37b);
+    background: linear-gradient(90deg, #02796f 0%, #05b6a1 100%);
     color: #ffffff;
     font-weight: 600;
     display: flex;
@@ -287,7 +287,7 @@
     width: 50px;
     height: 50px;
     border-radius: 16px;
-    background: linear-gradient(135deg, #2e7d5f, #49b37b);
+    background: linear-gradient(90deg, #02796f 0%, #05b6a1 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -371,7 +371,7 @@
 
 .chat-message--mine {
     margin-left: auto;
-    background: linear-gradient(135deg, #2e7d5f, #1b5e3d);
+    background: linear-gradient(90deg, #02796f 0%, #05b6a1 100%);
     color: #ffffff;
 }
 
@@ -427,21 +427,22 @@
     color: #1f2937;
 }
 
-.group-user-list {
+/* .group-user-list {
     max-height: 260px;
     overflow-y: auto;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 10px;
-}
+} */
 
 .group-user-list .form-check {
     background: #ffffff;
     border: 1px solid rgba(148, 163, 184, 0.3);
     border-radius: 12px;
-    padding: 10px 12px;
+    padding: 6px 12px;
+    padding-left: 34px;
+    margin-bottom: 7px;
 }
-
 .group-user-list .form-check-input {
     margin-top: 4px;
     margin-right: 8px;

@@ -1411,7 +1411,7 @@ button:focus:not(:focus-visible) {
 .topbar {
     position: fixed;
     top: 0;
-    left: 270px;
+    left: 230px;
     right: 0;
     height: 60px;
     background: white;
@@ -2242,7 +2242,7 @@ button:focus:not(:focus-visible) {
 .right-search {
     display: flex;
     width: 100%;
-    /* align-items: center; */
+    margin-top: 20px;
     gap: 10px;
 }
 
@@ -2253,6 +2253,7 @@ button:focus:not(:focus-visible) {
 
 .right-search .choices {
     width: 45%;
+    margin-bottom: 0;
 }
 
 .right-search .form-group span {

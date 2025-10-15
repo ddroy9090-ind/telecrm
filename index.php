@@ -91,11 +91,11 @@ include __DIR__ . '/includes/common-header.php';
         <form action="" method="get">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-lg-6">
+                    <div class="col-lg-12">
                         <h1 class="main-heading">Dashboard</h1>
                         <p class="subheading">Manage and track all your real estate leads</p>
                     </div>
-                    <div class="col-lg-6">
+                    <div class="col-lg-12">
                         <div class="right-search">
                             <div class="form-group mb-0">
                                 <input type="text" class="form-control" placeholder="Search leads, projects, clients" data-dashboard-search />
@@ -115,7 +115,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <option value="this_month" <?= $selectedRange === 'this_month' ? 'selected' : '' ?>>This Month</option>
                                 <option value="custom" <?= $selectedRange === 'custom' ? 'selected' : '' ?>>Custom Range</option>
                             </select>
-                            <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                            <div class="d-flex gap-2 align-items-center ">
                                 <input
                                     type="date"
                                     class="form-control"

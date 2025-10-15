@@ -1,9 +1,9 @@
 <?php
 // Database configuration and connection
 $host = 'localhost';
-$username = 'u431421769_crm';
-$password = 'u431421769_crm';
-$database = 'Reliant@1977';
+$username = 'root';
+$password = '';
+$database = 'telecrm';
 
 // $host = 'localhost';
 // $username = 'u431421769_root1';

@@ -59,6 +59,141 @@ SQL;
 $pdo->exec($createPartnersTableSql);
 $pdo->exec($createPartnerDocumentsTableSql);
 
+$respondWithJson = static function (array $payload, int $statusCode = 200): void {
+    http_response_code($statusCode);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+};
+
+$fetchPartnerForResponse = static function (PDO $pdo, int $partnerId): ?array {
+    if ($partnerId <= 0) {
+        return null;
+    }
+
+    $statement = $pdo->prepare('SELECT * FROM all_partners WHERE id = :id');
+    $statement->execute([':id' => $partnerId]);
+    $partner = $statement->fetch(PDO::FETCH_ASSOC);
+
+    if (!$partner) {
+        return null;
+    }
+
+    $createdAt = isset($partner['created_at'])
+        ? date('d M Y, h:i A', strtotime((string) $partner['created_at']))
+        : null;
+
+    $documents = [
+        'rera_certificate' => $partner['rera_certificate'] ?? null,
+        'trade_license' => $partner['trade_license'] ?? null,
+        'agreement' => $partner['agreement'] ?? null,
+    ];
+
+    $documentPayload = [];
+    foreach ($documents as $key => $path) {
+        if ($path === null || $path === '') {
+            $documentPayload[$key] = null;
+            continue;
+        }
+
+        $documentPayload[$key] = [
+            'url' => hh_asset($path),
+            'name' => basename((string) $path),
+        ];
+    }
+
+    return [
+        'id' => (int) $partner['id'],
+        'partner_code' => $partner['partner_code'] ?? null,
+        'company_name' => $partner['company_name'] ?? null,
+        'contact_person' => $partner['contact_person'] ?? null,
+        'email' => $partner['email'] ?? null,
+        'phone' => $partner['phone'] ?? null,
+        'whatsapp' => $partner['whatsapp'] ?? null,
+        'country' => $partner['country'] ?? null,
+        'city' => $partner['city'] ?? null,
+        'address' => $partner['address'] ?? null,
+        'status' => $partner['status'] ?? null,
+        'commission_structure' => $partner['commission_structure'] ?? null,
+        'remarks' => $partner['remarks'] ?? null,
+        'rera_number' => $partner['rera_number'] ?? null,
+        'license_number' => $partner['license_number'] ?? null,
+        'website' => $partner['website'] ?? null,
+        'created_at' => $createdAt,
+        'documents' => $documentPayload,
+    ];
+};
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    if ($action === 'fetch_partner') {
+        $partnerId = (int) ($_POST['partner_id'] ?? 0);
+        $partner = $fetchPartnerForResponse($pdo, $partnerId);
+
+        if ($partner === null) {
+            $respondWithJson(['status' => 'error', 'message' => 'Partner not found.'], 404);
+        }
+
+        $respondWithJson(['status' => 'success', 'data' => $partner]);
+    }
+
+    if ($action === 'delete_partner') {
+        $partnerId = (int) ($_POST['partner_id'] ?? 0);
+
+        if ($partnerId <= 0) {
+            $respondWithJson(['status' => 'error', 'message' => 'Invalid partner selected.'], 400);
+        }
+
+        $statement = $pdo->prepare('SELECT rera_certificate, trade_license, agreement FROM all_partners WHERE id = :id');
+        $statement->execute([':id' => $partnerId]);
+        $existingFiles = $statement->fetch(PDO::FETCH_ASSOC);
+
+        if (!$existingFiles) {
+            $respondWithJson(['status' => 'error', 'message' => 'Partner not found.'], 404);
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $deleteStatement = $pdo->prepare('DELETE FROM all_partners WHERE id = :id');
+            $deleteStatement->execute([':id' => $partnerId]);
+
+            $pdo->commit();
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            $respondWithJson(['status' => 'error', 'message' => 'Unable to delete the partner. Please try again.'], 500);
+        }
+
+        foreach ($existingFiles as $path) {
+            if (is_string($path) && $path !== '') {
+                $fullPath = __DIR__ . '/' . ltrim($path, '/');
+                if (file_exists($fullPath)) {
+                    @unlink($fullPath);
+                }
+            }
+        }
+
+        $respondWithJson(['status' => 'success', 'message' => 'Partner deleted successfully.']);
+    }
+
+    if ($action === 'load_partner_for_edit') {
+        $partnerId = (int) ($_POST['partner_id'] ?? 0);
+        $partner = $fetchPartnerForResponse($pdo, $partnerId);
+
+        if ($partner === null) {
+            $respondWithJson(['status' => 'error', 'message' => 'Partner not found.'], 404);
+        }
+
+        $respondWithJson(['status' => 'success', 'data' => $partner]);
+    }
+
+    $respondWithJson(['status' => 'error', 'message' => 'Unsupported action requested.'], 400);
+}
+
 $uploadDirectory = __DIR__ . '/uploads/partners';
 $formErrors = [];
 $formValues = [
@@ -156,6 +291,25 @@ $handleUpload = static function (string $fieldName) use (&$formErrors, &$uploade
 };
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $partnerAction = $_POST['partner_action'] ?? 'create';
+    $editingPartnerId = (int) ($_POST['partner_id'] ?? 0);
+    $isUpdateRequest = $partnerAction === 'update';
+    $existingPartner = null;
+
+    if ($isUpdateRequest) {
+        if ($editingPartnerId <= 0) {
+            $formErrors['general'] = 'Invalid partner selected for update.';
+        } else {
+            $partnerStatement = $pdo->prepare('SELECT * FROM all_partners WHERE id = :id');
+            $partnerStatement->execute([':id' => $editingPartnerId]);
+            $existingPartner = $partnerStatement->fetch(PDO::FETCH_ASSOC);
+
+            if (!$existingPartner) {
+                $formErrors['general'] = 'The selected partner could not be found.';
+            }
+        }
+    }
+
     $formValues['company_name'] = $sanitize($_POST['company_name'] ?? '');
     $formValues['contact_person'] = $sanitize($_POST['contact_person'] ?? '');
     $formValues['email'] = $sanitize($_POST['email'] ?? '');
@@ -220,6 +374,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($formErrors)) {
         try {
             $pdo->beginTransaction();
+
+            $documentFields = [
+                'rera_certificate' => 'RERA Certificate',
+                'trade_license' => 'Trade License',
+                'agreement' => 'Agreement/MOU',
+            ];
+
+            if ($isUpdateRequest && $existingPartner !== null) {
+                $filesToDeleteAfterSuccess = [];
+
+                $currentFileValues = [
+                    'rera_certificate' => $existingPartner['rera_certificate'] ?? null,
+                    'trade_license' => $existingPartner['trade_license'] ?? null,
+                    'agreement' => $existingPartner['agreement'] ?? null,
+                ];
+
+                foreach ($documentFields as $field => $label) {
+                    if (!isset($uploadedFileMetadata[$field])) {
+                        continue;
+                    }
+
+                    $currentFileValues[$field] = $uploadedFileMetadata[$field]['db_path'];
+                    if (!empty($existingPartner[$field])) {
+                        $filesToDeleteAfterSuccess[] = __DIR__ . '/' . ltrim((string) $existingPartner[$field], '/');
+                    }
+                }
+
+                $updateSql = <<<SQL
+                    UPDATE all_partners SET
+                        company_name = :company_name,
+                        contact_person = :contact_person,
+                        email = :email,
+                        phone = :phone,
+                        whatsapp = :whatsapp,
+                        country = :country,
+                        city = :city,
+                        address = :address,
+                        rera_number = :rera_number,
+                        license_number = :license_number,
+                        website = :website,
+                        status = :status,
+                        commission_structure = :commission_structure,
+                        remarks = :remarks,
+                        rera_certificate = :rera_certificate,
+                        trade_license = :trade_license,
+                        agreement = :agreement
+                    WHERE id = :id
+                SQL;
+
+                $updateStatement = $pdo->prepare($updateSql);
+                $updateStatement->execute([
+                    ':company_name' => $formValues['company_name'],
+                    ':contact_person' => $formValues['contact_person'],
+                    ':email' => $formValues['email'],
+                    ':phone' => $formValues['phone'],
+                    ':whatsapp' => $formValues['whatsapp'] !== '' ? $formValues['whatsapp'] : null,
+                    ':country' => $formValues['country'],
+                    ':city' => $formValues['city'] !== '' ? $formValues['city'] : null,
+                    ':address' => $formValues['address'] !== '' ? $formValues['address'] : null,
+                    ':rera_number' => $formValues['rera_number'] !== '' ? $formValues['rera_number'] : null,
+                    ':license_number' => $formValues['license_number'] !== '' ? $formValues['license_number'] : null,
+                    ':website' => $formValues['website'] !== '' ? $formValues['website'] : null,
+                    ':status' => $formValues['status'],
+                    ':commission_structure' => $formValues['commission_structure'],
+                    ':remarks' => $formValues['remarks'] !== '' ? $formValues['remarks'] : null,
+                    ':rera_certificate' => $currentFileValues['rera_certificate'],
+                    ':trade_license' => $currentFileValues['trade_license'],
+                    ':agreement' => $currentFileValues['agreement'],
+                    ':id' => $editingPartnerId,
+                ]);
+
+                $deleteDocumentStatement = $pdo->prepare('DELETE FROM partner_documents WHERE partner_id = :partner_id AND document_type = :document_type');
+                $insertDocumentStatement = $pdo->prepare(
+                    'INSERT INTO partner_documents (partner_id, document_type, original_name, file_path, mime_type, file_size) VALUES (:partner_id, :document_type, :original_name, :file_path, :mime_type, :file_size)'
+                );
+
+                foreach ($documentFields as $field => $label) {
+                    if (!isset($uploadedFileMetadata[$field])) {
+                        continue;
+                    }
+
+                    $metadata = $uploadedFileMetadata[$field];
+
+                    $deleteDocumentStatement->execute([
+                        ':partner_id' => $editingPartnerId,
+                        ':document_type' => $label,
+                    ]);
+
+                    $insertDocumentStatement->execute([
+                        ':partner_id' => $editingPartnerId,
+                        ':document_type' => $label,
+                        ':original_name' => $metadata['original_name'],
+                        ':file_path' => $metadata['db_path'],
+                        ':mime_type' => $metadata['mime_type'] !== '' ? $metadata['mime_type'] : null,
+                        ':file_size' => $metadata['file_size'],
+                    ]);
+                }
+
+                $pdo->commit();
+
+                foreach ($filesToDeleteAfterSuccess as $oldFile) {
+                    if (is_string($oldFile) && $oldFile !== '' && file_exists($oldFile)) {
+                        @unlink($oldFile);
+                    }
+                }
+
+                header('Location: channel-partners.php?updated=1');
+                exit;
+            }
 
             $insertSql = <<<SQL
                 INSERT INTO all_partners (
@@ -313,12 +576,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $documentStatement = $pdo->prepare($insertDocumentSql);
 
-            $documentFields = [
-                'rera_certificate' => 'RERA Certificate',
-                'trade_license' => 'Trade License',
-                'agreement' => 'Agreement/MOU',
-            ];
-
             foreach ($documentFields as $field => $label) {
                 if (!isset($uploadedFileMetadata[$field])) {
                     continue;
@@ -366,6 +623,10 @@ if (isset($_GET['added']) && $_GET['added'] === '1') {
     $successMessage = 'Partner has been added successfully.';
 }
 
+if (isset($_GET['updated']) && $_GET['updated'] === '1') {
+    $successMessage = 'Partner has been updated successfully.';
+}
+
 try {
     $partnersQuery = $pdo->query('SELECT * FROM all_partners ORDER BY created_at DESC');
     $partners = $partnersQuery ? $partnersQuery->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -396,6 +657,7 @@ if (!isset($pageInlineScripts) || !is_array($pageInlineScripts)) {
     $pageInlineScripts = [];
 }
 
+
 $pageInlineScripts[] = <<<HTML
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -403,6 +665,8 @@ $pageInlineScripts[] = <<<HTML
         var overlay = document.getElementById('leadSidebarOverlay');
         var detailsView = document.getElementById('partnerDetailsView');
         var addPartnerForm = document.getElementById('addPartnerForm');
+        var partnerActionInput = document.getElementById('partnerActionInput');
+        var partnerIdInput = document.getElementById('partnerIdInput');
         var body = document.body;
         var preventSelector = '[data-prevent-lead-open]';
 
@@ -414,6 +678,7 @@ $pageInlineScripts[] = <<<HTML
         var subtitleElement = leadSidebar.querySelector('[data-sidebar-subtitle]');
         var defaultTitle = titleElement ? titleElement.textContent.trim() : '';
         var defaultSubtitle = subtitleElement ? subtitleElement.textContent.trim() : '';
+        var overlayHideTimeout = null;
 
         var detailFields = {};
         detailsView.querySelectorAll('[data-partner-detail]').forEach(function (element) {
@@ -433,9 +698,8 @@ $pageInlineScripts[] = <<<HTML
 
         var closeTrigger = leadSidebar.querySelector('.lead-sidebar__close');
         var addPartnerTrigger = document.querySelector('[data-open-lead-sidebar]');
-        var overlayHideTimeout = null;
 
-        var showOverlay = function () {
+        function showOverlay() {
             if (!overlay) {
                 return;
             }
@@ -449,20 +713,34 @@ $pageInlineScripts[] = <<<HTML
             window.requestAnimationFrame(function () {
                 overlay.classList.add('is-visible');
             });
-        };
+        }
 
-        var openSidebarForView = function () {
+        function hideOverlay() {
+            if (!overlay) {
+                return;
+            }
+
+            overlay.classList.remove('is-visible');
+            if (overlayHideTimeout) {
+                window.clearTimeout(overlayHideTimeout);
+            }
+
+            overlayHideTimeout = window.setTimeout(function () {
+                overlay.hidden = true;
+                overlayHideTimeout = null;
+            }, 200);
+        }
+
+        function openSidebar() {
             leadSidebar.classList.add('is-open');
             leadSidebar.setAttribute('aria-hidden', 'false');
             body.classList.add('lead-sidebar-open');
             showOverlay();
-        };
+        }
 
-        var showFormMode = function () {
-            if (detailsView) {
-                detailsView.hidden = true;
-                detailsView.setAttribute('aria-hidden', 'true');
-            }
+        function showFormContent() {
+            detailsView.hidden = true;
+            detailsView.setAttribute('aria-hidden', 'true');
 
             if (addPartnerForm) {
                 addPartnerForm.hidden = false;
@@ -470,17 +748,20 @@ $pageInlineScripts[] = <<<HTML
             }
 
             leadSidebar.classList.remove('is-viewing-partner');
+        }
 
-            if (titleElement) {
-                titleElement.textContent = defaultTitle;
+        function showDetailsContent() {
+            if (addPartnerForm) {
+                addPartnerForm.hidden = true;
+                addPartnerForm.setAttribute('aria-hidden', 'true');
             }
 
-            if (subtitleElement) {
-                subtitleElement.textContent = defaultSubtitle;
-            }
-        };
+            detailsView.hidden = false;
+            detailsView.removeAttribute('aria-hidden');
+            leadSidebar.classList.add('is-viewing-partner');
+        }
 
-        var applyTextValue = function (element, value, options) {
+        function applyTextValue(element, value, options) {
             if (!element) {
                 return;
             }
@@ -496,7 +777,8 @@ $pageInlineScripts[] = <<<HTML
                 var normalized = String(value).trim();
 
                 if (settings.preserveLineBreaks) {
-                    var fragments = normalized.split(/\r?\n/);
+                    var fragments = normalized.split(/?
+/);
                     element.innerHTML = '';
                     fragments.forEach(function (fragment, index) {
                         element.appendChild(document.createTextNode(fragment));
@@ -513,9 +795,9 @@ $pageInlineScripts[] = <<<HTML
                 element.textContent = settings.fallback;
                 element.classList.add('is-empty');
             }
-        };
+        }
 
-        var applyLinkValue = function (element, value, builder, fallback) {
+        function applyLinkValue(element, value, builder, fallback) {
             if (!element) {
                 return;
             }
@@ -547,9 +829,9 @@ $pageInlineScripts[] = <<<HTML
                 element.textContent = emptyText;
                 element.classList.add('is-empty');
             }
-        };
+        }
 
-        var applyDocumentValue = function (element, documentInfo) {
+        function applyDocumentValue(element, documentInfo) {
             if (!element) {
                 return;
             }
@@ -569,9 +851,9 @@ $pageInlineScripts[] = <<<HTML
                 element.textContent = 'Not uploaded';
                 element.classList.add('is-empty');
             }
-        };
+        }
 
-        var populateDetails = function (partnerData) {
+        function populateDetails(partnerData) {
             if (!partnerData) {
                 return;
             }
@@ -618,9 +900,9 @@ $pageInlineScripts[] = <<<HTML
                     applyDocumentValue(documentFields[key], null);
                 });
             }
-        };
+        }
 
-        var parsePartnerDataFromRow = function (row) {
+        function parsePartnerDataFromRow(row) {
             if (!row) {
                 return null;
             }
@@ -636,118 +918,359 @@ $pageInlineScripts[] = <<<HTML
                 console.error('Unable to parse partner data', error);
                 return null;
             }
-        };
+        }
 
-        var showPartnerDetails = function (partnerData) {
+        function setFormFieldValue(fieldName, value) {
+            if (!addPartnerForm) {
+                return;
+            }
+
+            var field = addPartnerForm.elements.namedItem(fieldName);
+            if (!field) {
+                return;
+            }
+
+            if (typeof field.length === 'number' && typeof field.value === 'undefined' && field.length > 0) {
+                field = field[0];
+            }
+
+            if (field && typeof field.value !== 'undefined') {
+                field.value = value !== null && typeof value !== 'undefined' ? String(value) : '';
+            }
+        }
+
+        function populateFormFields(partnerData) {
+            if (!partnerData || !addPartnerForm) {
+                return;
+            }
+
+            setFormFieldValue('company_name', partnerData.company_name || '');
+            setFormFieldValue('contact_person', partnerData.contact_person || '');
+            setFormFieldValue('email', partnerData.email || '');
+            setFormFieldValue('phone', partnerData.phone || '');
+            setFormFieldValue('whatsapp', partnerData.whatsapp || '');
+            setFormFieldValue('country', partnerData.country || '');
+            setFormFieldValue('city', partnerData.city || '');
+            setFormFieldValue('address', partnerData.address || '');
+            setFormFieldValue('rera_number', partnerData.rera_number || '');
+            setFormFieldValue('license_number', partnerData.license_number || '');
+            setFormFieldValue('website', partnerData.website || '');
+            setFormFieldValue('status', partnerData.status || '');
+            setFormFieldValue('commission_structure', partnerData.commission_structure || '');
+            setFormFieldValue('remarks', partnerData.remarks || '');
+        }
+
+        function updateHeaderForForm(mode, partnerData) {
+            if (!titleElement || !subtitleElement) {
+                return;
+            }
+
+            if (mode === 'edit') {
+                var name = partnerData && partnerData.company_name ? partnerData.company_name.trim() : '';
+                titleElement.textContent = name !== '' ? 'Edit: ' + name : 'Edit Partner';
+                subtitleElement.textContent = 'Update partner information and documents';
+            } else {
+                titleElement.textContent = defaultTitle;
+                subtitleElement.textContent = defaultSubtitle;
+            }
+        }
+
+        function updateHeaderForDetails(partnerData) {
+            if (!titleElement || !subtitleElement) {
+                return;
+            }
+
+            var name = partnerData && partnerData.company_name ? partnerData.company_name.trim() : '';
+            titleElement.textContent = name !== '' ? name : 'Partner Details';
+
+            if (partnerData && partnerData.partner_code && partnerData.partner_code.trim() !== '') {
+                subtitleElement.textContent = 'Partner Code: ' + partnerData.partner_code;
+            } else {
+                subtitleElement.textContent = 'Review partner information';
+            }
+        }
+
+        function showFormMode(options) {
+            options = options || {};
+            var mode = options.mode === 'edit' ? 'edit' : 'create';
+            var shouldReset = options.resetForm === true;
+            var shouldOpen = options.shouldOpen !== false;
+            var partnerData = options.partner || null;
+
+            showFormContent();
+
+            if (shouldReset && addPartnerForm) {
+                addPartnerForm.reset();
+            }
+
+            if (partnerActionInput) {
+                partnerActionInput.value = mode === 'edit' ? 'update' : 'create';
+            }
+
+            if (partnerIdInput) {
+                partnerIdInput.value = mode === 'edit' && partnerData && partnerData.id ? partnerData.id : '';
+            }
+
+            if (mode === 'edit' && partnerData) {
+                populateFormFields(partnerData);
+            }
+
+            updateHeaderForForm(mode, partnerData);
+
+            if (shouldOpen) {
+                openSidebar();
+            }
+        }
+
+        function showPartnerDetails(partnerData) {
             if (!partnerData) {
                 return;
             }
 
             populateDetails(partnerData);
+            updateHeaderForDetails(partnerData);
+            showDetailsContent();
+            openSidebar();
+        }
 
-            if (titleElement) {
-                var titleText = partnerData.company_name && partnerData.company_name.trim() !== '' ? partnerData.company_name : 'Partner Details';
-                titleElement.textContent = titleText;
+        function closeSidebar() {
+            leadSidebar.classList.remove('is-open');
+            leadSidebar.setAttribute('aria-hidden', 'true');
+            body.classList.remove('lead-sidebar-open');
+            leadSidebar.classList.remove('is-viewing-partner');
+            hideOverlay();
+            showFormMode({
+                mode: 'create',
+                resetForm: false,
+                shouldOpen: false
+            });
+        }
+
+        function sendPartnerRequest(action, params) {
+            var payload = new URLSearchParams();
+            payload.append('action', action);
+
+            Object.keys(params || {}).forEach(function (key) {
+                if (typeof params[key] !== 'undefined') {
+                    payload.append(key, params[key]);
+                }
+            });
+
+            return fetch('channel-partners.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: payload.toString()
+            }).then(function (response) {
+                return response.json().catch(function () {
+                    return {};
+                }).then(function (data) {
+                    if (!response.ok) {
+                        var message = data && data.message ? data.message : 'Unable to process the request.';
+                        throw new Error(message);
+                    }
+
+                    if (!data || typeof data.status === 'undefined') {
+                        throw new Error('Unexpected server response.');
+                    }
+
+                    if (data.status !== 'success') {
+                        throw new Error(data.message || 'Request failed.');
+                    }
+
+                    return data;
+                });
+            });
+        }
+
+        function fetchPartnerData(partnerId) {
+            if (!partnerId) {
+                return Promise.reject(new Error('Invalid partner selected.'));
             }
 
-            if (subtitleElement) {
-                if (partnerData.partner_code && partnerData.partner_code.trim() !== '') {
-                    subtitleElement.textContent = 'Partner Code: ' + partnerData.partner_code;
-                } else {
-                    subtitleElement.textContent = 'Review partner information';
+            return sendPartnerRequest('fetch_partner', { partner_id: partnerId }).then(function (result) {
+                return result.data || null;
+            });
+        }
+
+        function loadPartnerForEdit(partnerId) {
+            if (!partnerId) {
+                return Promise.reject(new Error('Invalid partner selected.'));
+            }
+
+            return sendPartnerRequest('load_partner_for_edit', { partner_id: partnerId }).then(function (result) {
+                return result.data || null;
+            });
+        }
+
+        function deletePartner(partnerId) {
+            if (!partnerId) {
+                return Promise.reject(new Error('Invalid partner selected.'));
+            }
+
+            return sendPartnerRequest('delete_partner', { partner_id: partnerId });
+        }
+
+        function closeAnyDropdown(element) {
+            if (!element) {
+                return;
+            }
+
+            var dropdown = element.closest('.dropdown');
+            if (!dropdown) {
+                return;
+            }
+
+            var toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+            if (toggle && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                var instance = bootstrap.Dropdown.getInstance(toggle) || new bootstrap.Dropdown(toggle);
+                instance.hide();
+            } else {
+                dropdown.classList.remove('show');
+                var menu = dropdown.querySelector('.dropdown-menu');
+                if (menu) {
+                    menu.classList.remove('show');
                 }
             }
+        }
 
-            if (addPartnerForm) {
-                addPartnerForm.hidden = true;
-                addPartnerForm.setAttribute('aria-hidden', 'true');
+        function handleViewAction(partnerId, fallbackData) {
+            return fetchPartnerData(partnerId).then(function (partner) {
+                showPartnerDetails(partner);
+            }).catch(function (error) {
+                if (fallbackData) {
+                    console.warn('Falling back to table data for partner view:', error);
+                    showPartnerDetails(fallbackData);
+                    return;
+                }
+
+                window.alert(error.message || 'Unable to load partner details.');
+            });
+        }
+
+        function handleEditAction(partnerId) {
+            return loadPartnerForEdit(partnerId).then(function (partner) {
+                showFormMode({
+                    mode: 'edit',
+                    partner: partner,
+                    resetForm: true
+                });
+            }).catch(function (error) {
+                window.alert(error.message || 'Unable to load partner for editing.');
+            });
+        }
+
+        function handleDeleteAction(partnerId) {
+            if (!window.confirm('Are you sure you want to delete this partner? This action cannot be undone.')) {
+                return;
             }
 
-            detailsView.hidden = false;
-            detailsView.removeAttribute('aria-hidden');
-            leadSidebar.classList.add('is-viewing-partner');
-
-            openSidebarForView();
-        };
+            deletePartner(partnerId).then(function () {
+                window.location.reload();
+            }).catch(function (error) {
+                window.alert(error.message || 'Unable to delete the partner.');
+            });
+        }
 
         document.querySelectorAll('[data-action="view"][data-partner-id]').forEach(function (button) {
             button.addEventListener('click', function (event) {
                 event.preventDefault();
 
-                var row = button.closest('tr[data-partner-json]');
-                if (!row) {
+                closeAnyDropdown(button);
+
+                var row = button.closest('tr[data-partner-id]');
+                var partnerId = row ? parseInt(row.getAttribute('data-partner-id'), 10) : parseInt(button.getAttribute('data-partner-id'), 10);
+                var fallback = row ? parsePartnerDataFromRow(row) : null;
+
+                if (!partnerId) {
+                    window.alert('Unable to determine the selected partner.');
                     return;
                 }
 
-                var dropdown = button.closest('.dropdown');
-                if (dropdown) {
-                    var toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
-                    if (toggle && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
-                        var instance = bootstrap.Dropdown.getInstance(toggle) || new bootstrap.Dropdown(toggle);
-                        instance.hide();
-                    } else {
-                        dropdown.classList.remove('show');
-                        var menu = dropdown.querySelector('.dropdown-menu');
-                        if (menu) {
-                            menu.classList.remove('show');
-                        }
-                    }
-                }
+                handleViewAction(partnerId, fallback);
+            });
+        });
 
-                var parsed = parsePartnerDataFromRow(row);
-                if (!parsed) {
+        document.querySelectorAll('[data-action="edit"][data-partner-id]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+
+                closeAnyDropdown(button);
+
+                var partnerId = parseInt(button.getAttribute('data-partner-id'), 10);
+                if (!partnerId) {
+                    window.alert('Unable to determine the selected partner.');
                     return;
                 }
 
-                showPartnerDetails(parsed);
+                handleEditAction(partnerId);
+            });
+        });
+
+        document.querySelectorAll('[data-action="delete"][data-partner-id]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+
+                closeAnyDropdown(button);
+
+                var partnerId = parseInt(button.getAttribute('data-partner-id'), 10);
+                if (!partnerId) {
+                    window.alert('Unable to determine the selected partner.');
+                    return;
+                }
+
+                handleDeleteAction(partnerId);
             });
         });
 
         var partnerTableBody = document.querySelector('.lead-table tbody');
         if (partnerTableBody) {
             partnerTableBody.addEventListener('click', function (event) {
-                var targetElement = event.target instanceof Element ? event.target : event.target.parentElement;
+                var targetElement = event.target instanceof Element ? event.target : null;
 
                 if (!targetElement) {
                     return;
                 }
 
-                if (typeof targetElement.closest === 'function' && targetElement.closest(preventSelector)) {
+                if (targetElement.closest('[data-action]') || (typeof targetElement.closest === 'function' && targetElement.closest(preventSelector))) {
                     return;
                 }
 
-                var clickedRow = typeof targetElement.closest === 'function'
-                    ? targetElement.closest('tr[data-partner-json]')
-                    : null;
-
+                var clickedRow = targetElement.closest('tr[data-partner-id]');
                 if (!clickedRow) {
                     return;
                 }
 
-                var partnerData = parsePartnerDataFromRow(clickedRow);
-                if (!partnerData) {
+                var partnerId = parseInt(clickedRow.getAttribute('data-partner-id'), 10);
+                if (!partnerId) {
                     return;
                 }
 
-                showPartnerDetails(partnerData);
+                var fallback = parsePartnerDataFromRow(clickedRow);
+                handleViewAction(partnerId, fallback);
             });
         }
 
         if (addPartnerTrigger) {
             addPartnerTrigger.addEventListener('click', function () {
-                showFormMode();
+                showFormMode({
+                    mode: 'create',
+                    resetForm: true
+                });
             });
         }
 
         if (overlay) {
             overlay.addEventListener('click', function () {
-                showFormMode();
+                closeSidebar();
             });
         }
 
         if (closeTrigger) {
             closeTrigger.addEventListener('click', function () {
-                showFormMode();
+                closeSidebar();
             });
         }
 
@@ -755,32 +1278,34 @@ $pageInlineScripts[] = <<<HTML
         if (viewCloseButton) {
             viewCloseButton.addEventListener('click', function (event) {
                 event.preventDefault();
-
-                if (closeTrigger) {
-                    closeTrigger.click();
-                } else {
-                    leadSidebar.classList.remove('is-open');
-                    leadSidebar.setAttribute('aria-hidden', 'true');
-                    body.classList.remove('lead-sidebar-open');
-
-                    if (overlay) {
-                        overlay.classList.remove('is-visible');
-                        overlay.hidden = true;
-                    }
-                }
+                closeSidebar();
             });
         }
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
-                showFormMode();
+                closeSidebar();
             }
         });
 
-        showFormMode();
+        var initialMode = addPartnerForm ? addPartnerForm.getAttribute('data-initial-mode') : 'create';
+        if (initialMode === 'edit') {
+            showFormMode({
+                mode: 'edit',
+                resetForm: false,
+                shouldOpen: false
+            });
+        } else {
+            showFormMode({
+                mode: 'create',
+                resetForm: false,
+                shouldOpen: false
+            });
+        }
     });
 </script>
 HTML;
+
 
 $pageTitle = 'Channel Partners';
 
@@ -1020,7 +1545,7 @@ include __DIR__ . '/includes/common-header.php';
                                         $partnerJson = '{}';
                                     }
                                     ?>
-                                    <tr class="lead-table-row" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json='<?= htmlspecialchars($partnerJson, ENT_QUOTES, 'UTF-8') ?>'>
+                                    <tr class="lead-table-row" data-partner-id="<?= (int) ($partner['id'] ?? 0) ?>" data-partner-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" data-partner-json='<?= htmlspecialchars($partnerJson, ENT_QUOTES, 'UTF-8') ?>'>
                                         <td>
                                             <?= htmlspecialchars($partnerCode, ENT_QUOTES, 'UTF-8') ?>
                                         </td>
@@ -1299,7 +1824,12 @@ include __DIR__ . '/includes/common-header.php';
                         </div>
                     </div>
 
-                    <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data" novalidate>
+                    <?php
+                    $initialFormMode = isset($_POST['partner_action']) && $_POST['partner_action'] === 'update' ? 'edit' : 'create';
+                    ?>
+                    <form id="addPartnerForm" class="lead-sidebar__form" method="post" enctype="multipart/form-data" novalidate data-initial-mode="<?= htmlspecialchars($initialFormMode, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="partner_action" id="partnerActionInput" value="<?= htmlspecialchars($_POST['partner_action'] ?? 'create', ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="partner_id" id="partnerIdInput" value="<?= isset($_POST['partner_id']) ? (int) $_POST['partner_id'] : '' ?>">
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Basic Details</h3>
                             <div class="row g-3">

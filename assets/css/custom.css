@@ -1,9 +1,10 @@
-.content{
-    margin-top: 20px;
+.content {
+  margin-top: 20px;
 }
+
 .card-header.bg-primary.text-white {
-    background-color: #004a44 !important;
-    border-bottom: 1px #004a44 solid;
+  background-color: #004a44 !important;
+  border-bottom: 1px #004a44 solid;
 }
 
 .upload-box {
@@ -51,9 +52,9 @@
 }
 
 .form-label {
-    margin-bottom: .5rem;
-    font-size: 14px;
-    color: #000;
+  margin-bottom: .5rem;
+  font-size: 14px;
+  color: #000;
 }
 
 .upload-box {
@@ -86,85 +87,90 @@
 
 
 @media (max-width: 1199.98px) {
-    .stat-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 767.98px) {
-    .stat-grid {
-        grid-template-columns: 1fr;
-    }
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .chart-wrapper {
-        min-height: 260px;
-    }
+  .chart-wrapper {
+    min-height: 260px;
+  }
 }
 
 .form-section {
-    border: 1px solid #d7e4de;
-    border-radius: 18px;
-    padding: 28px;
-    background: #f9fdfc;
-    position: relative;
+  border: 1px solid #d7e4de;
+  border-radius: 18px;
+  padding: 28px;
+  background: #f9fdfc;
+  position: relative;
 }
 
 .section-header {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .section-title {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 20px;
-    font-weight: 700;
-    color: #004a44;
-    margin-bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #004a44;
+  margin-bottom: 6px;
 }
 
 .section-title span {
-    line-height: 1.2;
+  line-height: 1.2;
 }
 
 .section-title-icon {
-    width: 24px;
-    height: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 .section-subtitle {
-    margin: 0;
-    font-size: 15px;
-    color: #666;
+  margin: 0;
+  font-size: 15px;
+  color: #666;
 }
 
-.section-subtitle + .row {
-    margin-top: 0;
+.section-subtitle+.row {
+  margin-top: 0;
 }
 
 h4.section-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 20px;
-    font-weight: 600;
-    color: #004a44;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #004a44;
 }
 
-h4.section-title img{
-    filter: brightness(0) saturate(100%) invert(21%) sepia(66%) saturate(661%) hue-rotate(133deg) brightness(95%) contrast(97%);
+h4.section-title img {
+  filter: brightness(0) saturate(100%) invert(21%) sepia(66%) saturate(661%) hue-rotate(133deg) brightness(95%) contrast(97%);
 }
 
 
 /* Reset default browser checkbox */
 input[type="checkbox"] {
-  -webkit-appearance: none; /* Safari/Chrome */
-  -moz-appearance: none;    /* Firefox */
-  appearance: none;         /* Modern browsers */
+  -webkit-appearance: none;
+  /* Safari/Chrome */
+  -moz-appearance: none;
+  /* Firefox */
+  appearance: none;
+  /* Modern browsers */
   width: 20px;
   height: 20px;
-  border: 2px solid #004225;   /* border color */
-  border-radius: 6px;          /* square with rounded edges */
+  border: 2px solid #004225;
+  /* border color */
+  border-radius: 6px;
+  /* square with rounded edges */
   background-color: #fff;
   cursor: pointer;
   position: relative;
@@ -176,8 +182,8 @@ input[type="checkbox"]:hover {
   border-color: #004255;
 }
 
-input[type="checkbox"]:focus{
-    box-shadow: none;
+input[type="checkbox"]:focus {
+  box-shadow: none;
 }
 
 /* Checked state */
@@ -201,10 +207,10 @@ input[type="checkbox"]:checked::after {
 
 /* Dashboard */
 .dashboard-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-    padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 0 20px;
 }
 
 .dashboard-header {
@@ -486,7 +492,7 @@ input[type="checkbox"]:checked::after {
 
 /* -------- New Css --- */
 
-/* From Uiverse.io by andrew-demchenk0 */ 
+/* From Uiverse.io by andrew-demchenk0 */
 .button {
   position: relative;
   width: 150px;
@@ -499,7 +505,9 @@ input[type="checkbox"]:checked::after {
   border-radius: 5px;
 }
 
-.button, .button__icon, .button__text {
+.button,
+.button__icon,
+.button__text {
   transition: all 0.3s;
 }
 

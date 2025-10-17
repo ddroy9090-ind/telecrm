@@ -65,6 +65,39 @@ $successMessage = '';
 
 $allowedStatuses = ['Pending', 'Active', 'Inactive'];
 
+$sanitize = static function (?string $value): string {
+    return trim((string) $value);
+};
+
+$filterValues = [
+    'search' => isset($_GET['search']) ? $sanitize($_GET['search']) : '',
+    'status' => isset($_GET['status']) ? $sanitize($_GET['status']) : '',
+    'country' => isset($_GET['country']) ? $sanitize($_GET['country']) : '',
+];
+
+if (!in_array($filterValues['status'], $allowedStatuses, true)) {
+    $filterValues['status'] = '';
+}
+
+$filterValues['country'] = $filterValues['country'] !== '' ? $filterValues['country'] : '';
+
+$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? 'channel-partners.php', PHP_URL_PATH) ?: 'channel-partners.php';
+
+$availableCountries = [];
+
+try {
+    $countriesQuery = $pdo->query("SELECT DISTINCT country FROM all_partners WHERE country IS NOT NULL AND country <> '' ORDER BY country ASC");
+    if ($countriesQuery) {
+        $availableCountries = array_values(array_filter(array_map(static function ($row) {
+            return isset($row['country']) ? (string) $row['country'] : '';
+        }, $countriesQuery->fetchAll(PDO::FETCH_ASSOC)), static function ($value) {
+            return $value !== '';
+        }));
+    }
+} catch (Throwable $exception) {
+    $availableCountries = [];
+}
+
 $uploadedFilePaths = [];
 $filesToDeleteAfterSuccess = [];
 
@@ -79,10 +112,6 @@ $handleFileRemoval = static function (?string $relativePath): void {
     }
 
     @unlink($fullPath);
-};
-
-$sanitize = static function (?string $value): string {
-    return trim((string) $value);
 };
 
 $handleUpload = static function (string $fieldName) use (&$formErrors, &$uploadedFilePaths, $uploadDirectory): ?string {
@@ -455,9 +484,60 @@ if (isset($_GET['added']) && $_GET['added'] === '1') {
     $successMessage = 'Partner has been deleted successfully.';
 }
 
+$orderByColumn = 'created_at';
 try {
-    $partnersQuery = $pdo->query('SELECT * FROM all_partners ORDER BY created_at DESC');
-    $partners = $partnersQuery ? $partnersQuery->fetchAll(PDO::FETCH_ASSOC) : [];
+    $columnCheck = $pdo->query("SHOW COLUMNS FROM all_partners LIKE 'created_at'");
+    if (!$columnCheck || $columnCheck->fetch(PDO::FETCH_ASSOC) === false) {
+        $orderByColumn = 'id';
+    }
+
+    if ($columnCheck instanceof PDOStatement) {
+        $columnCheck->closeCursor();
+    }
+} catch (Throwable $exception) {
+    $orderByColumn = 'id';
+}
+
+if (!in_array($orderByColumn, ['created_at', 'id'], true)) {
+    $orderByColumn = 'id';
+}
+
+try {
+    $partnersQuerySql = 'SELECT * FROM all_partners';
+    $conditions = [];
+    $queryParameters = [];
+
+    if ($filterValues['search'] !== '') {
+        $conditions[] = '(
+            company_name LIKE :search OR
+            contact_person LIKE :search OR
+            email LIKE :search OR
+            phone LIKE :search OR
+            whatsapp LIKE :search OR
+            partner_code LIKE :search
+        )';
+        $queryParameters[':search'] = '%' . $filterValues['search'] . '%';
+    }
+
+    if ($filterValues['status'] !== '') {
+        $conditions[] = 'status = :status';
+        $queryParameters[':status'] = $filterValues['status'];
+    }
+
+    if ($filterValues['country'] !== '') {
+        $conditions[] = 'country = :country';
+        $queryParameters[':country'] = $filterValues['country'];
+    }
+
+    if (!empty($conditions)) {
+        $partnersQuerySql .= ' WHERE ' . implode(' AND ', $conditions);
+    }
+
+    $partnersQuerySql .= ' ORDER BY ' . $orderByColumn . ' DESC';
+
+    $statement = $pdo->prepare($partnersQuerySql);
+    $statement->execute($queryParameters);
+    $partners = $statement->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $exception) {
     $partners = [];
     if (!isset($formErrors['general'])) {
@@ -488,6 +568,16 @@ if (!isset($pageInlineScripts) || !is_array($pageInlineScripts)) {
 $pageInlineScripts[] = <<<HTML
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        var filterForm = document.querySelector('[data-partner-filters]');
+        var clearFiltersButton = document.getElementById('clearFilters');
+
+        if (filterForm && clearFiltersButton) {
+            var resetUrl = filterForm.getAttribute('data-reset-url') || window.location.pathname;
+            clearFiltersButton.addEventListener('click', function () {
+                window.location.href = resetUrl;
+            });
+        }
+
         var partnerTable = document.querySelector('[data-partner-table]');
         var partnerForm = document.getElementById('addPartnerForm');
         var addPartnerButton = document.querySelector('[data-open-lead-sidebar]');
@@ -950,7 +1040,7 @@ include __DIR__ . '/includes/common-header.php';
                 <div class="col-12">
                     <div class="filter-bar">
                         <!-- A custom inner wrapper that will hold grid layout (custom class only) -->
-                        <div class="inner-wrap">
+                        <form method="get" class="inner-wrap" data-partner-filters data-reset-url="<?= htmlspecialchars($currentPath, ENT_QUOTES, 'UTF-8') ?>">
                             <div class="filter-grid">
                                 <!-- Column 1: Search (Bootstrap col was above so inner grid controls width) -->
                                 <div>
@@ -962,18 +1052,26 @@ include __DIR__ . '/includes/common-header.php';
                                             <path d="M20 20 L16.65 16.65" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
                                         </svg>
                                         <!-- Input has NO class per rule (parent has class) -->
-                                        <input type="text" placeholder="Search by company, contact, email, or phone..." aria-label="Search">
+                                        <input
+                                            type="text"
+                                            name="search"
+                                            value="<?= htmlspecialchars($filterValues['search'], ENT_QUOTES, 'UTF-8') ?>"
+                                            placeholder="Search by company, contact, email, or phone..."
+                                            aria-label="Search"
+                                        >
                                     </div>
                                 </div>
 
                                 <!-- Column 2: Status select (parent custom wrapper present) -->
                                 <div>
                                     <div class="select-wrap">
-                                        <select aria-label="Status filter" class="select-dropDownClass">
-                                            <option>All Statuses</option>
-                                            <option>Active</option>
-                                            <option>Pending</option>
-                                            <option>Closed</option>
+                                        <select name="status" aria-label="Status filter" class="select-dropDownClass">
+                                            <option value="">All Statuses</option>
+                                            <?php foreach ($allowedStatuses as $statusOption): ?>
+                                                <option value="<?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?>" <?= $filterValues['status'] === $statusOption ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($statusOption, ENT_QUOTES, 'UTF-8') ?>
+                                                </option>
+                                            <?php endforeach; ?>
                                         </select>
                                     </div>
                                 </div>
@@ -981,11 +1079,13 @@ include __DIR__ . '/includes/common-header.php';
                                 <!-- Column 3: Countries select (with outline-parent for focus visual) -->
                                 <div>
                                     <div class="select-wrap outline">
-                                        <select aria-label="Country filter" class="select-dropDownClass">
-                                            <option>All Countries</option>
-                                            <option>UAE</option>
-                                            <option>India</option>
-                                            <option>USA</option>
+                                        <select name="country" aria-label="Country filter" class="select-dropDownClass">
+                                            <option value="">All Countries</option>
+                                            <?php foreach ($availableCountries as $countryOption): ?>
+                                                <option value="<?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?>" <?= $filterValues['country'] === $countryOption ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($countryOption, ENT_QUOTES, 'UTF-8') ?>
+                                                </option>
+                                            <?php endforeach; ?>
                                         </select>
                                     </div>
                                 </div>
@@ -997,17 +1097,17 @@ include __DIR__ . '/includes/common-header.php';
                                         <button type="button" id="clearFilters" aria-label="Clear filters">
                                             <span class="x" aria-hidden="true">&times;</span> Clear
                                         </button>
-                                        <button type="button" class="btn btn-primary">
+                                        <button type="submit" class="btn btn-primary">
                                             Apply Filter
                                         </button>
                                     </div>
                                 </div>
 
                             </div> <!-- /.filter-grid -->
-                        </div> <!-- /.inner-wrap -->
-                    </div> <!-- /.col-12 -->
-                </div> <!-- /.row -->
-            </div> <!-- /.filter-bar -->
+                        </form> <!-- /.inner-wrap -->
+                    </div> <!-- /.filter-bar -->
+                </div> <!-- /.col-12 -->
+            </div> <!-- /.row -->
         </div>
 
         <div class="card lead-table-card">

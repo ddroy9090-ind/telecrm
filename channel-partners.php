@@ -484,6 +484,24 @@ if (isset($_GET['added']) && $_GET['added'] === '1') {
     $successMessage = 'Partner has been deleted successfully.';
 }
 
+$orderByColumn = 'created_at';
+try {
+    $columnCheck = $pdo->query("SHOW COLUMNS FROM all_partners LIKE 'created_at'");
+    if (!$columnCheck || $columnCheck->fetch(PDO::FETCH_ASSOC) === false) {
+        $orderByColumn = 'id';
+    }
+
+    if ($columnCheck instanceof PDOStatement) {
+        $columnCheck->closeCursor();
+    }
+} catch (Throwable $exception) {
+    $orderByColumn = 'id';
+}
+
+if (!in_array($orderByColumn, ['created_at', 'id'], true)) {
+    $orderByColumn = 'id';
+}
+
 try {
     $partnersQuerySql = 'SELECT * FROM all_partners';
     $conditions = [];
@@ -515,7 +533,7 @@ try {
         $partnersQuerySql .= ' WHERE ' . implode(' AND ', $conditions);
     }
 
-    $partnersQuerySql .= ' ORDER BY created_at DESC';
+    $partnersQuerySql .= ' ORDER BY ' . $orderByColumn . ' DESC';
 
     $statement = $pdo->prepare($partnersQuerySql);
     $statement->execute($queryParameters);

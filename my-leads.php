@@ -258,8 +258,25 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         return null;
     }
 
-    $insertId = (int) $statement->insert_id;
     $statement->close();
+
+    $insertId = (int) $mysqli->insert_id;
+    if ($insertId <= 0) {
+        $fallback = $mysqli->prepare('SELECT id FROM lead_remarks WHERE lead_id = ? ORDER BY id DESC LIMIT 1');
+        if ($fallback instanceof mysqli_stmt) {
+            $fallback->bind_param('i', $leadId);
+            if ($fallback->execute()) {
+                $fallback->bind_result($fallbackId);
+                if ($fallback->fetch()) {
+                    $insertId = (int) $fallbackId;
+                }
+            }
+            $fallback->close();
+        }
+    }
+    if ($insertId <= 0) {
+        return null;
+    }
 
     $lookup = $mysqli->prepare('SELECT id, lead_id, remark_text, attachments, created_by_name, created_at FROM lead_remarks WHERE id = ?');
     if (!$lookup instanceof mysqli_stmt) {

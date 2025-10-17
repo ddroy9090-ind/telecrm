@@ -65,6 +65,10 @@ $successMessage = '';
 
 $allowedStatuses = ['Pending', 'Active', 'Inactive'];
 
+$sanitize = static function (?string $value): string {
+    return trim((string) $value);
+};
+
 $filterValues = [
     'search' => isset($_GET['search']) ? $sanitize($_GET['search']) : '',
     'status' => isset($_GET['status']) ? $sanitize($_GET['status']) : '',
@@ -108,10 +112,6 @@ $handleFileRemoval = static function (?string $relativePath): void {
     }
 
     @unlink($fullPath);
-};
-
-$sanitize = static function (?string $value): string {
-    return trim((string) $value);
 };
 
 $handleUpload = static function (string $fieldName) use (&$formErrors, &$uploadedFilePaths, $uploadDirectory): ?string {

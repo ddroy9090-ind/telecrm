@@ -103,6 +103,20 @@ CREATE TABLE `lead_activity_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
+-- Table structure for table `lead_remarks`
+--
+
+CREATE TABLE `lead_remarks` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `lead_id` int(10) UNSIGNED NOT NULL,
+  `remark_text` text NOT NULL,
+  `attachments` json DEFAULT NULL,
+  `created_by` int(10) UNSIGNED DEFAULT NULL,
+  `created_by_name` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
 -- Indexes for dumped tables
 --
 
@@ -128,6 +142,13 @@ ALTER TABLE `lead_activity_log`
   ADD KEY `lead_activity_type` (`activity_type`);
 
 --
+-- Indexes for table `lead_remarks`
+--
+ALTER TABLE `lead_remarks`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `lead_remarks_lead_id` (`lead_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -150,10 +171,18 @@ ALTER TABLE `lead_activity_log`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `lead_remarks`
+--
+ALTER TABLE `lead_remarks`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- Constraints for table `lead_activity_log`
 --
 ALTER TABLE `lead_activity_log`
   ADD CONSTRAINT `lead_activity_log_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE;
+ALTER TABLE `lead_remarks`
+  ADD CONSTRAINT `lead_remarks_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 -- --------------------------------------------------------

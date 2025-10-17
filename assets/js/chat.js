@@ -265,10 +265,11 @@
             entity.appendChild(status);
         }
 
-        if (item.unread_count) {
+        const unreadCount = parseNumber(item.unread_count);
+        if (unreadCount && unreadCount > 0) {
             entity.appendChild(createElement('span', {
                 className: 'chat-entity__badge',
-                text: String(item.unread_count),
+                text: String(unreadCount),
             }));
         }
 

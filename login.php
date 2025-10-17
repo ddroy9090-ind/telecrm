@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="shortcut icon" href="assets/images/logo/favicon.svg">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
 
         body,
         html {
@@ -66,15 +67,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         /* Particle Background */
-        #particles-js {
+        /* #particles-js {
             position: fixed;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #004225, #004225);
+            background: linear-gradient(135deg, #02796f, #02796f);
             top: 0;
             left: 0;
             z-index: 0;
-        }
+        } */
 
         .login-wrapper {
             position: relative;
@@ -83,10 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             min-height: 100vh;
             display: flex;
             align-items: center;
+            background-color: #02796f;
         }
 
         span.whiteYellow {
             color: #fff;
+            font-family: "Lora", serif;
+            font-style: italic;
             font-weight: 300;
         }
 
@@ -145,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             /* Modern browsers */
             width: 17px;
             height: 17px;
-            border: 2px solid #004225;
+            border: 2px solid #02796f;
             /* border color */
             border-radius: 6px;
             /* square with rounded edges */
@@ -166,8 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* Checked state */
         input[type="checkbox"]:checked {
-            background-color: #004225;
-            border-color: #004225;
+            background-color: #02796f;
+            border-color: #02796f;
         }
 
         /* Tick mark */
@@ -200,24 +204,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .login-box button {
-            background-color: #ffcf9d;
+            background-color: #02796f;
             border: none;
             border-radius: 8px;
             width: 100%;
             padding: 10px;
-            color: #333;
+            color: #fff;
             transition: background-color 0.5s ease;
             /* smooth hover effect */
         }
 
         .login-box button:hover {
-            background-color: #004225;
+            background-color: #02796f;
             color: #fff;
         }
 
 
         .login-box .forgot {
-            color: #004225;
+            color: #02796f;
             font-size: 14px;
             font-weight: 500;
         }
@@ -227,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .login-box .contact {
-            color: #004225;
+            color: #02796f;
             text-decoration: none;
             font-weight: 600;
         }
@@ -259,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
     <!-- Particle background -->
-    <div id="particles-js"></div>
+    <!-- <div id="particles-js"></div> -->
 
     <div class="login-wrapper">
         <div class="container">
@@ -267,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- Left Section -->
                 <div class="col-lg-7 d-flex flex-column justify-content-center">
                     <a href="index.php"><img src="assets/images/logo/crm-logo.svg" alt="" class="login-logo"></a>
-                    <h2><span class="whiteYellow">REAL ESTATE CRM Portal</span></h2>
+                    <h2><span class="whiteYellow">Real Estate CRM Portal</span></h2>
                     <p>Your all-in-one platform for managing Dubai’s real estate operations.</p>
                     <p>Log in to manage your leads, track client journeys, monitor listings, and drive sales performance with real-time insights.</p>
 

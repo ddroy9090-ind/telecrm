@@ -41,7 +41,7 @@
     height: 600px;
    overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: #004225 #f8fafc;
+    scrollbar-color: #02796f #f8fafc;
     overflow-x: hidden;
 }
 
@@ -56,7 +56,7 @@
 }
 
 .chat-sidebar::-webkit-scrollbar-thumb {
-    background-color: #004225;
+    background-color: #02796f;
     border-radius: 10px;
     border: 1px solid #e2e8f0;
 }
@@ -182,7 +182,7 @@
 }
 
 .chat-entity.active {
-    background: #004225;
+    background: #02796f;
     color: #ffffff;
     border-color: transparent;
     /* box-shadow: 0 12px 26px rgba(34, 163, 111, 0.35); */
@@ -199,7 +199,7 @@
     width: 42px;
     height: 42px;
     border-radius: 14px;
-    background: #004225;
+    background: #02796f;
     color: #ffffff;
     font-weight: 600;
     display: flex;
@@ -311,7 +311,7 @@
     width: 50px;
     height: 50px;
     border-radius: 16px;
-    background: #004225;
+    background: #02796f;
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -395,7 +395,7 @@
 
 .chat-message--mine {
     margin-left: auto;
-    background: linear-gradient(90deg, #004225 0%, #004225 100%);
+    background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
     color: #ffffff;
 }
 

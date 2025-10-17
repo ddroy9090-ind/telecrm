@@ -167,7 +167,7 @@ input[type="checkbox"] {
   /* Modern browsers */
   width: 20px;
   height: 20px;
-  border: 2px solid #004225;
+  border: 2px solid #02796f;
   /* border color */
   border-radius: 6px;
   /* square with rounded edges */
@@ -188,8 +188,8 @@ input[type="checkbox"]:focus {
 
 /* Checked state */
 input[type="checkbox"]:checked {
-  background-color: #004225;
-  border-color: #004225;
+  background-color: #02796f;
+  border-color: #02796f;
 }
 
 /* Tick mark */
@@ -288,7 +288,7 @@ input[type="checkbox"]:checked::after {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
-  color: #004225;
+  color: #02796f;
 }
 
 .section-heading p {
@@ -415,7 +415,7 @@ input[type="checkbox"]:checked::after {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #004225;
+  color: #02796f;
   font-size: 16px;
 }
 
@@ -500,8 +500,8 @@ input[type="checkbox"]:checked::after {
   cursor: pointer;
   display: flex;
   align-items: center;
-  border: 1px solid #FFCF9D;
-  background-color: #FFCF9D;
+  border: 1px solid #02796f;
+  background-color: #02796f;
   border-radius: 5px;
 }
 
@@ -522,7 +522,7 @@ input[type="checkbox"]:checked::after {
   transform: translateX(109px);
   height: 100%;
   width: 39px;
-  background-color: #FFCF9D;
+  background-color: #02796f;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -536,7 +536,7 @@ input[type="checkbox"]:checked::after {
 }
 
 .button:hover {
-  background: #FFCF9D;
+  background: #02796f;
 }
 
 .button:hover .button__text {
@@ -549,9 +549,9 @@ input[type="checkbox"]:checked::after {
 }
 
 .button:active .button__icon {
-  background-color: #FFCF9D;
+  background-color: #02796f;
 }
 
 .button:active {
-  border: 1px solid #FFCF9D;
+  border: 1px solid #02796f;
 }

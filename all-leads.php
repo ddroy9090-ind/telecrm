@@ -231,6 +231,160 @@ SQL,
     return $isReady;
 }
 
+function ensure_lead_remarks_table(mysqli $mysqli): bool
+{
+    static $remarksReady = null;
+    if ($remarksReady !== null) {
+        return $remarksReady;
+    }
+
+    $remarksReady = false;
+    $result = $mysqli->query("SHOW TABLES LIKE 'lead_remarks'");
+    if ($result instanceof mysqli_result) {
+        if ($result->num_rows > 0) {
+            $remarksReady = true;
+        }
+        $result->free();
+    }
+
+    if ($remarksReady) {
+        return true;
+    }
+
+    $tableDefinitions = [
+        <<<SQL
+CREATE TABLE IF NOT EXISTS `lead_remarks` (
+    `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `lead_id` INT(10) UNSIGNED NOT NULL,
+    `remark_text` TEXT NOT NULL,
+    `attachments` JSON DEFAULT NULL,
+    `created_by` INT(10) UNSIGNED DEFAULT NULL,
+    `created_by_name` VARCHAR(255) DEFAULT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `lead_remarks_lead_id` (`lead_id`),
+    CONSTRAINT `lead_remarks_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL,
+        <<<SQL
+CREATE TABLE IF NOT EXISTS `lead_remarks` (
+    `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `lead_id` INT(10) UNSIGNED NOT NULL,
+    `remark_text` TEXT NOT NULL,
+    `attachments` LONGTEXT DEFAULT NULL,
+    `created_by` INT(10) UNSIGNED DEFAULT NULL,
+    `created_by_name` VARCHAR(255) DEFAULT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `lead_remarks_lead_id` (`lead_id`),
+    CONSTRAINT `lead_remarks_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL,
+    ];
+
+    foreach ($tableDefinitions as $definition) {
+        if ($mysqli->query($definition)) {
+            $remarksReady = true;
+            break;
+        }
+
+        error_log('Unable to create lead_remarks table: ' . $mysqli->error);
+    }
+
+    return $remarksReady;
+}
+
+function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array $attachments = [], ?int $userId = null, string $userName = ''): ?array
+{
+    if ($leadId <= 0 || (!ensure_lead_remarks_table($mysqli))) {
+        return null;
+    }
+
+    $normalizedRemark = trim($remarkText);
+    $attachmentsJson = null;
+    if (!empty($attachments)) {
+        $attachmentsJson = json_encode($attachments, JSON_UNESCAPED_UNICODE);
+        if ($attachmentsJson === false) {
+            $attachmentsJson = null;
+        }
+    }
+
+    $userIdValue = $userId !== null ? (int) $userId : null;
+    $userNameValue = trim($userName) !== '' ? trim($userName) : null;
+
+    $statement = $mysqli->prepare('INSERT INTO lead_remarks (lead_id, remark_text, attachments, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)');
+    if (!$statement instanceof mysqli_stmt) {
+        return null;
+    }
+
+    $statement->bind_param('issis', $leadId, $normalizedRemark, $attachmentsJson, $userIdValue, $userNameValue);
+    $executed = $statement->execute();
+    if (!$executed) {
+        $statement->close();
+        return null;
+    }
+
+    $insertId = (int) $statement->insert_id;
+    $statement->close();
+
+    $lookup = $mysqli->prepare('SELECT id, lead_id, remark_text, attachments, created_by_name, created_at FROM lead_remarks WHERE id = ?');
+    if (!$lookup instanceof mysqli_stmt) {
+        return null;
+    }
+
+    $lookup->bind_param('i', $insertId);
+    if (!$lookup->execute()) {
+        $lookup->close();
+        return null;
+    }
+
+    $result = $lookup->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $lookup->close();
+
+    if (!$row) {
+        return null;
+    }
+
+    $attachmentsList = [];
+    if (!empty($row['attachments'])) {
+        $decoded = json_decode((string) $row['attachments'], true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $attachmentsList = array_values(array_filter(array_map(static function ($file) {
+                if (!is_array($file)) {
+                    return null;
+                }
+
+                $name = isset($file['name']) ? trim((string) $file['name']) : '';
+                $url = isset($file['url']) ? trim((string) $file['url']) : '';
+                if ($url === '') {
+                    $url = isset($file['path']) ? trim((string) $file['path']) : '';
+                }
+
+                if ($url === '') {
+                    return null;
+                }
+
+                return [
+                    'name' => $name !== '' ? $name : 'Attachment',
+                    'url' => $url,
+                ];
+            }, $decoded)));
+        }
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'lead_id' => (int) $row['lead_id'],
+        'text' => $normalizedRemark !== '' ? $normalizedRemark : 'No remark details provided.',
+        'attachments' => $attachmentsList,
+        'author' => isset($row['created_by_name']) && trim((string) $row['created_by_name']) !== ''
+            ? trim((string) $row['created_by_name'])
+            : 'Team',
+        'timestamp' => format_activity_timestamp($row['created_at'] ?? null),
+    ];
+}
+
 function log_lead_activity(mysqli $mysqli, int $leadId, string $type, string $description, array $metadata = [], ?int $userId = null, string $userName = ''): bool
 {
     if ($leadId <= 0 || trim($type) === '') {
@@ -394,34 +548,6 @@ function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
 
             $activities[$leadId]['history'][] = $historyEntry;
 
-            if ($activityType === 'remark') {
-                $remarkText = isset($metadata['remark_text']) ? (string) $metadata['remark_text'] : $description;
-                $attachments = [];
-                if (!empty($metadata['attachments']) && is_array($metadata['attachments'])) {
-                    foreach ($metadata['attachments'] as $attachment) {
-                        if (!is_array($attachment)) {
-                            continue;
-                        }
-                        $fileName = trim((string) ($attachment['name'] ?? 'Attachment'));
-                        $fileUrl = trim((string) ($attachment['url'] ?? ($attachment['path'] ?? '')));
-                        if ($fileUrl === '') {
-                            continue;
-                        }
-                        $attachments[] = [
-                            'name' => $fileName !== '' ? $fileName : 'Attachment',
-                            'url' => $fileUrl,
-                        ];
-                    }
-                }
-
-                $activities[$leadId]['remarks'][] = [
-                    'author' => $actorName !== '' ? $actorName : 'Team',
-                    'timestamp' => $timestamp,
-                    'text' => $remarkText !== '' ? $remarkText : 'No remark details provided.',
-                    'attachments' => $attachments,
-                ];
-            }
-
             if ($activityType === 'file_upload') {
                 $fileName = trim((string) ($metadata['file_name'] ?? $description));
                 if ($fileName === '') {
@@ -460,7 +586,114 @@ function fetch_lead_activities(mysqli $mysqli, array $leadIds): array
 
     $statement->close();
 
+    $remarksByLead = fetch_lead_remarks($mysqli, $uniqueIds);
+    if (!empty($remarksByLead)) {
+        foreach ($remarksByLead as $leadId => $remarks) {
+            if (!isset($activities[$leadId])) {
+                $activities[$leadId] = [
+                    'history' => [],
+                    'remarks' => [],
+                    'files' => [],
+                ];
+            }
+
+            $activities[$leadId]['remarks'] = $remarks;
+        }
+    }
+
     return $activities;
+}
+
+function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
+{
+    if (empty($leadIds) || !ensure_lead_remarks_table($mysqli)) {
+        return [];
+    }
+
+    $uniqueIds = array_values(array_unique(array_map('intval', $leadIds)));
+    if (empty($uniqueIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+    $types = str_repeat('i', count($uniqueIds));
+
+    $statement = $mysqli->prepare("SELECT id, lead_id, remark_text, attachments, created_by_name, created_at FROM lead_remarks WHERE lead_id IN ({$placeholders}) ORDER BY created_at DESC, id DESC");
+    if (!$statement instanceof mysqli_stmt) {
+        return [];
+    }
+
+    $bindParams = array_merge([$types], $uniqueIds);
+    $bindReferences = [];
+    foreach ($bindParams as $key => &$value) {
+        $bindReferences[$key] = &$value;
+    }
+    unset($value);
+
+    $statement->bind_param(...$bindReferences);
+
+    if (!$statement->execute()) {
+        $statement->close();
+        return [];
+    }
+
+    $result = $statement->get_result();
+    $remarks = [];
+
+    if ($result instanceof mysqli_result) {
+        while ($row = $result->fetch_assoc()) {
+            $leadId = isset($row['lead_id']) ? (int) $row['lead_id'] : 0;
+            if ($leadId <= 0) {
+                continue;
+            }
+
+            if (!isset($remarks[$leadId])) {
+                $remarks[$leadId] = [];
+            }
+
+            $text = isset($row['remark_text']) ? trim((string) $row['remark_text']) : '';
+            $author = isset($row['created_by_name']) ? trim((string) $row['created_by_name']) : '';
+            $timestamp = format_activity_timestamp($row['created_at'] ?? null);
+
+            $attachments = [];
+            if (!empty($row['attachments'])) {
+                $decoded = json_decode((string) $row['attachments'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    foreach ($decoded as $attachment) {
+                        if (!is_array($attachment)) {
+                            continue;
+                        }
+
+                        $fileName = isset($attachment['name']) ? trim((string) $attachment['name']) : '';
+                        $fileUrl = isset($attachment['url']) ? trim((string) $attachment['url']) : '';
+                        if ($fileUrl === '' && isset($attachment['path'])) {
+                            $fileUrl = trim((string) $attachment['path']);
+                        }
+
+                        if ($fileUrl === '') {
+                            continue;
+                        }
+
+                        $attachments[] = [
+                            'name' => $fileName !== '' ? $fileName : 'Attachment',
+                            'url' => $fileUrl,
+                        ];
+                    }
+                }
+            }
+
+            $remarks[$leadId][] = [
+                'author' => $author !== '' ? $author : 'Team',
+                'timestamp' => $timestamp,
+                'text' => $text !== '' ? $text : 'No remark details provided.',
+                'attachments' => $attachments,
+            ];
+        }
+    }
+
+    $statement->close();
+
+    return $remarks;
 }
 
 function reformat_uploaded_files_array(array $files): array
@@ -1269,6 +1502,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
     $actorId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
     $actorName = $loggedInUserName !== '' ? $loggedInUserName : 'System';
 
+    $savedRemark = save_lead_remark($mysqli, $leadId, $remarkText, $savedFiles, $actorId, $actorName);
+    if ($savedRemark === null) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Unable to save the remark.']);
+        exit;
+    }
+
     $remarkSnippet = $remarkText;
     if (function_exists('mb_strlen')) {
         if (mb_strlen($remarkSnippet) > 80) {
@@ -1284,7 +1524,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
         : sprintf('%s added a remark', $actorName);
 
     $remarkMetadata = [
-        'remark_text' => $remarkText,
+        'remark_id' => $savedRemark['id'] ?? null,
+        'remark_text' => $savedRemark['text'] ?? $remarkText,
         'attachments' => $savedFiles,
     ];
 
@@ -1293,6 +1534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
     foreach ($savedFiles as $file) {
         $fileDescription = sprintf('%s uploaded %s', $actorName, $file['name']);
         $fileMetadata = [
+            'remark_id' => $savedRemark['id'] ?? null,
             'file_name' => $file['name'],
             'file_path' => $file['path'],
             'file_url' => $file['url'],

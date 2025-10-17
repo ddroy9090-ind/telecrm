@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
 :root {
-    --theme-color: #02796f;
+    --theme-color: #004225;
 }
 
 * {
@@ -15,21 +15,21 @@ a {
 }
 
 .page-link {
-    color: #02796f;
+    color: #004225;
 }
 
 .active>.page-link,
 .page-link.active {
     z-index: 3;
     color: #fff;
-    background-color: #02796f;
-    border-color: #02796f;
+    background-color: #004225;
+    border-color: #004225;
 }
 
 .page-link:focus {
     box-shadow: none;
-    border-color: #02796f;
-    color: #02796f;
+    border-color: #004225;
+    color: #004225;
 }
 
 ul.pagination.justify-content-center.mb-0 {
@@ -40,7 +40,7 @@ span.profile {
     display: inline-block;
     width: 30px;
     height: 30px;
-    background-color: #02796f;
+    background-color: #004225;
     border-radius: 50%;
     position: relative;
 }
@@ -84,7 +84,7 @@ body.lead-sidebar-open {
 
 span.badge.bg-light.text-dark {
     font-size: 14px;
-    background-color: #02796f !important;
+    background-color: #004225 !important;
     color: #fff !important;
     border-radius: 50px;
 }
@@ -99,15 +99,14 @@ button:focus:not(:focus-visible) {
     background-color: #fefefe;
     font-size: 14px;
     padding: 8px 30px;
-    /* width: 100%; */
     color: #333;
 }
 
 .btn-primary {
-    background: #02796f;
-    color: #fff;
+    background: #FFCF9D;
+    color: #333;
     box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
-    border-color: #02796f;
+    border-color: #FFCF9D;
     transition: all 0.3s ease-in-out;
     font-size: 14px;
     font-weight: 400;
@@ -116,13 +115,13 @@ button:focus:not(:focus-visible) {
 }
 
 .btn-primary:hover {
-    background-color: #02796f;
-    border-color: #02796f;
-    color: #fff;
+    background-color: #FFCF9D;
+    border-color: #FFCF9D;
+    color: #333;
 }
 
 .btn-outline-primary {
-    color: #02796f;
+    color: #FFCF9D;
     border: none;
     background-color: transparent;
     transition: all 0.3s ease-in-out;
@@ -131,7 +130,7 @@ button:focus:not(:focus-visible) {
 
 .btn-outline-primary:hover,
 .btn-outline-primary:focus {
-    background-color: #02796f;
+    background-color: #004225;
     color: #ffffff;
     box-shadow: 0 12px 24px -18px rgba(0, 69, 38, 0.45);
 }
@@ -141,9 +140,9 @@ button:focus:not(:focus-visible) {
 .btn-primary.active,
 .show>.btn-primary.dropdown-toggle {
     background: #e8f6ef;
-    color: #02796f;
+    color: #004225;
     box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
-    border-color: #02796f;
+    border-color: #004225;
 }
 
 
@@ -171,7 +170,7 @@ button:focus:not(:focus-visible) {
 }
 
 .lead-table-row:focus-visible {
-    outline: 2px solid #02796f;
+    outline: 2px solid #004225;
     outline-offset: -2px;
     background-color: rgba(2, 121, 111, 0.08);
 }
@@ -189,7 +188,7 @@ button:focus:not(:focus-visible) {
     font-weight: 600;
     text-transform: capitalize;
     background: rgba(2, 121, 111, 0.12);
-    color: #02796f;
+    color: #004225;
 }
 
 .lead-sidebar-overlay {
@@ -244,7 +243,7 @@ button:focus:not(:focus-visible) {
 .lead-sidebar__header-background {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, #02796f 0%, #02796f 100%);
+    background: linear-gradient(135deg, #004225 0%, #004225 100%);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 }
@@ -450,7 +449,7 @@ button:focus:not(:focus-visible) {
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    background: linear-gradient(135deg, #02796f 0%, #02796f 100%);
+    background: linear-gradient(135deg, #004225 0%, #004225 100%);
     color: #ffffff;
     box-shadow: 0 12px 18px -14px rgba(15, 23, 42, 0.6);
 }
@@ -517,7 +516,7 @@ button:focus:not(:focus-visible) {
     height: 32px;
     border-radius: 50%;
     background: #f0fdfa;
-    color: #02796f;
+    color: #004225;
     font-size: 16px;
     flex: 0 0 auto;
 }
@@ -617,7 +616,7 @@ button:focus:not(:focus-visible) {
     font-size: 12px;
     font-weight: 600;
     background: rgba(2, 121, 111, 0.1);
-    color: #02796f;
+    color: #004225;
     min-width: 96px;
     text-align: center;
     justify-content: center;
@@ -651,7 +650,7 @@ button:focus:not(:focus-visible) {
 
 .lead-sidebar-tab.is-active {
     background: #ffffff;
-    color: #02796f;
+    color: #004225;
     /* box-shadow: 0 6px 12px -6px rgba(15, 23, 42, 0.18); */
 }
 
@@ -739,7 +738,7 @@ button:focus:not(:focus-visible) {
     padding: 4px 10px;
     background: rgba(2, 121, 111, 0.1);
     border-radius: 999px;
-    color: #02796f;
+    color: #004225;
     text-decoration: none;
 }
 
@@ -801,7 +800,7 @@ button:focus:not(:focus-visible) {
     border: 1px solid #cbd5f5;
     font-size: 13px;
     font-weight: 600;
-    color: #02796f;
+    color: #004225;
     background: rgba(2, 121, 111, 0.08);
 }
 
@@ -1031,7 +1030,7 @@ button:focus:not(:focus-visible) {
 }
 
 /* .trend-up {
-    color: #16a34a;
+    color: #004225;
 } */
 
 .trend-up::before {
@@ -1183,7 +1182,7 @@ button:focus:not(:focus-visible) {
     left: 0;
     height: 100vh;
     width: 230px;
-    background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
+    background: linear-gradient(90deg, #004225 0%, #004225 100%);
     color: #ffffff;
     border-right: 1px solid rgba(255, 255, 255, 0.12);
     display: flex;
@@ -1321,16 +1320,28 @@ button:focus:not(:focus-visible) {
 
 .sidebar-menu li .sidebar-link:hover,
 .sidebar-menu li.active>.sidebar-link {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
+    background: #FFCF9D;
+    color: #333;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-    border: 1px solid #fff;
+    border: 1px solid #FFCF9D;
 }
 
 .sidebar-menu li .sidebar-link:hover .sidebar-icon,
 .sidebar-menu li.active>.sidebar-link .sidebar-icon {
-    background: rgba(255, 255, 255, 0.25);
-    color: #ffffff;
+    background: #FFCF9D;
+    color: #333;
+}
+
+.sidebar-menu li .sidebar-link:hover .sidebar-dropdown-arrow{
+    color: #333;
+}
+
+.sidebar-menu li .sidebar-dropdown.open .sidebar-dropdown-arrow{
+     color: #333;
+}
+
+li.sidebar-dropdown.active .sidebar-dropdown-arrow {
+color: #333;
 }
 
 .sidebar-dropdown-toggle {
@@ -1545,7 +1556,7 @@ button:focus:not(:focus-visible) {
 }
 
 .stat-card {
-    background: linear-gradient(135deg, #02796f 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #004225 0%, #764ba2 100%);
     color: white;
     border-radius: 5px;
     padding: 25px;
@@ -1782,7 +1793,7 @@ button:focus:not(:focus-visible) {
 
 .lead-table thead,
 .lead-table thead th {
-    background: linear-gradient(90deg, #02796f 0%, #02796f 100%);
+    background: linear-gradient(90deg, #004225 0%, #004225 100%);
     color: #fff;
     border: none;
 }
@@ -1828,7 +1839,7 @@ button:focus:not(:focus-visible) {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(90deg, #02796f 0%, #05b6a1 100%);
+    background: linear-gradient(90deg, #004225 0%, #05b6a1 100%);
     color: #fff;
     font-weight: 600;
     font-size: 16px;
@@ -1855,14 +1866,14 @@ button:focus:not(:focus-visible) {
 
 .assigned-input:focus {
     opacity: 1;
-    border-color: #02796f;
+    border-color: #004225;
     box-shadow: 0 0 0 3px rgba(2, 121, 111, 0.25);
     background-color: #fff;
 }
 
 /* View details link */
 .view-link {
-    color: #02796f;
+    color: #004225;
     font-weight: 500;
     text-decoration: none;
     transition: color 0.3s ease;
@@ -1884,10 +1895,10 @@ button:focus:not(:focus-visible) {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    border: 1.5px solid #02796f;
+    border: 1.5px solid #004225;
     border-radius: 50px;
     background-color: #f7fffd;
-    color: #02796f;
+    color: #004225;
     font-weight: 500;
     font-size: 13px;
     padding: 0;
@@ -1931,10 +1942,10 @@ button:focus:not(:focus-visible) {
 
 
 .assigned-select {
-    border: 1.5px solid #02796f;
+    border: 1.5px solid #004225;
     border-radius: 50px;
     background-color: #f7fffd;
-    color: #02796f;
+    color: #004225;
 }
 
 .stage-badge {
@@ -2247,12 +2258,12 @@ button:focus:not(:focus-visible) {
 }
 
 .right-search .form-group {
-    width: 55%;
+    width: 33%;
     position: relative;
 }
 
 .right-search .choices {
-    width: 45%;
+    width: 15%;
     margin-bottom: 0;
 }
 
@@ -2271,6 +2282,10 @@ button:focus:not(:focus-visible) {
     width: 100%;
     padding: 10px 20px;
     padding-left: 40px;
+}
+
+.right-search .applyFilterBtn{
+    width: 50%;
 }
 
 
@@ -2321,7 +2336,7 @@ button:focus:not(:focus-visible) {
 }
 
 .lead-metric-icon {
-    /* background-color: #02796f;
+    /* background-color: #004225;
     color: #fff; */
     border-radius: 10px;
     width: 40px;
@@ -2367,8 +2382,9 @@ button:focus:not(:focus-visible) {
     color: #0d6efd;
 }
 
-.lead-metric-growth.green, .lead-metric-growth.blue {
-    color: #02796f;
+.lead-metric-growth.green,
+.lead-metric-growth.blue {
+    color: #004225;
     display: none;
 }
 
@@ -2551,8 +2567,8 @@ section.activity-section {
 }
 
 .agent-avatar {
-    background: #02796f;
-    color: #fff;
+    background: #ffcf9d;
+    color: #333;
     width: 38px;
     height: 38px;
     border-radius: 50%;
@@ -2579,7 +2595,7 @@ section.activity-section {
 }
 
 .agent-stats .growth {
-    color: #16a34a;
+    color: #004225;
     font-weight: 500;
 }
 
@@ -3067,7 +3083,7 @@ section.activity-section {
 }
 
 .filter-bar .action-wrap button.btn-primary:hover {
-    background-color: #02796f;
+    background-color: #004225;
     color: #fff;
 }
 
@@ -3129,8 +3145,10 @@ section.activity-section {
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
     font-family: "Inter", "Poppins", sans-serif;
     overflow-y: auto;
-    scrollbar-width: thin; /* for Firefox */
-    scrollbar-color: #02796f #f8fafc; /* thumb color | track color */
+    scrollbar-width: thin;
+    /* for Firefox */
+    scrollbar-color: #004225 #f8fafc;
+    /* thumb color | track color */
     overflow-x: hidden;
 }
 
@@ -3145,7 +3163,7 @@ section.activity-section {
 }
 
 .partner-details-modal::-webkit-scrollbar-thumb {
-    background-color: #02796f;
+    background-color: #004225;
     border-radius: 10px;
     border: 1px solid #e2e8f0;
 }
@@ -3220,7 +3238,7 @@ section.activity-section {
 
 .partner-details-modal dd:hover {
     background: #f0f9ff;
-    border-color: #02796f;
+    border-color: #004225;
     transition: all 0.2s ease;
 }
 
@@ -3230,11 +3248,11 @@ section.activity-section {
 }
 
 .partner-details-modal .doc ul li a {
-    color: #02796f;
+    color: #004225;
 }
 
 .partner-details-modal .modal-title {
     font-size: 20px;
     font-weight: 500;
-    color: #02796f;
+    color: #004225;
 }

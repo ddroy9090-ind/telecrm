@@ -189,9 +189,18 @@ unset($_SESSION['flash']);
                 <h1 class="main-heading">Users</h1>
                 <p class="subheading">Manage and track all your real estate users</p>
             </div>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                <i class="bx bx-user-plus me-1"></i> Add User
+            <!-- From Uiverse.io by andrew-demchenk0 -->
+
+            <button type="button" class="button" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <span class="button__text">Add User</span>
+                <span class="button__icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" height="24" fill="none" class="svg">
+                        <line y2="19" y1="5" x2="12" x1="12"></line>
+                        <line y2="12" y1="12" x2="19" x1="5"></line>
+                    </svg></span>
             </button>
+            <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bx bx-user-plus me-1"></i> Add User
+            </button> -->
         </div>
 
         <div class="row g-3 lead-stats">
@@ -199,28 +208,28 @@ unset($_SESSION['flash']);
                 <div class="stat-card total-leads">
                     <h6>Total Users</h6>
                     <h2><?php echo (int) $userStats['total']; ?></h2>
-                    
+
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card active-leads">
                     <h6>Total Admin</h6>
                     <h2><?php echo (int) ($userStats['roles']['admin'] ?? 0); ?></h2>
-                    
+
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card closed-leads">
                     <h6>Total Agents</h6>
                     <h2><?php echo (int) ($userStats['roles']['agent'] ?? 0); ?></h2>
-                    
+
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card lost-leads">
                     <h6>Total Manager</h6>
                     <h2><?php echo (int) ($userStats['roles']['manager'] ?? 0); ?></h2>
-                    
+
                 </div>
             </div>
         </div>

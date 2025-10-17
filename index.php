@@ -115,7 +115,7 @@ include __DIR__ . '/includes/common-header.php';
                                 <option value="this_month" <?= $selectedRange === 'this_month' ? 'selected' : '' ?>>This Month</option>
                                 <option value="custom" <?= $selectedRange === 'custom' ? 'selected' : '' ?>>Custom Range</option>
                             </select>
-                            <div class="d-flex gap-2 align-items-center ">
+                            <div class="d-flex gap-2 applyFilterBtn">
                                 <input
                                     type="date"
                                     class="form-control"
@@ -132,7 +132,7 @@ include __DIR__ . '/includes/common-header.php';
                                     placeholder="End date"
                                     data-dashboard-end
                                 />
-                                <button type="button" class="btn btn-primary" data-dashboard-apply-range>Apply</button>
+                                <button type="button" class="btn btn-primary w-100" data-dashboard-apply-range>Apply</button>
                             </div>
                         </div>
                     </div>

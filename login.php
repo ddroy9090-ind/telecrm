@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: fixed;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #013b2a, #3db174);
+            background: linear-gradient(135deg, #004225, #004225);
             top: 0;
             left: 0;
             z-index: 0;
@@ -135,6 +135,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #111;
         }
 
+        /* Reset default browser checkbox */
+        input[type="checkbox"] {
+            -webkit-appearance: none;
+            /* Safari/Chrome */
+            -moz-appearance: none;
+            /* Firefox */
+            appearance: none;
+            /* Modern browsers */
+            width: 17px;
+            height: 17px;
+            border: 2px solid #004225;
+            /* border color */
+            border-radius: 6px;
+            /* square with rounded edges */
+            background-color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* Hover effect */
+        input[type="checkbox"]:hover {
+            border-color: #004255;
+        }
+
+        input[type="checkbox"]:focus {
+            box-shadow: none;
+        }
+
+        /* Checked state */
+        input[type="checkbox"]:checked {
+            background-color: #004225;
+            border-color: #004225;
+        }
+
+        /* Tick mark */
+        input[type="checkbox"]:checked::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            display: none;
+        }
+
         .login-form .form-group input {
             box-shadow: none;
             border: 1px #004a44 solid;
@@ -151,20 +200,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .login-box button {
-            background-color: #319965;
+            background-color: #ffcf9d;
             border: none;
             border-radius: 8px;
             width: 100%;
             padding: 10px;
-            color: #fff;
+            color: #333;
+            transition: background-color 0.5s ease;
+            /* smooth hover effect */
         }
 
         .login-box button:hover {
-            background-color: #154442;
+            background-color: #004225;
+            color: #fff;
         }
 
+
         .login-box .forgot {
-            color: #eebd2b;
+            color: #004225;
             font-size: 14px;
             font-weight: 500;
         }
@@ -174,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .login-box .contact {
-            color: #f0c22b;
+            color: #004225;
             text-decoration: none;
             font-weight: 600;
         }

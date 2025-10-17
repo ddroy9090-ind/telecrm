@@ -163,7 +163,7 @@ input[type="checkbox"] {
   appearance: none;         /* Modern browsers */
   width: 20px;
   height: 20px;
-  border: 2px solid #009688;   /* border color */
+  border: 2px solid #004225;   /* border color */
   border-radius: 6px;          /* square with rounded edges */
   background-color: #fff;
   cursor: pointer;
@@ -173,7 +173,7 @@ input[type="checkbox"] {
 
 /* Hover effect */
 input[type="checkbox"]:hover {
-  border-color: #00796b;
+  border-color: #004255;
 }
 
 input[type="checkbox"]:focus{
@@ -182,8 +182,8 @@ input[type="checkbox"]:focus{
 
 /* Checked state */
 input[type="checkbox"]:checked {
-  background-color: #009688;
-  border-color: #009688;
+  background-color: #004225;
+  border-color: #004225;
 }
 
 /* Tick mark */
@@ -282,7 +282,7 @@ input[type="checkbox"]:checked::after {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
-  color: #023c36;
+  color: #004225;
 }
 
 .section-heading p {
@@ -409,7 +409,7 @@ input[type="checkbox"]:checked::after {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #023c36;
+  color: #004225;
   font-size: 16px;
 }
 
@@ -481,4 +481,69 @@ input[type="checkbox"]:checked::after {
   .metric-value {
     font-size: 15px;
   }
+}
+
+
+/* -------- New Css --- */
+
+/* From Uiverse.io by andrew-demchenk0 */ 
+.button {
+  position: relative;
+  width: 150px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: 1px solid #FFCF9D;
+  background-color: #FFCF9D;
+  border-radius: 5px;
+}
+
+.button, .button__icon, .button__text {
+  transition: all 0.3s;
+}
+
+.button .button__text {
+  transform: translateX(30px);
+  color: #333;
+  font-weight: 500;
+}
+
+.button .button__icon {
+  position: absolute;
+  transform: translateX(109px);
+  height: 100%;
+  width: 39px;
+  background-color: #FFCF9D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.button .svg {
+  width: 30px;
+  /* stroke: transparent; */
+  font-weight: 400;
+}
+
+.button:hover {
+  background: #FFCF9D;
+}
+
+.button:hover .button__text {
+  color: transparent;
+}
+
+.button:hover .button__icon {
+  width: 148px;
+  transform: translateX(0);
+}
+
+.button:active .button__icon {
+  background-color: #FFCF9D;
+}
+
+.button:active {
+  border: 1px solid #FFCF9D;
 }

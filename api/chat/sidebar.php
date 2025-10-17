@@ -52,7 +52,8 @@ try {
               AND (cp.last_read_message_id IS NULL OR m.id > cp.last_read_message_id)
             GROUP BY m.conversation_id
         ) unread ON unread.conversation_id = dc.id
-        ORDER BY CASE WHEN u.id = :me_order THEN 0 ELSE 1 END, u.full_name ASC
+        WHERE u.id <> :me_exclude
+        ORDER BY u.full_name ASC
     SQL);
 
     $usersStmt->execute([
@@ -61,7 +62,7 @@ try {
         'me_direct_greatest'   => $userId,
         'me_unread_participant' => $userId,
         'me_unread_sender'     => $userId,
-        'me_order'             => $userId,
+        'me_exclude'           => $userId,
     ]);
     $users = [];
     while ($row = $usersStmt->fetch()) {

@@ -1586,6 +1586,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
             'payload' => $updatedPayload,
             'json' => $encodedPayload,
         ],
+        'remark' => $savedRemark,
     ]);
     exit;
 }

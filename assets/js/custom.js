@@ -940,6 +940,81 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   };
 
+  const sanitizeRemark = (remark, fallbackTimestamp = "—", fallbackAuthor = "Team") => {
+    const author = remark?.author && String(remark.author).trim() !== "" ? String(remark.author).trim() : null;
+    const timestamp = remark?.timestamp && String(remark.timestamp).trim() !== "" ? String(remark.timestamp).trim() : null;
+    const text = remark?.text && String(remark.text).trim() !== "" ? String(remark.text).trim() : null;
+    const attachments = Array.isArray(remark?.attachments)
+      ? remark.attachments
+          .map((file) => ({
+            name: file?.name && String(file.name).trim() !== "" ? String(file.name).trim() : "Attachment",
+            url: file?.url || file?.path || "",
+          }))
+          .filter((file) => file.url !== "")
+      : [];
+
+    return {
+      author: author || fallbackAuthor || "Team",
+      timestamp: timestamp || fallbackTimestamp || "—",
+      text: text || "No remark details provided.",
+      attachments,
+    };
+  };
+
+  const createRemarkElement = (remark, shouldHighlight = false) => {
+    const remarkBlock = document.createElement("div");
+    remarkBlock.className = "lead-remark";
+
+    const meta = document.createElement("div");
+    meta.className = "lead-remark__meta";
+
+    const author = document.createElement("span");
+    author.className = "lead-remark__author";
+    author.textContent = remark.author;
+
+    const separator = document.createElement("span");
+    separator.className = "lead-remark__separator";
+    separator.textContent = "•";
+
+    const time = document.createElement("span");
+    time.className = "lead-remark__timestamp";
+    time.textContent = remark.timestamp;
+
+    meta.append(author);
+    meta.append(separator);
+    meta.append(time);
+
+    const text = document.createElement("div");
+    text.className = "lead-remark__text";
+    text.textContent = remark.text;
+
+    remarkBlock.append(meta, text);
+
+    if (remark.attachments.length) {
+      const attachmentsWrapper = document.createElement("div");
+      attachmentsWrapper.className = "lead-remark__attachments";
+
+      remark.attachments.forEach((file) => {
+        const attachmentLink = document.createElement("a");
+        attachmentLink.className = "lead-remark__attachment";
+        attachmentLink.textContent = file.name || "Attachment";
+        attachmentLink.href = file.url;
+        attachmentLink.target = "_blank";
+        attachmentLink.rel = "noreferrer noopener";
+        attachmentsWrapper.appendChild(attachmentLink);
+      });
+
+      remarkBlock.appendChild(attachmentsWrapper);
+    }
+
+    if (shouldHighlight) {
+      remarkBlock.classList.add("is-new");
+      remarkBlock.setAttribute("tabindex", "-1");
+    }
+
+    return remarkBlock;
+  };
+
   const renderRemarks = (remarks, fallbackTimestamp, fallbackAuthor) => {
     if (!remarksContainer) {
       return;
@@ -949,26 +1024,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const items = Array.isArray(remarks) ? remarks : [];
 
     const sanitizedRemarks = items
-      .map((remark) => {
-        const author = remark?.author && String(remark.author).trim() !== "" ? String(remark.author).trim() : null;
-        const timestamp = remark?.timestamp && String(remark.timestamp).trim() !== "" ? String(remark.timestamp).trim() : null;
-        const text = remark?.text && String(remark.text).trim() !== "" ? String(remark.text).trim() : null;
-        const attachments = Array.isArray(remark?.attachments)
-          ? remark.attachments
-              .map((file) => ({
-                name: file?.name && String(file.name).trim() !== "" ? String(file.name).trim() : "Attachment",
-                url: file?.url || file?.path || "",
-              }))
-              .filter((file) => file.url !== "")
-          : [];
-
-        return {
-          author: author || "Team",
-          timestamp: timestamp || "—",
-          text: text || "No remark details provided.",
-          attachments,
-        };
-      })
+      .map((remark) => sanitizeRemark(remark, fallbackTimestamp, fallbackAuthor))
       .filter((remark) => remark.text || remark.attachments.length);
 
     if (!sanitizedRemarks.length) {
@@ -985,57 +1041,11 @@ document.addEventListener("DOMContentLoaded", function () {
     let highlightedRemark = null;
 
     sanitizedRemarks.forEach((remark, index) => {
-      const remarkBlock = document.createElement("div");
-      remarkBlock.className = "lead-remark";
-
-      const meta = document.createElement("div");
-      meta.className = "lead-remark__meta";
-
-      const author = document.createElement("span");
-      author.className = "lead-remark__author";
-      author.textContent = remark.author;
-
-      const separator = document.createElement("span");
-      separator.className = "lead-remark__separator";
-      separator.textContent = "•";
-
-      const time = document.createElement("span");
-      time.className = "lead-remark__timestamp";
-      time.textContent = remark.timestamp;
-
-      meta.append(author);
-      meta.append(separator);
-      meta.append(time);
-
-      const text = document.createElement("div");
-      text.className = "lead-remark__text";
-      text.textContent = remark.text;
-
-      remarkBlock.append(meta, text);
-
-      if (remark.attachments.length) {
-        const attachmentsWrapper = document.createElement("div");
-        attachmentsWrapper.className = "lead-remark__attachments";
-
-        remark.attachments.forEach((file) => {
-          const attachmentLink = document.createElement("a");
-          attachmentLink.className = "lead-remark__attachment";
-          attachmentLink.textContent = file.name || "Attachment";
-          attachmentLink.href = file.url;
-          attachmentLink.target = "_blank";
-          attachmentLink.rel = "noreferrer noopener";
-          attachmentsWrapper.appendChild(attachmentLink);
-        });
-
-        remarkBlock.appendChild(attachmentsWrapper);
-      }
-
-      if (highlightNextRemark && index === 0) {
-        remarkBlock.classList.add("is-new");
-        remarkBlock.setAttribute("tabindex", "-1");
+      const shouldHighlight = highlightNextRemark && index === 0;
+      const remarkBlock = createRemarkElement(remark, shouldHighlight);
+      if (shouldHighlight) {
         highlightedRemark = remarkBlock;
       }
-
       fragment.appendChild(remarkBlock);
     });
 
@@ -1050,6 +1060,31 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     highlightNextRemark = false;
+  };
+
+  const appendRemark = (remark, fallbackTimestamp, fallbackAuthor) => {
+    if (!remarksContainer) {
+      return;
+    }
+
+    const sanitized = sanitizeRemark(remark, fallbackTimestamp, fallbackAuthor);
+    if (!sanitized.text && !sanitized.attachments.length) {
+      return;
+    }
+
+    const emptyState = remarksContainer.querySelector(".lead-remarks__empty");
+    if (emptyState) {
+      remarksContainer.innerHTML = "";
+    }
+
+    const remarkElement = createRemarkElement(sanitized, true);
+    remarksContainer.insertBefore(remarkElement, remarksContainer.firstChild);
+    remarksContainer.setAttribute("data-has-remarks", "true");
+
+    requestAnimationFrame(() => {
+      remarkElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      remarkElement.focus?.();
+    });
   };
 
   const renderFiles = (files) => {
@@ -1441,6 +1476,24 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((data) => {
           highlightNextRemark = true;
           applyLeadResponse(data.lead);
+
+          if (
+            (!data?.lead || !data.lead?.payload || !Array.isArray(data.lead.payload.remarks)) &&
+            data?.remark
+          ) {
+            appendRemark(data.remark, currentLeadData?.createdAtDisplay, currentLeadData?.assignedTo);
+
+            if (currentLeadData) {
+              const sanitized = sanitizeRemark(
+                data.remark,
+                currentLeadData.createdAtDisplay,
+                currentLeadData.assignedTo
+              );
+              const existing = Array.isArray(currentLeadData.remarks) ? currentLeadData.remarks : [];
+              currentLeadData.remarks = [sanitized, ...existing];
+            }
+          }
+
           const successMessage = data.message || 'Remark saved successfully.';
           showFeedback(successMessage, 'success');
         })

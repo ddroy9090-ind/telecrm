@@ -485,9 +485,11 @@ if (isset($_GET['added']) && $_GET['added'] === '1') {
 }
 
 $orderByColumn = 'created_at';
+$hasCreatedAtColumn = true;
 try {
     $columnCheck = $pdo->query("SHOW COLUMNS FROM all_partners LIKE 'created_at'");
     if (!$columnCheck || $columnCheck->fetch(PDO::FETCH_ASSOC) === false) {
+        $hasCreatedAtColumn = false;
         $orderByColumn = 'id';
     }
 
@@ -495,6 +497,7 @@ try {
         $columnCheck->closeCursor();
     }
 } catch (Throwable $exception) {
+    $hasCreatedAtColumn = false;
     $orderByColumn = 'id';
 }
 
@@ -508,14 +511,35 @@ try {
     $queryParameters = [];
 
     if ($filterValues['search'] !== '') {
-        $conditions[] = '(
-            company_name LIKE :search OR
-            contact_person LIKE :search OR
-            email LIKE :search OR
-            phone LIKE :search OR
-            whatsapp LIKE :search OR
-            partner_code LIKE :search
-        )';
+        $searchableColumns = [
+            'company_name',
+            'contact_person',
+            'email',
+            'phone',
+            'whatsapp',
+            'partner_code',
+            'country',
+            'city',
+            'address',
+            'rera_number',
+            'license_number',
+            'website',
+            'status',
+            'commission_structure',
+            'remarks',
+        ];
+
+        $searchExpressions = array_map(static function (string $column): string {
+            return "COALESCE($column, '') LIKE :search";
+        }, $searchableColumns);
+
+        $searchExpressions[] = 'CAST(id AS CHAR) LIKE :search';
+
+        if ($hasCreatedAtColumn) {
+            $searchExpressions[] = "DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') LIKE :search";
+        }
+
+        $conditions[] = '(' . implode(' OR ', $searchExpressions) . ')';
         $queryParameters[':search'] = '%' . $filterValues['search'] . '%';
     }
 

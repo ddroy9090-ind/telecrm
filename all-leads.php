@@ -338,17 +338,17 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         return null;
     }
 
-    $result = $lookup->get_result();
-    $row = $result ? $result->fetch_assoc() : null;
+    $lookup->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAttachments, $rowAuthorName, $rowCreatedAt);
+    $hasRow = $lookup->fetch();
     $lookup->close();
 
-    if (!$row) {
+    if (!$hasRow) {
         return null;
     }
 
     $attachmentsList = [];
-    if (!empty($row['attachments'])) {
-        $decoded = json_decode((string) $row['attachments'], true);
+    if (!empty($rowAttachments)) {
+        $decoded = json_decode((string) $rowAttachments, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
             $attachmentsList = array_values(array_filter(array_map(static function ($file) {
                 if (!is_array($file)) {
@@ -373,15 +373,19 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         }
     }
 
+    $authorName = isset($rowAuthorName) ? trim((string) $rowAuthorName) : '';
+    $createdAt = $rowCreatedAt ?? null;
+    $storedRemarkText = isset($rowRemarkText) ? trim((string) $rowRemarkText) : $normalizedRemark;
+
     return [
-        'id' => (int) $row['id'],
-        'lead_id' => (int) $row['lead_id'],
-        'text' => $normalizedRemark !== '' ? $normalizedRemark : 'No remark details provided.',
+        'id' => (int) $rowId,
+        'lead_id' => (int) $rowLeadId,
+        'text' => $storedRemarkText !== '' ? $storedRemarkText : 'No remark details provided.',
         'attachments' => $attachmentsList,
-        'author' => isset($row['created_by_name']) && trim((string) $row['created_by_name']) !== ''
-            ? trim((string) $row['created_by_name'])
+        'author' => $authorName !== ''
+            ? $authorName
             : 'Team',
-        'timestamp' => format_activity_timestamp($row['created_at'] ?? null),
+        'timestamp' => format_activity_timestamp($createdAt),
     ];
 }
 
@@ -637,58 +641,56 @@ function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
         return [];
     }
 
-    $result = $statement->get_result();
     $remarks = [];
 
-    if ($result instanceof mysqli_result) {
-        while ($row = $result->fetch_assoc()) {
-            $leadId = isset($row['lead_id']) ? (int) $row['lead_id'] : 0;
-            if ($leadId <= 0) {
-                continue;
-            }
+    $statement->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAttachments, $rowAuthorName, $rowCreatedAt);
+    while ($statement->fetch()) {
+        $leadId = (int) $rowLeadId;
+        if ($leadId <= 0) {
+            continue;
+        }
 
-            if (!isset($remarks[$leadId])) {
-                $remarks[$leadId] = [];
-            }
+        if (!isset($remarks[$leadId])) {
+            $remarks[$leadId] = [];
+        }
 
-            $text = isset($row['remark_text']) ? trim((string) $row['remark_text']) : '';
-            $author = isset($row['created_by_name']) ? trim((string) $row['created_by_name']) : '';
-            $timestamp = format_activity_timestamp($row['created_at'] ?? null);
+        $text = isset($rowRemarkText) ? trim((string) $rowRemarkText) : '';
+        $author = isset($rowAuthorName) ? trim((string) $rowAuthorName) : '';
+        $timestamp = format_activity_timestamp($rowCreatedAt ?? null);
 
-            $attachments = [];
-            if (!empty($row['attachments'])) {
-                $decoded = json_decode((string) $row['attachments'], true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                    foreach ($decoded as $attachment) {
-                        if (!is_array($attachment)) {
-                            continue;
-                        }
-
-                        $fileName = isset($attachment['name']) ? trim((string) $attachment['name']) : '';
-                        $fileUrl = isset($attachment['url']) ? trim((string) $attachment['url']) : '';
-                        if ($fileUrl === '' && isset($attachment['path'])) {
-                            $fileUrl = trim((string) $attachment['path']);
-                        }
-
-                        if ($fileUrl === '') {
-                            continue;
-                        }
-
-                        $attachments[] = [
-                            'name' => $fileName !== '' ? $fileName : 'Attachment',
-                            'url' => $fileUrl,
-                        ];
+        $attachments = [];
+        if (!empty($rowAttachments)) {
+            $decoded = json_decode((string) $rowAttachments, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                foreach ($decoded as $attachment) {
+                    if (!is_array($attachment)) {
+                        continue;
                     }
+
+                    $fileName = isset($attachment['name']) ? trim((string) $attachment['name']) : '';
+                    $fileUrl = isset($attachment['url']) ? trim((string) $attachment['url']) : '';
+                    if ($fileUrl === '' && isset($attachment['path'])) {
+                        $fileUrl = trim((string) $attachment['path']);
+                    }
+
+                    if ($fileUrl === '') {
+                        continue;
+                    }
+
+                    $attachments[] = [
+                        'name' => $fileName !== '' ? $fileName : 'Attachment',
+                        'url' => $fileUrl,
+                    ];
                 }
             }
-
-            $remarks[$leadId][] = [
-                'author' => $author !== '' ? $author : 'Team',
-                'timestamp' => $timestamp,
-                'text' => $text !== '' ? $text : 'No remark details provided.',
-                'attachments' => $attachments,
-            ];
         }
+
+        $remarks[$leadId][] = [
+            'author' => $author !== '' ? $author : 'Team',
+            'timestamp' => $timestamp,
+            'text' => $text !== '' ? $text : 'No remark details provided.',
+            'attachments' => $attachments,
+        ];
     }
 
     $statement->close();

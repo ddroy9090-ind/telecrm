@@ -222,25 +222,20 @@ function ensure_lead_remarks_table(mysqli $mysqli): bool
     }
 
     $remarksReady = false;
+
+    $tableExists = false;
     $result = $mysqli->query("SHOW TABLES LIKE 'lead_remarks'");
     if ($result instanceof mysqli_result) {
-        if ($result->num_rows > 0) {
-            $remarksReady = true;
-        }
+        $tableExists = $result->num_rows > 0;
         $result->free();
     }
 
-    if ($remarksReady) {
-        return true;
-    }
-
-    $tableDefinitions = [
-        <<<SQL
-CREATE TABLE IF NOT EXISTS `lead_remarks` (
+    if (!$tableExists) {
+        $definition = <<<SQL
+CREATE TABLE `lead_remarks` (
     `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
     `lead_id` INT(10) UNSIGNED NOT NULL,
     `remark_text` TEXT NOT NULL,
-    `attachments` JSON DEFAULT NULL,
     `created_by` INT(10) UNSIGNED DEFAULT NULL,
     `created_by_name` VARCHAR(255) DEFAULT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -248,31 +243,120 @@ CREATE TABLE IF NOT EXISTS `lead_remarks` (
     KEY `lead_remarks_lead_id` (`lead_id`),
     CONSTRAINT `lead_remarks_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-SQL,
-        <<<SQL
-CREATE TABLE IF NOT EXISTS `lead_remarks` (
-    `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-    `lead_id` INT(10) UNSIGNED NOT NULL,
-    `remark_text` TEXT NOT NULL,
-    `attachments` LONGTEXT DEFAULT NULL,
-    `created_by` INT(10) UNSIGNED DEFAULT NULL,
-    `created_by_name` VARCHAR(255) DEFAULT NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    KEY `lead_remarks_lead_id` (`lead_id`),
-    CONSTRAINT `lead_remarks_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-SQL,
-    ];
+SQL;
 
-    foreach ($tableDefinitions as $definition) {
-        if ($mysqli->query($definition)) {
-            $remarksReady = true;
-            break;
+        if (!$mysqli->query($definition)) {
+            error_log('Unable to create lead_remarks table: ' . $mysqli->error);
+            return false;
         }
 
-        error_log('Unable to create lead_remarks table: ' . $mysqli->error);
+        $tableExists = true;
     }
+
+    if (!$tableExists) {
+        return false;
+    }
+
+    $columnResult = $mysqli->query('SHOW COLUMNS FROM `lead_remarks`');
+    if (!$columnResult instanceof mysqli_result) {
+        return false;
+    }
+
+    $columns = [];
+    while ($column = $columnResult->fetch_assoc()) {
+        $field = $column['Field'] ?? '';
+        if ($field === '') {
+            continue;
+        }
+
+        $columns[$field] = $column;
+    }
+    $columnResult->free();
+
+    $alterStatements = [];
+
+    if (isset($columns['attachments'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` DROP COLUMN `attachments`';
+    }
+
+    if (isset($columns['remark']) && !isset($columns['remark_text'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` CHANGE `remark` `remark_text` TEXT NOT NULL';
+    }
+
+    if (isset($columns['remarks']) && !isset($columns['remark_text'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` CHANGE `remarks` `remark_text` TEXT NOT NULL';
+    }
+
+    if (!isset($columns['lead_id'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `lead_id` INT(10) UNSIGNED NOT NULL AFTER `id`';
+    }
+
+    if (!isset($columns['remark_text'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `remark_text` TEXT NOT NULL AFTER `lead_id`';
+    } elseif (stripos((string) ($columns['remark_text']['Type'] ?? ''), 'text') === false) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` MODIFY COLUMN `remark_text` TEXT NOT NULL';
+    }
+
+    if (!isset($columns['created_by'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `created_by` INT(10) UNSIGNED DEFAULT NULL AFTER `remark_text`';
+    }
+
+    if (!isset($columns['created_by_name'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `created_by_name` VARCHAR(255) DEFAULT NULL AFTER `created_by`';
+    }
+
+    if (!isset($columns['created_at'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `created_by_name`';
+    } elseif (stripos((string) ($columns['created_at']['Type'] ?? ''), 'timestamp') === false) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` MODIFY COLUMN `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP';
+    }
+
+    if (isset($columns['id']) && stripos((string) ($columns['id']['Extra'] ?? ''), 'auto_increment') === false) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` MODIFY COLUMN `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT';
+    }
+
+    if (!empty($alterStatements)) {
+        foreach ($alterStatements as $alterSql) {
+            if (!$mysqli->query($alterSql)) {
+                error_log('Unable to adjust lead_remarks table: ' . $mysqli->error);
+            }
+        }
+
+        $columnResult = $mysqli->query('SHOW COLUMNS FROM `lead_remarks`');
+        if ($columnResult instanceof mysqli_result) {
+            $columns = [];
+            while ($column = $columnResult->fetch_assoc()) {
+                $field = $column['Field'] ?? '';
+                if ($field === '') {
+                    continue;
+                }
+                $columns[$field] = $column;
+            }
+            $columnResult->free();
+        }
+    }
+
+    $requiredColumns = ['id', 'lead_id', 'remark_text', 'created_at'];
+    foreach ($requiredColumns as $columnName) {
+        if (!isset($columns[$columnName])) {
+            return false;
+        }
+    }
+
+    $indexResult = $mysqli->query("SHOW INDEX FROM `lead_remarks` WHERE Key_name = 'lead_remarks_lead_id'");
+    $hasLeadIndex = false;
+    if ($indexResult instanceof mysqli_result) {
+        $hasLeadIndex = $indexResult->num_rows > 0;
+        $indexResult->free();
+    }
+
+    if (!$hasLeadIndex) {
+        if (!$mysqli->query('ALTER TABLE `lead_remarks` ADD INDEX `lead_remarks_lead_id` (`lead_id`)')) {
+            error_log('Unable to add lead_remarks_lead_id index: ' . $mysqli->error);
+        }
+    }
+
+    $remarksReady = true;
 
     return $remarksReady;
 }
@@ -284,23 +368,15 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
     }
 
     $normalizedRemark = trim($remarkText);
-    $attachmentsJson = null;
-    if (!empty($attachments)) {
-        $attachmentsJson = json_encode($attachments, JSON_UNESCAPED_UNICODE);
-        if ($attachmentsJson === false) {
-            $attachmentsJson = null;
-        }
-    }
-
     $userIdValue = $userId !== null ? (int) $userId : null;
     $userNameValue = trim($userName) !== '' ? trim($userName) : null;
 
-    $statement = $mysqli->prepare('INSERT INTO lead_remarks (lead_id, remark_text, attachments, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)');
+    $statement = $mysqli->prepare('INSERT INTO lead_remarks (lead_id, remark_text, created_by, created_by_name) VALUES (?, ?, ?, ?)');
     if (!$statement instanceof mysqli_stmt) {
         return null;
     }
 
-    $statement->bind_param('issis', $leadId, $normalizedRemark, $attachmentsJson, $userIdValue, $userNameValue);
+    $statement->bind_param('isis', $leadId, $normalizedRemark, $userIdValue, $userNameValue);
     $executed = $statement->execute();
     if (!$executed) {
         $statement->close();
@@ -327,7 +403,7 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         return null;
     }
 
-    $lookup = $mysqli->prepare('SELECT id, lead_id, remark_text, attachments, created_by_name, created_at FROM lead_remarks WHERE id = ?');
+    $lookup = $mysqli->prepare('SELECT id, lead_id, remark_text, created_by_name, created_at FROM lead_remarks WHERE id = ?');
     if (!$lookup instanceof mysqli_stmt) {
         return null;
     }
@@ -338,39 +414,12 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         return null;
     }
 
-    $lookup->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAttachments, $rowAuthorName, $rowCreatedAt);
+    $lookup->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAuthorName, $rowCreatedAt);
     $hasRow = $lookup->fetch();
     $lookup->close();
 
     if (!$hasRow) {
         return null;
-    }
-
-    $attachmentsList = [];
-    if (!empty($rowAttachments)) {
-        $decoded = json_decode((string) $rowAttachments, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            $attachmentsList = array_values(array_filter(array_map(static function ($file) {
-                if (!is_array($file)) {
-                    return null;
-                }
-
-                $name = isset($file['name']) ? trim((string) $file['name']) : '';
-                $url = isset($file['url']) ? trim((string) $file['url']) : '';
-                if ($url === '' && isset($file['path'])) {
-                    $url = trim((string) $file['path']);
-                }
-
-                if ($url === '') {
-                    return null;
-                }
-
-                return [
-                    'name' => $name !== '' ? $name : 'Attachment',
-                    'url' => $url,
-                ];
-            }, $decoded)));
-        }
     }
 
     $authorName = isset($rowAuthorName) ? trim((string) $rowAuthorName) : '';
@@ -381,7 +430,7 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         'id' => (int) $rowId,
         'lead_id' => (int) $rowLeadId,
         'text' => $storedRemarkText !== '' ? $storedRemarkText : 'No remark details provided.',
-        'attachments' => $attachmentsList,
+        'attachments' => [],
         'author' => $authorName !== ''
             ? $authorName
             : 'Team',
@@ -563,7 +612,7 @@ function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
     $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
     $types = str_repeat('i', count($uniqueIds));
 
-    $statement = $mysqli->prepare("SELECT id, lead_id, remark_text, attachments, created_by_name, created_at FROM lead_remarks WHERE lead_id IN ({$placeholders}) ORDER BY created_at DESC, id DESC");
+    $statement = $mysqli->prepare("SELECT id, lead_id, remark_text, created_by_name, created_at FROM lead_remarks WHERE lead_id IN ({$placeholders}) ORDER BY created_at DESC, id DESC");
     if (!$statement instanceof mysqli_stmt) {
         return [];
     }
@@ -584,7 +633,7 @@ function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
 
     $remarks = [];
 
-    $statement->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAttachments, $rowAuthorName, $rowCreatedAt);
+    $statement->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAuthorName, $rowCreatedAt);
     while ($statement->fetch()) {
         $leadId = (int) $rowLeadId;
         if ($leadId <= 0) {
@@ -599,38 +648,11 @@ function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
         $author = isset($rowAuthorName) ? trim((string) $rowAuthorName) : '';
         $timestamp = format_activity_timestamp($rowCreatedAt ?? null);
 
-        $attachments = [];
-        if (!empty($rowAttachments)) {
-            $decoded = json_decode((string) $rowAttachments, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                foreach ($decoded as $attachment) {
-                    if (!is_array($attachment)) {
-                        continue;
-                    }
-
-                    $fileName = isset($attachment['name']) ? trim((string) $attachment['name']) : '';
-                    $fileUrl = isset($attachment['url']) ? trim((string) $attachment['url']) : '';
-                    if ($fileUrl === '' && isset($attachment['path'])) {
-                        $fileUrl = trim((string) $attachment['path']);
-                    }
-
-                    if ($fileUrl === '') {
-                        continue;
-                    }
-
-                    $attachments[] = [
-                        'name' => $fileName !== '' ? $fileName : 'Attachment',
-                        'url' => $fileUrl,
-                    ];
-                }
-            }
-        }
-
         $remarks[$leadId][] = [
             'author' => $author !== '' ? $author : 'Team',
             'timestamp' => $timestamp,
             'text' => $text !== '' ? $text : 'No remark details provided.',
-            'attachments' => $attachments,
+            'attachments' => [],
         ];
     }
 

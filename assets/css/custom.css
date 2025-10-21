@@ -513,7 +513,7 @@ input[type="checkbox"]:checked::after {
 
 .button .button__text {
   transform: translateX(30px);
-  color: #333;
+  color: #fff;
   font-weight: 500;
 }
 
@@ -531,7 +531,7 @@ input[type="checkbox"]:checked::after {
 
 .button .svg {
   width: 30px;
-  /* stroke: transparent; */
+  stroke: #fff;
   font-weight: 400;
 }
 

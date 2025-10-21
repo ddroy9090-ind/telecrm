@@ -2029,7 +2029,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_GET['action']) && $_GET['a
                         </a>
                     </div>
                     <div class="lead-sidebar__feedback" data-lead-feedback hidden></div>
-                    <form class="lead-sidebar__form" data-lead-form id="leadSidebarForm" novalidate>
+                    <form class="lead-sidebar__form" data-lead-form id="leadSidebarForm" novalidate data-update-endpoint="all-leads.php?action=update-lead">
                         <input type="hidden" name="id" data-edit-id>
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Contact Information</h3>

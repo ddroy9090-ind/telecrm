@@ -98,6 +98,55 @@ function format_activity_timestamp(?string $rawTimestamp): string
     return date('M d, Y g:i A', $timestamp);
 }
 
+function normalize_field_value_for_compare(string $fieldKey, $value): string
+{
+    if ($value === null) {
+        return '';
+    }
+
+    $stringValue = is_scalar($value) ? (string) $value : json_encode($value);
+    $stringValue = trim((string) $stringValue);
+
+    switch ($fieldKey) {
+        case 'stage':
+            return normalize_stage_label(format_lead_stage($stringValue));
+        case 'assigned_to':
+            return function_exists('mb_strtolower') ? mb_strtolower($stringValue, 'UTF-8') : strtolower($stringValue);
+        default:
+            return $stringValue;
+    }
+}
+
+function lead_field_has_changed(string $fieldKey, $oldValue, $newValue): bool
+{
+    return normalize_field_value_for_compare($fieldKey, $oldValue) !== normalize_field_value_for_compare($fieldKey, $newValue);
+}
+
+function format_field_display_value(string $fieldKey, $value): string
+{
+    if ($value === null || $value === '') {
+        return '—';
+    }
+
+    switch ($fieldKey) {
+        case 'stage':
+            return format_lead_stage((string) $value);
+        case 'assigned_to':
+        case 'name':
+        case 'source':
+        case 'purpose':
+        case 'size_required':
+        case 'location_preferences':
+        case 'property_type':
+        case 'interested_in':
+            return (string) $value;
+        case 'rating':
+            return trim((string) $value) !== '' ? (string) $value : 'Not rated';
+        default:
+            return (string) $value;
+    }
+}
+
 function ensure_lead_activity_table(mysqli $mysqli): bool
 {
     static $isReady = null;
@@ -173,25 +222,20 @@ function ensure_lead_remarks_table(mysqli $mysqli): bool
     }
 
     $remarksReady = false;
+
+    $tableExists = false;
     $result = $mysqli->query("SHOW TABLES LIKE 'lead_remarks'");
     if ($result instanceof mysqli_result) {
-        if ($result->num_rows > 0) {
-            $remarksReady = true;
-        }
+        $tableExists = $result->num_rows > 0;
         $result->free();
     }
 
-    if ($remarksReady) {
-        return true;
-    }
-
-    $tableDefinitions = [
-        <<<SQL
-CREATE TABLE IF NOT EXISTS `lead_remarks` (
+    if (!$tableExists) {
+        $definition = <<<SQL
+CREATE TABLE `lead_remarks` (
     `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
     `lead_id` INT(10) UNSIGNED NOT NULL,
     `remark_text` TEXT NOT NULL,
-    `attachments` JSON DEFAULT NULL,
     `created_by` INT(10) UNSIGNED DEFAULT NULL,
     `created_by_name` VARCHAR(255) DEFAULT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -199,31 +243,120 @@ CREATE TABLE IF NOT EXISTS `lead_remarks` (
     KEY `lead_remarks_lead_id` (`lead_id`),
     CONSTRAINT `lead_remarks_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-SQL,
-        <<<SQL
-CREATE TABLE IF NOT EXISTS `lead_remarks` (
-    `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-    `lead_id` INT(10) UNSIGNED NOT NULL,
-    `remark_text` TEXT NOT NULL,
-    `attachments` LONGTEXT DEFAULT NULL,
-    `created_by` INT(10) UNSIGNED DEFAULT NULL,
-    `created_by_name` VARCHAR(255) DEFAULT NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    KEY `lead_remarks_lead_id` (`lead_id`),
-    CONSTRAINT `lead_remarks_lead_fk` FOREIGN KEY (`lead_id`) REFERENCES `all_leads` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-SQL,
-    ];
+SQL;
 
-    foreach ($tableDefinitions as $definition) {
-        if ($mysqli->query($definition)) {
-            $remarksReady = true;
-            break;
+        if (!$mysqli->query($definition)) {
+            error_log('Unable to create lead_remarks table: ' . $mysqli->error);
+            return false;
         }
 
-        error_log('Unable to create lead_remarks table: ' . $mysqli->error);
+        $tableExists = true;
     }
+
+    if (!$tableExists) {
+        return false;
+    }
+
+    $columnResult = $mysqli->query('SHOW COLUMNS FROM `lead_remarks`');
+    if (!$columnResult instanceof mysqli_result) {
+        return false;
+    }
+
+    $columns = [];
+    while ($column = $columnResult->fetch_assoc()) {
+        $field = $column['Field'] ?? '';
+        if ($field === '') {
+            continue;
+        }
+
+        $columns[$field] = $column;
+    }
+    $columnResult->free();
+
+    $alterStatements = [];
+
+    if (isset($columns['attachments'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` DROP COLUMN `attachments`';
+    }
+
+    if (isset($columns['remark']) && !isset($columns['remark_text'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` CHANGE `remark` `remark_text` TEXT NOT NULL';
+    }
+
+    if (isset($columns['remarks']) && !isset($columns['remark_text'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` CHANGE `remarks` `remark_text` TEXT NOT NULL';
+    }
+
+    if (!isset($columns['lead_id'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `lead_id` INT(10) UNSIGNED NOT NULL AFTER `id`';
+    }
+
+    if (!isset($columns['remark_text'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `remark_text` TEXT NOT NULL AFTER `lead_id`';
+    } elseif (stripos((string) ($columns['remark_text']['Type'] ?? ''), 'text') === false) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` MODIFY COLUMN `remark_text` TEXT NOT NULL';
+    }
+
+    if (!isset($columns['created_by'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `created_by` INT(10) UNSIGNED DEFAULT NULL AFTER `remark_text`';
+    }
+
+    if (!isset($columns['created_by_name'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `created_by_name` VARCHAR(255) DEFAULT NULL AFTER `created_by`';
+    }
+
+    if (!isset($columns['created_at'])) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` ADD COLUMN `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `created_by_name`';
+    } elseif (stripos((string) ($columns['created_at']['Type'] ?? ''), 'timestamp') === false) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` MODIFY COLUMN `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP';
+    }
+
+    if (isset($columns['id']) && stripos((string) ($columns['id']['Extra'] ?? ''), 'auto_increment') === false) {
+        $alterStatements[] = 'ALTER TABLE `lead_remarks` MODIFY COLUMN `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT';
+    }
+
+    if (!empty($alterStatements)) {
+        foreach ($alterStatements as $alterSql) {
+            if (!$mysqli->query($alterSql)) {
+                error_log('Unable to adjust lead_remarks table: ' . $mysqli->error);
+            }
+        }
+
+        $columnResult = $mysqli->query('SHOW COLUMNS FROM `lead_remarks`');
+        if ($columnResult instanceof mysqli_result) {
+            $columns = [];
+            while ($column = $columnResult->fetch_assoc()) {
+                $field = $column['Field'] ?? '';
+                if ($field === '') {
+                    continue;
+                }
+                $columns[$field] = $column;
+            }
+            $columnResult->free();
+        }
+    }
+
+    $requiredColumns = ['id', 'lead_id', 'remark_text', 'created_at'];
+    foreach ($requiredColumns as $columnName) {
+        if (!isset($columns[$columnName])) {
+            return false;
+        }
+    }
+
+    $indexResult = $mysqli->query("SHOW INDEX FROM `lead_remarks` WHERE Key_name = 'lead_remarks_lead_id'");
+    $hasLeadIndex = false;
+    if ($indexResult instanceof mysqli_result) {
+        $hasLeadIndex = $indexResult->num_rows > 0;
+        $indexResult->free();
+    }
+
+    if (!$hasLeadIndex) {
+        if (!$mysqli->query('ALTER TABLE `lead_remarks` ADD INDEX `lead_remarks_lead_id` (`lead_id`)')) {
+            error_log('Unable to add lead_remarks_lead_id index: ' . $mysqli->error);
+        }
+    }
+
+    $remarksReady = true;
 
     return $remarksReady;
 }
@@ -235,23 +368,15 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
     }
 
     $normalizedRemark = trim($remarkText);
-    $attachmentsJson = null;
-    if (!empty($attachments)) {
-        $attachmentsJson = json_encode($attachments, JSON_UNESCAPED_UNICODE);
-        if ($attachmentsJson === false) {
-            $attachmentsJson = null;
-        }
-    }
-
     $userIdValue = $userId !== null ? (int) $userId : null;
     $userNameValue = trim($userName) !== '' ? trim($userName) : null;
 
-    $statement = $mysqli->prepare('INSERT INTO lead_remarks (lead_id, remark_text, attachments, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)');
+    $statement = $mysqli->prepare('INSERT INTO lead_remarks (lead_id, remark_text, created_by, created_by_name) VALUES (?, ?, ?, ?)');
     if (!$statement instanceof mysqli_stmt) {
         return null;
     }
 
-    $statement->bind_param('issis', $leadId, $normalizedRemark, $attachmentsJson, $userIdValue, $userNameValue);
+    $statement->bind_param('isis', $leadId, $normalizedRemark, $userIdValue, $userNameValue);
     $executed = $statement->execute();
     if (!$executed) {
         $statement->close();
@@ -278,7 +403,7 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         return null;
     }
 
-    $lookup = $mysqli->prepare('SELECT id, lead_id, remark_text, attachments, created_by_name, created_at FROM lead_remarks WHERE id = ?');
+    $lookup = $mysqli->prepare('SELECT id, lead_id, remark_text, created_by_name, created_at FROM lead_remarks WHERE id = ?');
     if (!$lookup instanceof mysqli_stmt) {
         return null;
     }
@@ -289,39 +414,12 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         return null;
     }
 
-    $lookup->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAttachments, $rowAuthorName, $rowCreatedAt);
+    $lookup->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAuthorName, $rowCreatedAt);
     $hasRow = $lookup->fetch();
     $lookup->close();
 
     if (!$hasRow) {
         return null;
-    }
-
-    $attachmentsList = [];
-    if (!empty($rowAttachments)) {
-        $decoded = json_decode((string) $rowAttachments, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            $attachmentsList = array_values(array_filter(array_map(static function ($file) {
-                if (!is_array($file)) {
-                    return null;
-                }
-
-                $name = isset($file['name']) ? trim((string) $file['name']) : '';
-                $url = isset($file['url']) ? trim((string) $file['url']) : '';
-                if ($url === '' && isset($file['path'])) {
-                    $url = trim((string) $file['path']);
-                }
-
-                if ($url === '') {
-                    return null;
-                }
-
-                return [
-                    'name' => $name !== '' ? $name : 'Attachment',
-                    'url' => $url,
-                ];
-            }, $decoded)));
-        }
     }
 
     $authorName = isset($rowAuthorName) ? trim((string) $rowAuthorName) : '';
@@ -332,7 +430,7 @@ function save_lead_remark(mysqli $mysqli, int $leadId, string $remarkText, array
         'id' => (int) $rowId,
         'lead_id' => (int) $rowLeadId,
         'text' => $storedRemarkText !== '' ? $storedRemarkText : 'No remark details provided.',
-        'attachments' => $attachmentsList,
+        'attachments' => [],
         'author' => $authorName !== ''
             ? $authorName
             : 'Team',
@@ -514,7 +612,7 @@ function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
     $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
     $types = str_repeat('i', count($uniqueIds));
 
-    $statement = $mysqli->prepare("SELECT id, lead_id, remark_text, attachments, created_by_name, created_at FROM lead_remarks WHERE lead_id IN ({$placeholders}) ORDER BY created_at DESC, id DESC");
+    $statement = $mysqli->prepare("SELECT id, lead_id, remark_text, created_by_name, created_at FROM lead_remarks WHERE lead_id IN ({$placeholders}) ORDER BY created_at DESC, id DESC");
     if (!$statement instanceof mysqli_stmt) {
         return [];
     }
@@ -535,7 +633,7 @@ function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
 
     $remarks = [];
 
-    $statement->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAttachments, $rowAuthorName, $rowCreatedAt);
+    $statement->bind_result($rowId, $rowLeadId, $rowRemarkText, $rowAuthorName, $rowCreatedAt);
     while ($statement->fetch()) {
         $leadId = (int) $rowLeadId;
         if ($leadId <= 0) {
@@ -550,38 +648,11 @@ function fetch_lead_remarks(mysqli $mysqli, array $leadIds): array
         $author = isset($rowAuthorName) ? trim((string) $rowAuthorName) : '';
         $timestamp = format_activity_timestamp($rowCreatedAt ?? null);
 
-        $attachments = [];
-        if (!empty($rowAttachments)) {
-            $decoded = json_decode((string) $rowAttachments, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                foreach ($decoded as $attachment) {
-                    if (!is_array($attachment)) {
-                        continue;
-                    }
-
-                    $fileName = isset($attachment['name']) ? trim((string) $attachment['name']) : '';
-                    $fileUrl = isset($attachment['url']) ? trim((string) $attachment['url']) : '';
-                    if ($fileUrl === '' && isset($attachment['path'])) {
-                        $fileUrl = trim((string) $attachment['path']);
-                    }
-
-                    if ($fileUrl === '') {
-                        continue;
-                    }
-
-                    $attachments[] = [
-                        'name' => $fileName !== '' ? $fileName : 'Attachment',
-                        'url' => $fileUrl,
-                    ];
-                }
-            }
-        }
-
         $remarks[$leadId][] = [
             'author' => $author !== '' ? $author : 'Team',
             'timestamp' => $timestamp,
             'text' => $text !== '' ? $text : 'No remark details provided.',
-            'attachments' => $attachments,
+            'attachments' => [],
         ];
     }
 
@@ -860,6 +931,252 @@ $currentUserRole = trim((string) ($_SESSION['role'] ?? ''));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
     $action = (string) $_GET['action'];
+
+    if ($action === 'update-lead') {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $rawInput = file_get_contents('php://input');
+        $payload = json_decode($rawInput ?: '[]', true);
+
+        if (!is_array($payload)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request payload.']);
+            exit;
+        }
+
+        $leadId = isset($payload['id']) ? (int) $payload['id'] : 0;
+        if ($leadId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+            exit;
+        }
+
+        $existingStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+        if (!$existingStatement instanceof mysqli_stmt) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare the lookup statement.']);
+            exit;
+        }
+
+        $existingStatement->bind_param('i', $leadId);
+        if (!$existingStatement->execute()) {
+            $existingStatement->close();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to look up the existing lead.']);
+            exit;
+        }
+
+        $existingResult = $existingStatement->get_result();
+        $existingLeadRow = $existingResult ? $existingResult->fetch_assoc() : null;
+        $existingStatement->close();
+
+        if (!$existingLeadRow) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+            exit;
+        }
+
+        $fieldsMap = [
+            'name' => 'name',
+            'stage' => 'stage',
+            'rating' => 'rating',
+            'assigned_to' => 'assigned_to',
+            'source' => 'source',
+            'phone' => 'phone',
+            'alternate_phone' => 'alternate_phone',
+            'email' => 'email',
+            'alternate_email' => 'alternate_email',
+            'nationality' => 'nationality',
+            'location_preferences' => 'location_preferences',
+            'property_type' => 'property_type',
+            'interested_in' => 'interested_in',
+            'budget_range' => 'budget_range',
+            'urgency' => 'urgency',
+            'purpose' => 'purpose',
+            'size_required' => 'size_required',
+        ];
+
+        $updates = [];
+        $types = '';
+        $params = [];
+        $changeSet = [];
+
+        foreach ($fieldsMap as $payloadKey => $columnName) {
+            if (!array_key_exists($payloadKey, $payload)) {
+                continue;
+            }
+
+            $value = $payload[$payloadKey];
+            if (is_string($value)) {
+                $value = trim($value);
+            } elseif ($value === null) {
+                $value = null;
+            } else {
+                $value = trim((string) $value);
+            }
+
+            $normalizedValue = $value === '' ? null : $value;
+            $previousValue = $existingLeadRow[$columnName] ?? null;
+
+            if (!lead_field_has_changed($payloadKey, $previousValue, $normalizedValue)) {
+                continue;
+            }
+
+            $updates[] = "`{$columnName}` = ?";
+            $params[] = $normalizedValue;
+            $types .= 's';
+
+            $changeSet[$payloadKey] = [
+                'column' => $columnName,
+                'from' => $previousValue,
+                'to' => $normalizedValue,
+            ];
+        }
+
+        if (empty($updates)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'No changes were provided or all values remained the same.']);
+            exit;
+        }
+
+        $params[] = $leadId;
+        $types .= 'i';
+
+        $updateStatement = $mysqli->prepare('UPDATE all_leads SET ' . implode(', ', $updates) . ' WHERE id = ?');
+        if (!$updateStatement instanceof mysqli_stmt) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare the update statement.']);
+            exit;
+        }
+
+        $bindParams = array_merge([$types], $params);
+        $bindReferences = [];
+        foreach ($bindParams as $key => &$value) {
+            $bindReferences[$key] = &$value;
+        }
+        unset($value);
+
+        $bindResult = $updateStatement->bind_param(...$bindReferences);
+        if (!$bindResult || !$updateStatement->execute()) {
+            $errorMessage = $updateStatement->error ?: $mysqli->error;
+            if ($errorMessage) {
+                error_log('Lead update failed: ' . $errorMessage);
+            }
+            $updateStatement->close();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to update the lead.']);
+            exit;
+        }
+
+        $updateStatement->close();
+
+        $selectStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+        if (!$selectStatement instanceof mysqli_stmt) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare the fetch statement.']);
+            exit;
+        }
+
+        $selectStatement->bind_param('i', $leadId);
+        if (!$selectStatement->execute()) {
+            $selectStatement->close();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to retrieve the updated lead.']);
+            exit;
+        }
+
+        $result = $selectStatement->get_result();
+        $updatedLeadRow = $result ? $result->fetch_assoc() : null;
+        $selectStatement->close();
+
+        if (!$updatedLeadRow) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+            exit;
+        }
+
+        if (!empty($changeSet)) {
+            ensure_lead_activity_table($mysqli);
+            $fieldLabels = [
+                'name' => 'Name',
+                'stage' => 'Stage',
+                'rating' => 'Rating',
+                'assigned_to' => 'Assignee',
+                'source' => 'Source',
+                'phone' => 'Primary Phone',
+                'alternate_phone' => 'Alternate Phone',
+                'email' => 'Email',
+                'alternate_email' => 'Alternate Email',
+                'nationality' => 'Nationality',
+                'location_preferences' => 'Location Preferences',
+                'property_type' => 'Property Type',
+                'interested_in' => 'Interested In',
+                'budget_range' => 'Budget Range',
+                'urgency' => 'Move-in Timeline',
+                'purpose' => 'Purpose',
+                'size_required' => 'Size Requirement',
+            ];
+
+            $actorId = $currentUserId !== null ? (int) $currentUserId : null;
+            $actorName = $currentUserName !== '' ? $currentUserName : 'System';
+
+            foreach ($changeSet as $fieldKey => $change) {
+                $fromDisplay = format_field_display_value($fieldKey, $change['from'] ?? null);
+                $toDisplay = format_field_display_value($fieldKey, $change['to'] ?? null);
+                $fieldLabel = $fieldLabels[$fieldKey] ?? ucfirst(str_replace('_', ' ', $fieldKey));
+
+                if ($fieldKey === 'assigned_to') {
+                    $description = $toDisplay !== '—'
+                        ? sprintf('%s assigned the lead to %s', $actorName, $toDisplay)
+                        : sprintf('%s unassigned the lead', $actorName);
+                    log_lead_activity($mysqli, $leadId, 'assignment', $description, [], $actorId, $actorName);
+                    continue;
+                }
+
+                if ($fromDisplay === '—' && $toDisplay !== '—') {
+                    $description = sprintf('%s set %s to %s', $actorName, $fieldLabel, $toDisplay);
+                } elseif ($toDisplay === '—') {
+                    $description = sprintf('%s cleared %s (was %s)', $actorName, $fieldLabel, $fromDisplay);
+                } else {
+                    $description = sprintf('%s updated %s from %s to %s', $actorName, $fieldLabel, $fromDisplay, $toDisplay);
+                }
+
+                log_lead_activity($mysqli, $leadId, 'update', $description, [], $actorId, $actorName);
+            }
+        }
+
+        $activitySnapshot = fetch_lead_activities($mysqli, [$leadId]);
+        $relatedActivities = $activitySnapshot[$leadId] ?? [];
+        $updatedPayload = build_lead_payload($updatedLeadRow, $relatedActivities);
+        $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
+        if ($encodedPayload === false) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to encode the updated lead payload.']);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Lead details updated successfully.',
+            'lead' => [
+                'row' => [
+                    'id' => (int) $updatedLeadRow['id'],
+                    'name' => $updatedPayload['name'],
+                    'email' => $updatedPayload['email'],
+                    'phone' => $updatedPayload['phone'],
+                    'stage' => $updatedPayload['stage'],
+                    'stageClass' => $updatedPayload['stageClass'],
+                    'source' => $updatedPayload['source'],
+                    'assigned_to' => $updatedPayload['assignedTo'],
+                    'avatarInitial' => $updatedPayload['avatarInitial'],
+                ],
+                'payload' => $updatedPayload,
+                'json' => $encodedPayload,
+            ],
+        ]);
+        exit;
+    }
 
     if ($action === 'add-remark') {
         header('Content-Type: application/json; charset=utf-8');
@@ -1433,7 +1750,7 @@ include __DIR__ . '/includes/common-header.php';
                         </a>
                     </div>
                     <div class="lead-sidebar__feedback" data-lead-feedback hidden></div>
-                    <form class="lead-sidebar__form" data-lead-form id="leadSidebarForm" novalidate>
+                    <form class="lead-sidebar__form" data-lead-form id="leadSidebarForm" novalidate data-update-endpoint="my-leads.php?action=update-lead">
                         <input type="hidden" name="id" data-edit-id>
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Contact Information</h3>

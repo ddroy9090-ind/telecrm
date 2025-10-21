@@ -98,6 +98,55 @@ function format_activity_timestamp(?string $rawTimestamp): string
     return date('M d, Y g:i A', $timestamp);
 }
 
+function normalize_field_value_for_compare(string $fieldKey, $value): string
+{
+    if ($value === null) {
+        return '';
+    }
+
+    $stringValue = is_scalar($value) ? (string) $value : json_encode($value);
+    $stringValue = trim((string) $stringValue);
+
+    switch ($fieldKey) {
+        case 'stage':
+            return normalize_stage_label(format_lead_stage($stringValue));
+        case 'assigned_to':
+            return function_exists('mb_strtolower') ? mb_strtolower($stringValue, 'UTF-8') : strtolower($stringValue);
+        default:
+            return $stringValue;
+    }
+}
+
+function lead_field_has_changed(string $fieldKey, $oldValue, $newValue): bool
+{
+    return normalize_field_value_for_compare($fieldKey, $oldValue) !== normalize_field_value_for_compare($fieldKey, $newValue);
+}
+
+function format_field_display_value(string $fieldKey, $value): string
+{
+    if ($value === null || $value === '') {
+        return '—';
+    }
+
+    switch ($fieldKey) {
+        case 'stage':
+            return format_lead_stage((string) $value);
+        case 'assigned_to':
+        case 'name':
+        case 'source':
+        case 'purpose':
+        case 'size_required':
+        case 'location_preferences':
+        case 'property_type':
+        case 'interested_in':
+            return (string) $value;
+        case 'rating':
+            return trim((string) $value) !== '' ? (string) $value : 'Not rated';
+        default:
+            return (string) $value;
+    }
+}
+
 function ensure_lead_activity_table(mysqli $mysqli): bool
 {
     static $isReady = null;
@@ -861,6 +910,252 @@ $currentUserRole = trim((string) ($_SESSION['role'] ?? ''));
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
     $action = (string) $_GET['action'];
 
+    if ($action === 'update-lead') {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $rawInput = file_get_contents('php://input');
+        $payload = json_decode($rawInput ?: '[]', true);
+
+        if (!is_array($payload)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request payload.']);
+            exit;
+        }
+
+        $leadId = isset($payload['id']) ? (int) $payload['id'] : 0;
+        if ($leadId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'A valid lead identifier is required.']);
+            exit;
+        }
+
+        $existingStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+        if (!$existingStatement instanceof mysqli_stmt) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare the lookup statement.']);
+            exit;
+        }
+
+        $existingStatement->bind_param('i', $leadId);
+        if (!$existingStatement->execute()) {
+            $existingStatement->close();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to look up the existing lead.']);
+            exit;
+        }
+
+        $existingResult = $existingStatement->get_result();
+        $existingLeadRow = $existingResult ? $existingResult->fetch_assoc() : null;
+        $existingStatement->close();
+
+        if (!$existingLeadRow) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+            exit;
+        }
+
+        $fieldsMap = [
+            'name' => 'name',
+            'stage' => 'stage',
+            'rating' => 'rating',
+            'assigned_to' => 'assigned_to',
+            'source' => 'source',
+            'phone' => 'phone',
+            'alternate_phone' => 'alternate_phone',
+            'email' => 'email',
+            'alternate_email' => 'alternate_email',
+            'nationality' => 'nationality',
+            'location_preferences' => 'location_preferences',
+            'property_type' => 'property_type',
+            'interested_in' => 'interested_in',
+            'budget_range' => 'budget_range',
+            'urgency' => 'urgency',
+            'purpose' => 'purpose',
+            'size_required' => 'size_required',
+        ];
+
+        $updates = [];
+        $types = '';
+        $params = [];
+        $changeSet = [];
+
+        foreach ($fieldsMap as $payloadKey => $columnName) {
+            if (!array_key_exists($payloadKey, $payload)) {
+                continue;
+            }
+
+            $value = $payload[$payloadKey];
+            if (is_string($value)) {
+                $value = trim($value);
+            } elseif ($value === null) {
+                $value = null;
+            } else {
+                $value = trim((string) $value);
+            }
+
+            $normalizedValue = $value === '' ? null : $value;
+            $previousValue = $existingLeadRow[$columnName] ?? null;
+
+            if (!lead_field_has_changed($payloadKey, $previousValue, $normalizedValue)) {
+                continue;
+            }
+
+            $updates[] = "`{$columnName}` = ?";
+            $params[] = $normalizedValue;
+            $types .= 's';
+
+            $changeSet[$payloadKey] = [
+                'column' => $columnName,
+                'from' => $previousValue,
+                'to' => $normalizedValue,
+            ];
+        }
+
+        if (empty($updates)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'No changes were provided or all values remained the same.']);
+            exit;
+        }
+
+        $params[] = $leadId;
+        $types .= 'i';
+
+        $updateStatement = $mysqli->prepare('UPDATE all_leads SET ' . implode(', ', $updates) . ' WHERE id = ?');
+        if (!$updateStatement instanceof mysqli_stmt) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare the update statement.']);
+            exit;
+        }
+
+        $bindParams = array_merge([$types], $params);
+        $bindReferences = [];
+        foreach ($bindParams as $key => &$value) {
+            $bindReferences[$key] = &$value;
+        }
+        unset($value);
+
+        $bindResult = $updateStatement->bind_param(...$bindReferences);
+        if (!$bindResult || !$updateStatement->execute()) {
+            $errorMessage = $updateStatement->error ?: $mysqli->error;
+            if ($errorMessage) {
+                error_log('Lead update failed: ' . $errorMessage);
+            }
+            $updateStatement->close();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to update the lead.']);
+            exit;
+        }
+
+        $updateStatement->close();
+
+        $selectStatement = $mysqli->prepare('SELECT * FROM all_leads WHERE id = ?');
+        if (!$selectStatement instanceof mysqli_stmt) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to prepare the fetch statement.']);
+            exit;
+        }
+
+        $selectStatement->bind_param('i', $leadId);
+        if (!$selectStatement->execute()) {
+            $selectStatement->close();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to retrieve the updated lead.']);
+            exit;
+        }
+
+        $result = $selectStatement->get_result();
+        $updatedLeadRow = $result ? $result->fetch_assoc() : null;
+        $selectStatement->close();
+
+        if (!$updatedLeadRow) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'The requested lead could not be found.']);
+            exit;
+        }
+
+        if (!empty($changeSet)) {
+            ensure_lead_activity_table($mysqli);
+            $fieldLabels = [
+                'name' => 'Name',
+                'stage' => 'Stage',
+                'rating' => 'Rating',
+                'assigned_to' => 'Assignee',
+                'source' => 'Source',
+                'phone' => 'Primary Phone',
+                'alternate_phone' => 'Alternate Phone',
+                'email' => 'Email',
+                'alternate_email' => 'Alternate Email',
+                'nationality' => 'Nationality',
+                'location_preferences' => 'Location Preferences',
+                'property_type' => 'Property Type',
+                'interested_in' => 'Interested In',
+                'budget_range' => 'Budget Range',
+                'urgency' => 'Move-in Timeline',
+                'purpose' => 'Purpose',
+                'size_required' => 'Size Requirement',
+            ];
+
+            $actorId = $currentUserId !== null ? (int) $currentUserId : null;
+            $actorName = $currentUserName !== '' ? $currentUserName : 'System';
+
+            foreach ($changeSet as $fieldKey => $change) {
+                $fromDisplay = format_field_display_value($fieldKey, $change['from'] ?? null);
+                $toDisplay = format_field_display_value($fieldKey, $change['to'] ?? null);
+                $fieldLabel = $fieldLabels[$fieldKey] ?? ucfirst(str_replace('_', ' ', $fieldKey));
+
+                if ($fieldKey === 'assigned_to') {
+                    $description = $toDisplay !== '—'
+                        ? sprintf('%s assigned the lead to %s', $actorName, $toDisplay)
+                        : sprintf('%s unassigned the lead', $actorName);
+                    log_lead_activity($mysqli, $leadId, 'assignment', $description, [], $actorId, $actorName);
+                    continue;
+                }
+
+                if ($fromDisplay === '—' && $toDisplay !== '—') {
+                    $description = sprintf('%s set %s to %s', $actorName, $fieldLabel, $toDisplay);
+                } elseif ($toDisplay === '—') {
+                    $description = sprintf('%s cleared %s (was %s)', $actorName, $fieldLabel, $fromDisplay);
+                } else {
+                    $description = sprintf('%s updated %s from %s to %s', $actorName, $fieldLabel, $fromDisplay, $toDisplay);
+                }
+
+                log_lead_activity($mysqli, $leadId, 'update', $description, [], $actorId, $actorName);
+            }
+        }
+
+        $activitySnapshot = fetch_lead_activities($mysqli, [$leadId]);
+        $relatedActivities = $activitySnapshot[$leadId] ?? [];
+        $updatedPayload = build_lead_payload($updatedLeadRow, $relatedActivities);
+        $encodedPayload = json_encode($updatedPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+
+        if ($encodedPayload === false) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Unable to encode the updated lead payload.']);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Lead details updated successfully.',
+            'lead' => [
+                'row' => [
+                    'id' => (int) $updatedLeadRow['id'],
+                    'name' => $updatedPayload['name'],
+                    'email' => $updatedPayload['email'],
+                    'phone' => $updatedPayload['phone'],
+                    'stage' => $updatedPayload['stage'],
+                    'stageClass' => $updatedPayload['stageClass'],
+                    'source' => $updatedPayload['source'],
+                    'assigned_to' => $updatedPayload['assignedTo'],
+                    'avatarInitial' => $updatedPayload['avatarInitial'],
+                ],
+                'payload' => $updatedPayload,
+                'json' => $encodedPayload,
+            ],
+        ]);
+        exit;
+    }
+
     if ($action === 'add-remark') {
         header('Content-Type: application/json; charset=utf-8');
 
@@ -1433,7 +1728,7 @@ include __DIR__ . '/includes/common-header.php';
                         </a>
                     </div>
                     <div class="lead-sidebar__feedback" data-lead-feedback hidden></div>
-                    <form class="lead-sidebar__form" data-lead-form id="leadSidebarForm" novalidate>
+                    <form class="lead-sidebar__form" data-lead-form id="leadSidebarForm" novalidate data-update-endpoint="my-leads.php?action=update-lead">
                         <input type="hidden" name="id" data-edit-id>
                         <section class="lead-sidebar__section">
                             <h3 class="lead-sidebar__section-title">Contact Information</h3>

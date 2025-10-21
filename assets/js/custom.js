@@ -275,6 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const remarkInput = remarkForm ? remarkForm.querySelector('textarea') : null;
   const remarkFileInput = remarkForm ? remarkForm.querySelector('.lead-file-upload__input') : null;
   const remarkEndpoint = remarkForm?.dataset?.remarkEndpoint || 'all-leads.php?action=add-remark';
+  const updateEndpoint = sidebarForm?.dataset?.updateEndpoint || 'all-leads.php?action=update-lead';
   let highlightNextRemark = false;
   const filesUploadInput = leadSidebar.querySelector('[data-tab-panel="files"] .lead-file-upload__input');
   const fileUploadEndpoint = filesUploadInput?.dataset?.uploadEndpoint || 'all-leads.php?action=upload-files';
@@ -1411,7 +1412,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       setSavingState(true);
 
-      fetch('all-leads.php?action=update-lead', {
+      fetch(updateEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
